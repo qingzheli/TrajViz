@@ -1,0 +1,147 @@
+
+<!DOCTYPE html>
+
+<html>
+
+<head>
+	<title>Leaflet Viz Demo</title>
+
+	<meta charset="utf-8" />
+
+
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+
+	<link rel="stylesheet" href="leaflet.css" />
+     <link href="bootstrap.min.css" rel="stylesheet">
+    
+</head>
+
+
+<jsp:useBean id="cb" scope="session" class="test.ColorGameBean" />
+<jsp:setProperty name="cb" property="*" />
+
+
+
+<body>
+
+
+<center>
+	<h1> GrammarViz Web for Trajectory</h1>
+	<br/>
+	<div id="map" style="width: 500px; height: 500px"></div>
+<br/><br/>
+
+	<table style="border: 10px">
+	<tr>
+	<td>
+	<form name="n7r" method="post" action="ColorGameBean">
+<input type="hidden" name="hdnbt" />
+<input id="b8" type="button" name="bt"  class="btn btn-primary" style="width: 200px;" value="Previous 6 Rules" onclick="{document.n7r.hdnbt.value=8; document.n7r.submit();}" />
+</form>
+</td>
+<td>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp </td>
+<td>
+<form name="n6r" method="post" action="ColorGameBean">
+<input type="hidden" name="hdnbt" />
+<input id="b7" type="button" name="bt"  class="btn btn-primary" style="width: 200px;" value="Next 6 Rules" onclick="{document.n6r.hdnbt.value=7;document.n6r.submit();}" />
+</form>
+</td>
+<td>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp </td>
+<td>
+<form name="n8r" method="post" action="ColorGameBean">
+<input type="hidden" name="hdnbt" />
+<input id="b9" type="button" name="bt"  class="btn btn-primary" style="width: 200px;" value="Sorted by Frequency" onclick="{document.n8r.hdnbt.value=9;document.n8r.submit();}" />
+</form>
+</td>
+<td>&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp&nbsp </td>
+<td>
+<form name="n9r" method="post" action="ColorGameBean">
+<input type="hidden" name="hdnbt" />
+<input id="b10" type="button" name="bt"  class="btn btn-primary" style="width: 200px;" value="Sorted by Length" onclick="{document.n9r.hdnbt.value=10;document.n9r.submit();}" />
+</form>
+</td>
+
+</tr>
+
+</center>
+
+
+<script src="leaflet.js"></script>
+
+<script>
+	function decode_msgpocket(strMsg){
+		var arr = strMsg.split('#');
+        var i=0;
+        var j=0;
+        for(i=0;i<arr.length; i++)
+        	{
+        		arr[i]=arr[i].split(' ');
+        		for(j=0; j<arr[i].length;j++)
+        			arr[i][j]=parseFloat(arr[i][j]);
+        	}
+        
+        var paths=[];
+        for(i=0;i<arr.length;i++)
+        {
+        	var newArr = [];
+        	while(arr[i].length) newArr.push(arr[i].splice(0,2));
+        	paths.push(newArr);
+        }
+        return paths;
+	}
+</script>
+
+<script>        
+        var strMsg='${cb.getMsg(1)}';
+        
+        var gridMsg='${cb.getMsg(0)}';
+        
+        var paths=decode_msgpocket(strMsg);
+        var grid=decode_msgpocket(gridMsg);
+        
+		var map = L.map('map').setView([paths[0][0][0],paths[0][0][1]], 13);
+        
+
+		L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6IjZjNmRjNzk3ZmE2MTcwOTEwMGY0MzU3YjUzOWFmNWZhIn0.Y8bhBaUMqFiPrDRW9hieoQ', {
+
+			maxZoom: 18,
+
+			attribution: 'GramViz Version 0.0.3 Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+
+				'<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+
+				'Imagery ?<a href="http://mapbox.com">Mapbox</a>',
+
+			id: 'mapbox.streets'
+
+		}).addTo(map);		
+
+
+var firstpolyline = new L.multiPolyline(paths, {
+color: 'blue',
+weight: 3,
+opacity: 0.5,
+smoothFactor: 1
+
+});
+firstpolyline.addTo(map);
+
+
+var grid = new L.multiPolyline(grid, {
+	color: 'red',
+	weight: 3,
+	opacity: 0.5,
+	smoothFactor: 1
+
+	});
+	grid.addTo(map);
+
+	
+</script>
+
+</body>
+
+</html>
