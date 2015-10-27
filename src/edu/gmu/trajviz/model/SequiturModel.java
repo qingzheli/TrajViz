@@ -423,7 +423,7 @@ public class SequiturModel extends Observable {
 			  consoleLogger.debug("running sequitur...");
 			  
 			  SAXRule sequiturGrammar = SequiturFactory.runSequitur(saxFrequencyData.getSAXString(SPACE));
-			//  System.out.println("sequiturGrammar: "+sequiturGrammar.toGrammarRulesData().getRuleRecord(2));
+			//  System.out.println("sequiturGrammar: "+sequiturGrammar.toGrammarRulesData().getRuleRecord(1));
 			  consoleLogger.debug("collecting grammar rules data ...");
 			 // GrammarRules rules1 = sequiturGrammar.toGRD();
 			 // System.out.println("rules size: "+ rules1.size());			 
@@ -438,6 +438,7 @@ public class SequiturModel extends Observable {
 	          String[] r0 = rule0.split(" ");
 	          for(int i = 0; i<rules.size();i++){
 	        	  String key = rules.get(i).getRuleName();
+	        	//  System.out.println(rules.get(i));
 	        	  hm.put(key, 0);
 	          }
 	          /*
@@ -467,14 +468,17 @@ public class SequiturModel extends Observable {
 	           * Postprocessing merge, connect
 	           */
 	          for (int i = 0; i<rules.size();i++){
-					if (rules.get(i).frequencyInR0()>2&&rules.get(i).getRuleYield()>=minBlocks-1)
+					if ((rules.get(i).frequencyInR0()>2&&rules.get(i).getRuleYield()>=minBlocks-1)||(rules.get(i).frequencyInR0()>1&&rules.get(i).getRuleIntervals().size()>2&&rules.get(i).getRuleYield()>=minBlocks-1))
 						{
 						//HashSet<Integer> set = new HashSet<Integer>();
 		//				System.out.println("Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
 						filter.add(i);
+						if(rules.get(i).getRuleIntervals().size()<=2)
+							System.out.println("Bug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+i);
 						}
 					
 				}
+	          System.out.println("filter Size = "+filter.size());
 	          
 	          //HashMap<Integer,ArrayList<Integer>> mergeRecord = new HashMap<Integer, ArrayList<Integer>>();
 	          long t1s = System.currentTimeMillis();
@@ -494,10 +498,15 @@ public class SequiturModel extends Observable {
 	         */
 	          long t2s =System.currentTimeMillis();
 	          NumberFormat formatter = new DecimalFormat("#0.00");
-	          
+	          System.out.println("rdm.pq.size(): "+rdm.pq.size());
+	          int mergableCount = 0;
 	          while(rdm.pq.size()>0){
 	        	  PairDistance pair = rdm.pq.remove();
+	        	  int lineSize;
+	        	  int colSize;
+	        	  int totalSize;
 	        	  if(isMergable(rdm.matrix,clusters,pair.getLine(),pair.getCol(),clusterMap)){
+	        		  mergableCount++;
 	        	//	  merge(rules,rdm.filter.get(pair.getLine()),rdm.filter.get(pair.getCol()));
 	        		  if(clusterMap.containsKey(pair.getLine())||clusterMap.containsKey(pair.getCol()))
 	        		  {
@@ -505,33 +514,40 @@ public class SequiturModel extends Observable {
 	        				  clusters.get(clusterMap.get(pair.getCol())).add(pair.getLine());
 	        				  clusterMap.put(pair.getLine(), clusterMap.get(pair.getCol()));
 	        			//	  System.out.println("Adding Line  to a cluster, Line:"+pair.getLine()+" Colu:"+pair.getCol()+clusters.get(clusterMap.get(pair.getCol())));
-	        				//  System.out.println("Map:"+clusterMap);
+	        				  //System.out.println("Map:"+clusterMap);
+	        				  
 	        			  }
 	        			  else if(!clusterMap.containsKey(pair.getCol())){
 	        				  clusters.get(clusterMap.get(pair.getLine())).add(pair.getCol());
 	        				  clusterMap.put(pair.getCol(), clusterMap.get(pair.getLine()));
-	        				  //System.out.println("Adding Colum to a cluster,Colum:"+pair.getCol()+" Colu:"+pair.getCol()+clusters.get(clusterMap.get(pair.getLine())));
+	        			//	  System.out.println("Adding Colum to a cluster,Colum:"+pair.getCol()+" Colu:"+pair.getCol()+clusters.get(clusterMap.get(pair.getLine())));
 	        				  //System.out.println("Map:"+clusterMap);
 	        			  }
 	        			  else{
-	        				  if(clusterMap.get(pair.getLine())!=clusterMap.get(pair.getCol()))
+	        				  if(!clusterMap.get(pair.getLine()).equals(clusterMap.get(pair.getCol())))
 	        				  {
-	        				//  System.out.println("Before Merge, Line:"+pair.getLine()+clusters.get(clusterMap.get(pair.getLine()))+" Colu:"+pair.getCol()+clusters.get(clusterMap.get(pair.getCol())));
+	        				//  System.out.println("Before Merge, line in cluster:"+clusterMap.get(pair.getLine())+clusters.get(clusterMap.get(pair.getLine()))+" colu in cluster:"+clusterMap.get(pair.getCol())+clusters.get(clusterMap.get(pair.getCol())));
+	        				  lineSize = clusters.get(clusterMap.get(pair.getLine())).size();
+	        				  colSize = clusters.get(clusterMap.get(pair.getCol())).size();
 	        				  clusters.get(clusterMap.get(pair.getLine())).addAll(clusters.get(clusterMap.get(pair.getCol())));
 	        				  int colCluster = clusterMap.get(pair.getCol());
 	        				  for(int v : clusters.get(clusterMap.get(pair.getCol())))
 	        					  {
-	        					//  System.out.print("v: "+v+" ");
+	        				//	  System.out.print("v: "+v+" ");
 	        					  clusterMap.put(v, clusterMap.get(pair.getLine()));
-	        					  clusters.get(clusterMap.get(pair.getLine())).add(v);
+	        				//	  clusters.get(clusterMap.get(pair.getLine())).add(v);
 	        					  }
-	        				 // System.out.println();
+	        				  //System.out.println();
 	        				  clusters.get(colCluster).clear();
 	        				 // System.out.println("After  Merge, Line:"+pair.getLine()+clusters.get(clusterMap.get(pair.getLine()))+" Colu:"+pair.getCol()+clusters.get(colCluster));
-	        				  //System.out.println("Map:"+clusterMap);
+	        				 // System.out.println("Map:"+clusterMap);
+	        				  totalSize = clusters.get(clusterMap.get(pair.getLine())).size();
+	        				  //if((lineSize+colSize)!=totalSize){
+	        					//  System.out.println("Error Candidate here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	        				  //}
 	        				  }
-	        				  else
-	        					;//  System.out.println("Same Cluster! "+clusterMap.get(pair.getLine())+","+clusterMap.get(pair.getCol()));
+	        				  //else
+	        					// System.out.println("Same Cluster! "+clusterMap.get(pair.getLine())+","+clusterMap.get(pair.getCol()));
 	        			  }
 	        		  }
 	        		  else{
@@ -541,7 +557,7 @@ public class SequiturModel extends Observable {
 	        			  clusters.add(set);
 	        			  clusterMap.put(pair.getLine(), clusters.size()-1);
 	        			  clusterMap.put(pair.getCol(), clusters.size()-1);
-	        		//	  System.out.println("Created a cluster: "+clusters.get(clusters.size()-1));
+	        			 // System.out.println("Created a cluster: "+clusters.get(clusters.size()-1));
 	        		//	  System.out.println("Map:"+clusterMap);
 	        		  }
 	        		  
@@ -567,6 +583,7 @@ public class SequiturModel extends Observable {
 	        	//	  System.out.println();
 	        	  }
 	          }
+	          System.out.println("MergableCount: "+mergableCount);
 	          
 	          /*
 	          ArrayList<HashSet<Integer>> tempCluster = new ArrayList<HashSet<Integer>>();
@@ -668,22 +685,31 @@ public class SequiturModel extends Observable {
 		   * Generate All Motifs and record them on files respectively.
 		   */
 		 // String header = "type,latitude,longitude";
-		  System.out.println("Total rules:"+chartData.getRulesNumber());
+//		  System.out.println("Total rules:"+chartData.getRulesNumber());
 		  
 		//  ArrayList<SAXMotif> allMotifs = chartData.getAllMotifs();
 		//  for (int i=1; i<chartData.getRulesNumber();i++){
 		    // create merged rule interval data structure corresponding to "clusters" 
 		    ArrayList<ArrayList<RuleInterval>> ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
 	          ArrayList<HashSet<Integer>> mapToOriginRules = new ArrayList<HashSet<Integer>>();
-
+	        System.out.println("cluster map size = "+ clusterMap.size());
 		    System.out.println("clusterMap:   "+clusterMap);
+		    int totalRuleCount = 0;
+		    int immergableRuleCount = 0;
 		    for(int i=0;i<filter.size();i++){
-		    	if(!clusterMap.containsKey(i)&&chartData.getRulePositionsByRuleNum(filter.get(i)).size()>=minBlocks)
+		    	if(!clusterMap.containsKey(i))//&&chartData.getRulePositionsByRuleNum(filter.get(i)).size()>=minBlocks)
 		    		{
-		    			ruleIntervals.add(chartData.getRulePositionsByRuleNum(filter.get(i)));
+		    		    ArrayList<RuleInterval> ri = chartData.getRulePositionsByRuleNum(filter.get(i));
+		    		  
+		    			{ruleIntervals.add(chartData.getRulePositionsByRuleNum(filter.get(i)));
 		    			HashSet<Integer> set = new HashSet<Integer>();
 		    			set.add(filter.get(i));
 		    			mapToOriginRules.add(set);
+		    			totalRuleCount++;
+		    			immergableRuleCount++;
+		    			}
+		    			  if(ri.size()<=2)
+		    		    	System.out.println("Error!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+ri);
 		    		}
 		    }
 		    
@@ -691,7 +717,10 @@ public class SequiturModel extends Observable {
 		    	
 		    	ArrayList<RuleInterval> mergedIntervals = new ArrayList<RuleInterval>();
 		    	HashSet<Integer> set = new HashSet<Integer>();
-		    	if(clusters.get(i).size()>0){
+		    	if(clusters.get(i).size()>0)
+		    	{
+		    		System.out.println("cluster "+i+" : {" +clusters.get(i)+"}");
+		    		totalRuleCount = totalRuleCount+clusters.get(i).size();
 		    	for(int r : clusters.get(i)){
 		    	
 		    		int rule = filter.get(r);
@@ -702,24 +731,41 @@ public class SequiturModel extends Observable {
 		    			ArrayList<RuleInterval> newIntervals = chartData.getRulePositionsByRuleNum(rule);
 		    			for(int j = 0; j<newIntervals.size();j++){
 		    				RuleInterval newComer = newIntervals.get(j);
+		    				boolean hasMerged = false;
 		    				for(int k = 0; k<mergedIntervals.size();k++){
 		    					if(RuleInterval.isMergable(mergedIntervals.get(k),newComer)){
 		    						RuleInterval newInterval = RuleInterval.merge(mergedIntervals.get(k), newComer);
-		    						mergedIntervals.remove(k);
-		    						mergedIntervals.add(newInterval);
-		    						break;
+		    						mergedIntervals.set(k, newInterval);
+		    						hasMerged = true;
+		    						//mergedIntervals.remove(k);
+		    						//mergedIntervals.add(newInterval);
+		    						//break;
+		    						
 		    					}
+		    					
+		    						
 		    				}
+		    				if(!hasMerged)
+		    					mergedIntervals.add(newComer);
 		    				
 		    			}
 		    		}
 		    		}
-		    	
+		    	if(mergedIntervals.size()>2)
+		    	{	
 		    	ruleIntervals.add(mergedIntervals);
-		    	mapToOriginRules.add(set); 
+		    	mapToOriginRules.add(set);
+		    	}
+		    	else
+		    		System.out.println("mergedIntervals.size = "+mergedIntervals.size());
 		    	}
 		    }
-		    
+		    System.out.println("Immergable Rule  = "+ immergableRuleCount);
+		    System.out.println("Total Rule Count = "+totalRuleCount);
+		    boolean[] isCovered = new boolean[lat.size()];
+		    int coverCount = 0;
+		    for (int i = 0; i<isCovered.length;i++)
+		    	isCovered[i] = false;
 		    int totalSubTrajectory = 0;
 			for (int i = 0; i<ruleIntervals.size();i++){
 		  	totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i).size();
@@ -728,7 +774,7 @@ public class SequiturModel extends Observable {
 			  ArrayList<RuleInterval> positions = ruleIntervals.get(i);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
 			  
 			//  ArrayList<RuleInterval> positions = chartData.getRulePositionsByRuleNum(i);	  
-			  //System.out.println("rule" + i+" actual rules: "+clusters.get(i)+" :  "+ positions);//.get(0).toString());
+			  System.out.println("rule" + i+" :  "+ positions);//.get(0).toString());
 			  
 			  
 			  if(true)//(positions.size()>2)
@@ -752,6 +798,9 @@ public class SequiturModel extends Observable {
 			//		  motifPos.append(header+"\n");
 					  int startPos = positions.get(k).getStartPos();
 						int endPos = positions.get(k).getEndPos();
+						
+						for(int index=startPos; index<=endPos;index++)
+							isCovered[index]=true;
 		//				System.out.println("startPos: "+startPos);
 		//				System.out.println("endPos: " +endPos);
 						boolean firstPoint = true;
@@ -785,9 +834,12 @@ public class SequiturModel extends Observable {
 							
 						}
 						route.add(singleRoute);
+						
 						counter++;
 					//	System.out.println();
 				  }
+				  System.out.println("position size: "+positions.size());
+				  System.out.println("route size: "+route.size());
 				  /* bug fixed!!!
 				   if(!route0Id.equals(route1Id))
 				   {
@@ -798,7 +850,7 @@ public class SequiturModel extends Observable {
 					//  	System.out.println(singleRoute.);
 				   }
 				    */	
-				    if(route.size()>2)
+				  //  if(route.size()>2)
 				     routes.add(route);
 				    
 				    
@@ -818,8 +870,12 @@ public class SequiturModel extends Observable {
 		  	}
 		  }
 		  
-		  
-		  
+		  for (int i = 0;i<isCovered.length;i++){
+			  if(isCovered[i]==true)
+				  coverCount++;
+		  }
+		  System.out.println("Cover Count: "+ coverCount);
+		  System.out.println("cover rate: " +coverCount/isCovered.length);
 		  /*
 		   * Generate All Motifs and record them on files respectively.
 		   */
@@ -859,7 +915,7 @@ public class SequiturModel extends Observable {
 		  /*
 		   * evaluation
 		   */
-		  
+	  
 		  double[] evalResult = evaluateMotifs(routes);
 		  double avgIntraDistance = evalResult[0];
 		  double avgIntraDistanceStdDev = evalResult[1];
@@ -894,6 +950,7 @@ public class SequiturModel extends Observable {
 			  e.printStackTrace();
 		  }
 		  
+		  
 	  }
 	  
 	
@@ -909,10 +966,11 @@ public class SequiturModel extends Observable {
 			}
 			else if(!map.containsKey(y)){
 				for(int i: families.get( map.get(x)))
-					if(distance[y][i]>MAXLINK)
+					if(distance[i][y]>MAXLINK)
 						return false;
 			}
 			else
+			{	
 			for (int i : families.get(map.get(x)))
 				for(int j : families.get(map.get(y)))
 
@@ -922,6 +980,7 @@ public class SequiturModel extends Observable {
 				if(distance[i][j]>MAXLINK)
 					return false;
 				}
+			}
 		}
 		else if(distance[x][y]>MAXLINK)
 			return false;
@@ -962,22 +1021,22 @@ public class SequiturModel extends Observable {
 			for (int x = 0; x<pairwiseDistances.size(); x++)
 				{
 					sums = sums+pairwiseDistances.get(x);
-					System.out.print(pairwiseDistances.get(x)+", ");
+		//			System.out.print(pairwiseDistances.get(x)+", ");
 				}
-			System.out.println();
-			System.out.println("sum of pairwise distance: "+sums);
-			System.out.println("pairSize = "+pairwiseDistances.size());
+		//	System.out.println();
+		//	System.out.println("sum of pairwise distance: "+sums);
+		//	System.out.println("pairSize = "+pairwiseDistances.size());
 			double avgDistance = avg(pairwiseDistances);
 			allDistances.add(avgDistance);
 			
 			Double stdDev = (Double)dev(pairwiseDistances);
 			
 			allStdDev.add(stdDev);
-			System.out.println("pairwire distances of motif "+i+": mean = "+avgDistance+",  Std.Dev ="+stdDev);
+		/*	System.out.println("pairwire distances of motif "+i+": mean = "+avgDistance+",  Std.Dev ="+stdDev);
 			for (int m = 0; m<pairwiseDistances.size();m++)
 				System.out.print(" "+pairwiseDistances.get(m));
 			System.out.println();
-			
+			*/
 			
 		}
 		
@@ -993,8 +1052,8 @@ public class SequiturModel extends Observable {
 
 		}
 		
-		System.out.println("average distances among all motifs: "+avg(allDistances));
-		System.out.println("average standard deviation among all motifs: "+avg(allStdDev));
+//		System.out.println("average distances among all motifs: "+avg(allDistances));
+	//	System.out.println("average standard deviation among all motifs: "+avg(allStdDev));
 		//sb.append(avg(allDistances)+","+avg(allStdDev)+"\n");
 		
 		//return sb.toString();
@@ -1017,7 +1076,7 @@ public class SequiturModel extends Observable {
 				sc = allMinimalInterDistances.get(i)/allDistances.get(i) - 1;
 				
 			}
-			System.out.println("compare: "+allDistances.get(i)+"/"+allMinimalInterDistances.get(i)+" = "+sc);
+	//		System.out.println("compare: "+allDistances.get(i)+"/"+allMinimalInterDistances.get(i)+" = "+sc);
 			silhouetteCoefficients.add(sc);
 		}
 		result[3] = avg(silhouetteCoefficients);

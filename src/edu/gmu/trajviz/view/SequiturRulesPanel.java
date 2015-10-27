@@ -66,7 +66,7 @@ private boolean acceptListEvents;
 private MotifChartData chartData;
 
 private ArrayList<ArrayList<RuleInterval>> ruleIntervals ;
-private ArrayList<ArrayList<HashSet<Integer>>> map ;
+private ArrayList<HashSet<Integer>> map ;
 //private ArrayList<Integer> frequency;
 // the logger business
 //
@@ -254,7 +254,7 @@ public void setRulesData(MotifChartData chartData) {
 	resetPanel();
 	this.acceptListEvents = true;
 }
-public void setRulesData(MotifChartData chartData, ArrayList<ArrayList<RuleInterval>> ruleIntervals, ArrayList<ArrayList<HashSet<Integer>>> mapToOriginRules) {
+public void setRulesData(MotifChartData chartData, ArrayList<ArrayList<RuleInterval>> ruleIntervals, ArrayList<HashSet<Integer>> mapToOriginRules) {
 	this.acceptListEvents = false;
 	
 	this.chartData = chartData;

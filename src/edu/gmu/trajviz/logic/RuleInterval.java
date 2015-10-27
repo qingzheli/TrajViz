@@ -135,10 +135,10 @@ public class RuleInterval implements Comparable<RuleInterval> {
   }
   //-Qingzhe
   public static boolean isMergable(RuleInterval i1,RuleInterval i2){
-	  if((i1.getStartPos()>i2.getStartPos()&&i1.getStartPos()<i2.getEndPos())||
-			  (i1.getEndPos()>i2.getStartPos()&&i1.getEndPos()<i2.getEndPos())||
-			  (i2.getStartPos()>i1.getStartPos()&&i2.getStartPos()<i1.getEndPos())||
-			  (i2.getEndPos()>i1.getStartPos()&&i2.getEndPos()<i1.getEndPos()))
+	  if((i1.getStartPos()>=i2.getStartPos()&&i1.getStartPos()<=i2.getEndPos())||
+			  (i1.getEndPos()>=i2.getStartPos()&&i1.getEndPos()<=i2.getEndPos())||
+			  (i2.getStartPos()>=i1.getStartPos()&&i2.getStartPos()<=i1.getEndPos())||
+			  (i2.getEndPos()>=i1.getStartPos()&&i2.getEndPos()<=i1.getEndPos()))
 		  return true;
 	  else  
 		  return false;

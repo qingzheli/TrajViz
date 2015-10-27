@@ -599,7 +599,7 @@ public class SequiturView implements Observer, ActionListener{
 	    	  @SuppressWarnings("unchecked")
 			ArrayList<ArrayList<RuleInterval>> ruleIntervals = (ArrayList<ArrayList<RuleInterval>>) message.getPayload1();
 	    	@SuppressWarnings("unchecked")
-			ArrayList<ArrayList<HashSet<Integer>>> map = (ArrayList<ArrayList<HashSet<Integer>>>) message.getPayload2();
+			ArrayList<HashSet<Integer>> map = (ArrayList<HashSet<Integer>>) message.getPayload2();
 	    	  
 	    //	  System.out.println("Check Payload:::::::::::::::::::"+filteredRulesMap );
 	    	  sequiturRulesPane.setRulesData(chartData,ruleIntervals,map);//,frequency);

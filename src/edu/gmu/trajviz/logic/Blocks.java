@@ -4,6 +4,8 @@ import java.util.ArrayList;
 
 public class Blocks {
 	public int n;   //means a area with n*n blocks
+	public int nLat;
+	public int nLon;
 	public double latMin;
 	public double lonMin;
 	public double latMax;
@@ -18,6 +20,7 @@ public class Blocks {
 		blocks = new ArrayList<Block>();
 	}
 	public Blocks(int n, double laMin, double laMax, double loMin, double loMax){
+		
 		this.n = n;
 		size = n*n;
 		latMin = laMin;

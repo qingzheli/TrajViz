@@ -617,7 +617,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
             if(ruleDetails<0||ruleDetails>motifs.size())    // Display all motifs on left side map
             {
               for (int i = 0; i< motifs.size(); i++){
-              route = motifs.get(i).get(1);
+              route = motifs.get(i).get(0);
       //        System.out.println("route         #########################                      : "+route.getLats().get(i)+", "+route.getLats().get(2));
               int size = route.getLats().size();
               String msgStart = "M"+i+"S";
@@ -713,7 +713,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 	//	g.drawPolyline(xPoints, yPoints, nPoints);
 
 		g.setPaintMode();
-		g.setStroke(new BasicStroke(2));
+		g.setStroke(new BasicStroke(4));
 		g.drawPolyline(xPoints, yPoints, latitudes.size());
 		
 		

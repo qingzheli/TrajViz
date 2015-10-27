@@ -62,7 +62,7 @@ public class SequiturTableModel extends SequiturTableDataModel {
 	    fireTableDataChanged();
 	  }
 	 
-	  public void update(GrammarRules grammarRules, ArrayList<ArrayList<RuleInterval>> ruleIntervals, ArrayList<ArrayList<HashSet<Integer>>> mapToOriginRules) {
+	  public void update(GrammarRules grammarRules, ArrayList<ArrayList<RuleInterval>> ruleIntervals, ArrayList<HashSet<Integer>> mapToOriginRules) {
 		  int rowIndex = 0;
 		    rows.clear();
 		    if (!(null == ruleIntervals)) {
