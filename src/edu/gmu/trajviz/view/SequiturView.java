@@ -122,12 +122,12 @@ public class SequiturView implements Observer, ActionListener{
 		  private boolean isTimeSeriesLoaded = false;
 		  private JButton dataLoadButton;
 		  private JPanel parametersPane;
-		  private JLabel paaSizeLabel;
+		  private JLabel minLinkLabel;
 		  private JLabel minBlocksLabel;
 		  private JLabel noiseThresholdLabel;
 		  private JTextField minBlocksField;
 		  private JTextField noiseThresholdField;
-		  private JTextField paaSizeField;
+		  private JTextField minLinkField;
 		  private JTextField alphabetSizeField;
 		  
 		  private JButton processButton;
@@ -326,8 +326,8 @@ public class SequiturView implements Observer, ActionListener{
 
 		    // the sliding window parameter
 		   
-		    paaSizeLabel = new JLabel("PAA size:");
-		    paaSizeField = new JTextField(String.valueOf(this.controller.getSession().getPAA()));
+		    minLinkLabel = new JLabel("Minimum Link Threshold:");
+		    minLinkField = new JTextField(String.valueOf(this.controller.getSession().getMinLink()));
 		    
 		    JLabel alphabetSizeLabel = new JLabel("Alphabet size:");
 		    alphabetSizeField = new JTextField(String.valueOf(this.controller.getSession()
@@ -339,8 +339,8 @@ public class SequiturView implements Observer, ActionListener{
 		    noiseThresholdField = new JTextField(String.valueOf(this.controller.getSession().getNoisePointThreshold()));
 
 
-		    parametersPane.add(paaSizeLabel);
-		    parametersPane.add(paaSizeField);
+		    parametersPane.add(minLinkLabel);
+		    parametersPane.add(minLinkField);
 		    
 
 		    parametersPane.add(alphabetSizeLabel);
@@ -551,8 +551,8 @@ public class SequiturView implements Observer, ActionListener{
 	      log(Level.INFO, "process data action performed");
 	      if (this.isTimeSeriesLoaded) {
 	    	//  mapPanel1.setRuleDetails(-1);  //reset the to -1 to avoid IndexOutOfBoundException
-	        // check the values for window/paa/alphabet, etc.
-	    	  this.controller.getSession().setPAA(Integer.valueOf(this.paaSizeField.getText()));
+	        // check the values for window/minimum link threshold/alphabet, etc.
+	    	  this.controller.getSession().setMinLink(Double.valueOf(this.minLinkField.getText()));
 	    	  this.controller.getSession().setAlphabet(Integer.valueOf(this.alphabetSizeField.getText()));
 	    	  this.controller.getSession().setMinBlocks(Integer.valueOf(this.minBlocksField.getText()));
 	    	  this.controller.getSession().setNoisePointThreshold(Integer.valueOf(this.noiseThresholdField.getText()));

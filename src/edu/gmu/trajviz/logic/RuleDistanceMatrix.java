@@ -15,13 +15,14 @@ public double[][] matrix;
 private double minDistance;
 private int[] minPair = new int[2];
 private GrammarRules rules;
+private int minBlocks;
 public RuleDistanceMatrix(){}
 public ArrayList<Integer> filter;
 public PriorityQueue<PairDistance> pq; 
 private PairDistanceComparator comparator;
 @SuppressWarnings("unchecked")
-public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> filter){
-	
+public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> filter, int minBlocks,double minLink){
+	this.minBlocks = minBlocks;
 	this.filter = filter;
 	/*
 	for (int i=0; i<filter.size();i++)
@@ -46,7 +47,7 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 		//	matrix[i][0] = 100;//Double.MAX_VALUE;
 			matrix[i][j] = avgDTWDistance(blocks, toArrayList(rule1), toArrayList(rule2));
 			matrix[j][i] = matrix[i][j];
-			if(matrix[i][j]>0&&matrix[i][j]<SequiturModel.MINLINK){//&&matrix[i][j]<minDistance){
+			if(matrix[i][j]>0&&matrix[i][j]<minLink){//&&matrix[i][j]<minDistance){
 				pq.add(new PairDistance(i,j,matrix[i][j]));
 			/*
 				minDistance = matrix[i][j];
@@ -73,10 +74,10 @@ private void printMatrix(double[][] matrix) {
 
 	}
 	*/
-	System.out.println("minDistance"+pq.peek().getDistance());
-	System.out.println("minPair: "+pq.peek().getLine()+", "+filter.get(pq.peek().getLine())+";"+pq.peek().getCol()+","+filter.get(pq.peek().getCol()));
-	System.out.println("rule1 :"+rules.getRuleRecord(filter.get(pq.peek().getLine()))+" Expand String: "+rules.get(filter.get(pq.peek().getLine())).getExpandedRuleString());
-	System.out.println("rule2 :"+rules.getRuleRecord(filter.get(pq.peek().getCol()))+" Expand String: "+rules.get(filter.get(pq.peek().getCol())).getExpandedRuleString());
+	//System.out.println("minDistance"+pq.peek().getDistance());
+//	System.out.println("minPair: "+pq.peek().getLine()+", "+filter.get(pq.peek().getLine())+";"+pq.peek().getCol()+","+filter.get(pq.peek().getCol()));
+	//System.out.println("rule1 :"+rules.getRuleRecord(filter.get(pq.peek().getLine()))+" Expand String: "+rules.get(filter.get(pq.peek().getLine())).getExpandedRuleString());
+	//System.out.println("rule2 :"+rules.getRuleRecord(filter.get(pq.peek().getCol()))+" Expand String: "+rules.get(filter.get(pq.peek().getCol())).getExpandedRuleString());
 	System.out.println("Matrix size: "+filter.size());
 }
 public double[][] getMatrix(){
@@ -146,6 +147,10 @@ private double avgDTWDistance(Blocks blocks,ArrayList<Integer> s,
 	}
 //	System.out.println("step: "+step);
 	double avg = DTW[n][m]/step;
+	if (m<n)
+		avg = avg/Math.sqrt(m+2-minBlocks);
+	else
+		avg = avg/Math.sqrt(n+2-minBlocks);
 //	System.out.println("avgDTW:::::"+avg);
 	return avg;
 }

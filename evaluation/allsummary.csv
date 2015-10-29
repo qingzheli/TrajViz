@@ -1,1 +1,1 @@
-DataName,	PaaSize,		AlphabetSize,	MinBlocks,	NCThreshold,	RunningTime,	AvgIntraDistance,	AvgStdDev,	AvgMinInterDistance,	AvgSilhouetteCoefficient,	TotalRules,	TotalPoints,	TotalSubTrajectories
+DataName,MinLink,AlphabetSize,MinimalContinuousBlocks,NoiseCancellationThreshold,RunningTime,AverageDistance,AverageStandardDeviation,AverageMinInterDistance,AvgSilhoueteCoefficient,TotalRules,TotalDataPoints,TotalSubTrajectories,CoveredPoints

@@ -40,11 +40,11 @@ import edu.gmu.trajviz.sax.datastructures.SAXRecords;
 import edu.gmu.trajviz.timeseries.TSException;
 import edu.gmu.trajviz.util.StackTrace;
 public class SequiturModel extends Observable {
-	public final static double MINLINK = 0.05;
-	public final static double MAXLINK = 0.1;
-	public final static int EVAL_RESOLUTION = 1000;
+//	public static double MINLINK = 0.0;
+//	public final static double (minLink*2) = 0.0;
+	public final static int EVAL_RESOLUTION = 500;
 	final static Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
-	public final static String EVALUATION_HEAD = "DataName,PaaSize,AlphabetSize,MinBlocks,NCThreshold,RunningTime,AvgDistance,AvgeStdDev,MinInterDistance,SilhouetteCoefficient,TotalRules,TotalDataPoints\n";
+	public final static String EVALUATION_HEAD = "DataName,PaaSize,AlphabetSize,MinBlocks,NCThreshold,RunningTime,AvgDistance,AvgeStdDev,MinInterDistance,SilhouetteCoefficient,TotalRules,TotalDataPoints, TotalSubTrajectories,CoveredPoints, ImmergableRuleCount\n";
 //	public static final int ALPHABETSIZE = 50;
 //	public static final int CONTINUALBLOCKTHRESHOLD = 10;
 	//public static final int paaSize = 10;
@@ -283,7 +283,7 @@ public class SequiturModel extends Observable {
 	  
 	  
 	  
-	  public synchronized void processData(int paaSize, int alphabetSize, int minBlocks, int noiseThreshold)throws IOException{
+	  public synchronized void processData(double minLink, int alphabetSize, int minBlocks, int noiseThreshold)throws IOException{
 		  StringBuffer sb = new StringBuffer();
 		  if (null == this.lat ||null == this.lon|| this.lat.size()==0 || this.lon.size()==0 ){
 			  this.log("unable to \"Process data\" - no data were loaded...");
@@ -291,7 +291,7 @@ public class SequiturModel extends Observable {
 		  else{
 			  consoleLogger.info("setting up GI with params: ");
 			  sb.append(" algorithm: Sequitur");
-			  sb.append(" PAA size: ").append(paaSize);
+			  sb.append(" MinLink: ").append(minLink);
 			  sb.append(" Alphabet size: ").append(alphabetSize);
 			  sb.append(" Minimal Continuous Blocks: ").append(minBlocks);
 			  sb.append(" Noise Cancellation Threshold: ").append(noiseThreshold);
@@ -313,7 +313,7 @@ public class SequiturModel extends Observable {
 		  /*
 		   * use the centroid(paaLat,paaLon) to represent the data
 		   */
-		  System.out.println("paaSize: "+paaSize);
+		//  System.out.println("paaSize: "+paaSize);
 		 /*
 		  if(paaSize==1)
 		  {
@@ -332,7 +332,7 @@ public class SequiturModel extends Observable {
 			  */
 			  latBuffer.add(lat.get(i));
 			  lonBuffer.add(lon.get(i));
-			  if((i+1==lat.size())||((i+1)%paaSize)==0){
+			  if((i+1==lat.size())||((i+1)%1)==0){
 				  //compute the avg of the buffered arrayList into paaLat and paaLon
 				  avgLat = avg(latBuffer);
 				  avgLon = avg(lonBuffer);
@@ -374,6 +374,7 @@ public class SequiturModel extends Observable {
 				  paaLon.set(i, paaLon.get(i-1));
 				  id = previousId;
 			  }
+			  
 			  words.add(id);
 		//	  System.out.println("previousId, id:  "+previousId+",   "+id+"        i:   "+i+"   Lat,Lon: "+paaLat.get(i)+","+paaLon.get(i));
 			  
@@ -405,7 +406,7 @@ public class SequiturModel extends Observable {
 		  System.out.println();
 		  
 		  */
-		  this.chartData = new MotifChartData(this.dataFileName, paaLat, paaLon, paaSize, alphabetSize);
+		  this.chartData = new MotifChartData(this.dataFileName, paaLat, paaLon, 1, alphabetSize); //PAA is always 1.
 	//	  GrammarRules filteredRules = new GrammarRules();
 		  
 	//	   filteredRuleMap = new ArrayList<Integer>(); // index is the rule# after filtering, Integer value is the actual rule number. 
@@ -468,7 +469,8 @@ public class SequiturModel extends Observable {
 	           * Postprocessing merge, connect
 	           */
 	          for (int i = 0; i<rules.size();i++){
-					if ((rules.get(i).frequencyInR0()>2&&rules.get(i).getRuleYield()>=minBlocks-1)||(rules.get(i).frequencyInR0()>1&&rules.get(i).getRuleIntervals().size()>2&&rules.get(i).getRuleYield()>=minBlocks-1))
+					if ((rules.get(i).frequencyInR0()>2&&rules.get(i).getRuleYield()>=minBlocks)||
+							(rules.get(i).frequencyInR0()>1&&rules.get(i).getRuleIntervals().size()>2&&rules.get(i).getRuleYield()>=minBlocks))
 						{
 						//HashSet<Integer> set = new HashSet<Integer>();
 		//				System.out.println("Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
@@ -482,7 +484,7 @@ public class SequiturModel extends Observable {
 	          
 	          //HashMap<Integer,ArrayList<Integer>> mergeRecord = new HashMap<Integer, ArrayList<Integer>>();
 	          long t1s = System.currentTimeMillis();
-	          RuleDistanceMatrix rdm = new RuleDistanceMatrix(blocks,rules, filter); 
+	          RuleDistanceMatrix rdm = new RuleDistanceMatrix(blocks,rules, filter,minBlocks, minLink); 
 	          long t1e = System.currentTimeMillis();
 	          buildMatrixTime = t1e-t1s;
 	          
@@ -505,7 +507,7 @@ public class SequiturModel extends Observable {
 	        	  int lineSize;
 	        	  int colSize;
 	        	  int totalSize;
-	        	  if(isMergable(rdm.matrix,clusters,pair.getLine(),pair.getCol(),clusterMap)){
+	        	  if(isMergable(rdm.matrix,clusters,pair.getLine(),pair.getCol(),clusterMap, minLink)){
 	        		  mergableCount++;
 	        	//	  merge(rules,rdm.filter.get(pair.getLine()),rdm.filter.get(pair.getCol()));
 	        		  if(clusterMap.containsKey(pair.getLine())||clusterMap.containsKey(pair.getCol()))
@@ -697,7 +699,7 @@ public class SequiturModel extends Observable {
 		    int totalRuleCount = 0;
 		    int immergableRuleCount = 0;
 		    for(int i=0;i<filter.size();i++){
-		    	if(!clusterMap.containsKey(i))//&&chartData.getRulePositionsByRuleNum(filter.get(i)).size()>=minBlocks)
+		    	if(!clusterMap.containsKey(i)&&chartData.getRulePositionsByRuleNum(filter.get(i)).size()>=minBlocks)
 		    		{
 		    		    ArrayList<RuleInterval> ri = chartData.getRulePositionsByRuleNum(filter.get(i));
 		    		  
@@ -719,7 +721,7 @@ public class SequiturModel extends Observable {
 		    	HashSet<Integer> set = new HashSet<Integer>();
 		    	if(clusters.get(i).size()>0)
 		    	{
-		    		System.out.println("cluster "+i+" : {" +clusters.get(i)+"}");
+		    		//System.out.println("cluster "+i+" : {" +clusters.get(i)+"}");
 		    		totalRuleCount = totalRuleCount+clusters.get(i).size();
 		    	for(int r : clusters.get(i)){
 		    	
@@ -774,7 +776,7 @@ public class SequiturModel extends Observable {
 			  ArrayList<RuleInterval> positions = ruleIntervals.get(i);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
 			  
 			//  ArrayList<RuleInterval> positions = chartData.getRulePositionsByRuleNum(i);	  
-			  System.out.println("rule" + i+" :  "+ positions);//.get(0).toString());
+		//	  System.out.println("rule" + i+" :  "+ positions);//.get(0).toString());
 			  
 			  
 			  if(true)//(positions.size()>2)
@@ -838,8 +840,8 @@ public class SequiturModel extends Observable {
 						counter++;
 					//	System.out.println();
 				  }
-				  System.out.println("position size: "+positions.size());
-				  System.out.println("route size: "+route.size());
+		//		  System.out.println("position size: "+positions.size());
+			//	  System.out.println("route size: "+route.size());
 				  /* bug fixed!!!
 				   if(!route0Id.equals(route1Id))
 				   {
@@ -909,13 +911,13 @@ public class SequiturModel extends Observable {
 			  frequency.add(ruleIntervals.get(i).size());
 			  */
 		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, this.chartData, ruleIntervals, mapToOriginRules));//, frequency ));
-		  
+	  
 		  
 		  
 		  /*
 		   * evaluation
 		   */
-	  
+	
 		  double[] evalResult = evaluateMotifs(routes);
 		  double avgIntraDistance = evalResult[0];
 		  double avgIntraDistanceStdDev = evalResult[1];
@@ -928,11 +930,11 @@ public class SequiturModel extends Observable {
 	//	  String evalHead = "DataName,PaaSize,AlphabetSize,MinimalContinuousBlocks,NoiseCancellationThreshold\n";
 		  
 		  try{
-		  File evalFile = new File("./evaluation/"+"evaluate_"+alphabetSize+"_"+minBlocks+"_"+noiseThreshold+"_"+lat.size()+"_"+fileNameOnly);
+		  File evalFile = new File("./evaluation/"+"evaluate_"+(int)(minLink*1000)+"_"+alphabetSize+"_"+minBlocks+"_"+noiseThreshold+"_"+lat.size()+"_"+fileNameOnly);
 		  FileWriter fr = new FileWriter(evalFile);
 		  String sb1; // = new StringBuffer();
 		  //sb1.append(fileNameOnly+",");
-		  sb1 = (fileNameOnly+","+paaSize+","+alphabetSize+","+minBlocks+","+noiseThreshold+","+runTime+","+avgIntraDistance+","+avgIntraDistanceStdDev+","+ minInterDistance+","+avgSilhouetteCoefficient+","+routes.size()+","+lat.size()+','+totalSubTrajectory+"\n");
+		  sb1 = (fileNameOnly+","+minLink+","+alphabetSize+","+minBlocks+","+noiseThreshold+","+runTime+","+avgIntraDistance+","+avgIntraDistanceStdDev+","+ minInterDistance+","+avgSilhouetteCoefficient+","+routes.size()+","+lat.size()+','+totalSubTrajectory+","+coverCount+","+immergableRuleCount+"\n");
 		  fr.append(sb1);
 		  System.out.println(EVALUATION_HEAD);
 		  System.out.println(sb1);
@@ -950,23 +952,23 @@ public class SequiturModel extends Observable {
 			  e.printStackTrace();
 		  }
 		  
-		  
+		 
 	  }
 	  
 	
 
-	private boolean isMergable(double[][] distance, ArrayList<HashSet<Integer>> families, int x, int y, HashMap<Integer, Integer> map) {
+	private boolean isMergable(double[][] distance, ArrayList<HashSet<Integer>> families, int x, int y, HashMap<Integer, Integer> map, double minLink) {
 		//boolean mergable = true;
 		if(map.containsKey(x)||map.containsKey(y)){
 			if(!map.containsKey(x)){
 				for(int i: families.get(map.get(y)))
 				
-					if(distance[x][i]>MAXLINK)
+					if(distance[x][i]>(minLink*2))
 						return false;
 			}
 			else if(!map.containsKey(y)){
 				for(int i: families.get( map.get(x)))
-					if(distance[i][y]>MAXLINK)
+					if(distance[i][y]>(minLink*2))
 						return false;
 			}
 			else
@@ -977,12 +979,12 @@ public class SequiturModel extends Observable {
 				{
 		//		int xSibling = families.get(x).get(i);
 		//		int ySibling = families.get(y).get(j);
-				if(distance[i][j]>MAXLINK)
+				if(distance[i][j]>(minLink*2))
 					return false;
 				}
 			}
 		}
-		else if(distance[x][y]>MAXLINK)
+		else if(distance[x][y]>(minLink*2))
 			return false;
 		
 		return true;

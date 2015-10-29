@@ -77,15 +77,15 @@ public class SequiturController extends Observable implements ActionListener {
   public ActionListener getProcessDataListener() {
 	  ActionListener loadDataActionListener = new ActionListener() {
 	      public void actionPerformed(ActionEvent e) {
-	    	  int paaSize = session.getPAA();
+	    	  double minLink = session.getMinLink();
 	    	  int alphabetSize = session.getAlphabet();
 	    	  int minBlocks = session.getMinBlocks();
 	    	  int noiseThreshold = session.getNoisePointThreshold();
 	    	  
-	    	  log("PAA Size: " + paaSize + ", Alphabet Size: "
+	    	  log("PAA Size: " + minLink + ", Alphabet Size: "
 	    	            + alphabetSize + ", Minimal Continous Blocks: " + minBlocks);
 	    	  try {
-	    		  model.processData(paaSize,alphabetSize,minBlocks, noiseThreshold);
+	    		  model.processData(minLink,alphabetSize,minBlocks, noiseThreshold);
 	    	  }
 	    	  catch (IOException e1){
 	    		  e1.printStackTrace();
