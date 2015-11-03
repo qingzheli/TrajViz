@@ -148,9 +148,9 @@ private double avgDTWDistance(Blocks blocks,ArrayList<Integer> s,
 //	System.out.println("step: "+step);
 	double avg = DTW[n][m]/step;
 	if (m<n)
-		avg = avg/Math.sqrt(m+2-minBlocks);
+		avg = avg*((double)minBlocks/m)*((double)minBlocks/m);
 	else
-		avg = avg/Math.sqrt(n+2-minBlocks);
+		avg = avg*((double)minBlocks/n)*((double)minBlocks/n);
 //	System.out.println("avgDTW:::::"+avg);
 	return avg;
 }

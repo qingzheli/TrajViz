@@ -338,6 +338,7 @@ public class SAXRule {
       res[i] = idx;
       i++;
     }
+ //   System.out.println("res = "+res);
     return res;
   }
 
@@ -359,7 +360,7 @@ public class SAXRule {
     int processedRules = 0;
 
     StringBuilder sbCurrentRule = new StringBuilder();
-
+    
     while (processedRules < rules.size()) {
 
       currentRule = rules.elementAt(processedRules);

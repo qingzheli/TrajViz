@@ -129,13 +129,14 @@ public final class SequiturFactory {
 public static void updateRuleIntervals(GrammarRules rules,
 		SAXRecords saxFrequencyData, int originalLength ) {
 	ArrayList<Integer> saxWordsIndexes = new ArrayList<Integer>(saxFrequencyData.getAllIndices());
+	//ArrayList<Integer> indexesInR0 = new ArrayList<Integer>(saxFrequencyData.getAllIndices());
 //	System.out.println("saxwordsIndexes: "+saxWordsIndexes);
 	for (GrammarRuleRecord ruleContainer : rules) {
 	//	System.out.println("minmaxLenth: "+ruleContainer.minMaxLengthAsString());
 	//	System.out.println("ruleIntervals: "+ruleContainer.getRuleIntervals());
 	      // here we construct the array of rule intervals
 	      ArrayList<RuleInterval> resultIntervals = new ArrayList<RuleInterval>();
-
+	      ArrayList<RuleInterval> r0Intervals = new ArrayList<RuleInterval>();
 	      // array of all words of this rule expanded form
 	      // String[] expandedRuleSplit = ruleContainer.getExpandedRuleString().trim().split(" ");
 	     
@@ -144,8 +145,9 @@ public static void updateRuleIntervals(GrammarRules rules,
      
 	      // the auxiliary array that keeps lengths of all rule occurrences
 	      int[] lengths = new int[ruleContainer.getOccurrences().size()];
+	      int[] r0Lengths = new int [ruleContainer.getR0Occurrences().size()];
 	      int lengthCounter = 0;
-
+	      int r0LengthCounter = 0 ;
 	      // iterate over all occurrences of this rule
 	      // the currentIndex here is the position of the rule in the input string
 	      //
@@ -166,10 +168,19 @@ public static void updateRuleIntervals(GrammarRules rules,
 
 	        int startPos = saxWordsIndexes.get(currentIndex);
 	        int endPos;
+	        
+	        
+	        
+	        /* modified here to adapt multiple runs  -qz on 11022015
+	         * */
 	        if (currentIndex+expandedRuleLength>=saxWordsIndexes.size())
 	        	endPos = originalLength-1;
 	        else
 	        	endPos = saxWordsIndexes.get(currentIndex+expandedRuleLength)-1;
+	        	
+	        	
+	        
+	        
 	       // System.out.println("expandedRuleLength: "+expandedRuleLength);
 	        /*
 	        if ((currentIndex + expandedRuleLength) >= saxWordsIndexes.size()) {
@@ -189,12 +200,56 @@ public static void updateRuleIntervals(GrammarRules rules,
 	        lengths[lengthCounter] = endPos - startPos;
 	        lengthCounter++;
 	      }
+	      
+	      /*
+	       * add by qingzhe to set rule intervals in R0
+	       * 
+	       */
+	      for (Integer r0Index : ruleContainer.getR0Occurrences()) {
+
+		        // System.out.println("Index: " + currentIndex);
+		        // String extractedStr = "";
+
+		        // what we do here is to extract the positions of sax words in the real time-series
+		        // by using their positions at the input string
+		        //
+		        // int[] extractedPositions = new int[expandedRuleSplit.length];
+		        // for (int i = 0; i < expandedRuleSplit.length; i++) {
+		        // extractedStr = extractedStr.concat(" ").concat(
+		        // saxWordsToIndexesMap.get(saxWordsIndexes.get(currentIndex + i)));
+		        // extractedPositions[i] = saxWordsIndexes.get(currentIndex + i);
+		        // }
+
+		        int startPos = saxWordsIndexes.get(r0Index);
+		        int endPos;
+		        
+		        
+		        
+		        /* modified here to adapt multiple runs  -qz on 11022015
+		         * */
+		        if (r0Index+expandedRuleLength>=saxWordsIndexes.size())
+		        	endPos = originalLength-1;
+		        else
+		        	endPos = saxWordsIndexes.get(r0Index+expandedRuleLength)-1;
+		        	
+		        	
+		        
+		    
+		        r0Intervals.add(new RuleInterval(startPos, endPos));
+
+		        r0Lengths[r0LengthCounter] = endPos - startPos;
+		        r0LengthCounter++;
+		      }
+	      
+	      
 	      if (0 == ruleContainer.getRuleNumber()) {
 	        resultIntervals.add(new RuleInterval(0, originalLength - 1));
+	        r0Intervals.add(new RuleInterval(0, originalLength -1));
 	        lengths = new int[1];
 	        lengths[0] = originalLength;
 	      }
 	      ruleContainer.setRuleIntervals(resultIntervals);
+	      ruleContainer.setR0Intervals(r0Intervals);
 	      ruleContainer.setMeanLength(lengths);
 	      ruleContainer.setMinMaxLength(lengths);
 	  //    System.out.println("minmaxLenth: "+ruleContainer.minMaxLengthAsString());

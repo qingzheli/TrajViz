@@ -186,6 +186,7 @@ public class MotifChartData extends Observable implements Observer {
   }
 
   /**
+   * Modified By Qingzhe return all intervals occured in R0
    * Recovers start and stop coordinates ofRule's subsequences.
    * 
    * @param ruleIdx The rule index.
@@ -195,7 +196,8 @@ public class MotifChartData extends Observable implements Observer {
    // GrammarRuleRecord ruleRec = this.grammarRules.getRuleRecord(ruleIdx);
     GrammarRuleRecord ruleRec = getRule(ruleIdx);
  //   System.out.println("grammarRulesRecord:  "+getRule(ruleIdx));
-    return ruleRec.getRuleIntervals();
+    //return ruleRec.getRuleIntervals();
+    return ruleRec.getR0Intervals();
   }
 
   /**

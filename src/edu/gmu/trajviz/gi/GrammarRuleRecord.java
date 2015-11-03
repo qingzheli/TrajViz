@@ -23,9 +23,15 @@ public class GrammarRuleRecord {
 
   /* The indexes at which the rule occurs in the discretized time series. */
   private ArrayList<Integer> timeSeriesOccurrenceIndexes = new ArrayList<Integer>();
+  
+  /* The indexes at which the rule occurs in the R0 on discretized time serires */
+  private ArrayList<Integer> tsR0OccurenceIndexes;// = new ArrayList<Integer>();
 
   /* This rule intervals on the original time series. */
   private ArrayList<RuleInterval> ruleIntervals;
+  
+  /* This rule intervals only in R0 on the original time series -qz */
+  private ArrayList<RuleInterval> r0Intervals;
 
   /* The rule use frequency - how many time that rule is used by other rules. */
   private int ruleUsageFrequency;
@@ -55,6 +61,27 @@ public class GrammarRuleRecord {
    * Frequency in R0
    */
   private int fR0;
+  
+  
+  
+  /*
+   * cursor
+   */
+  private int cursor;
+  public GrammarRuleRecord(){
+	  cursor = 0;
+	  tsR0OccurenceIndexes = new ArrayList<Integer>();
+  }
+  public void setCursor(int i){
+	  if(i>r0Intervals.size())
+		 // cursor = ruleIntervals.size()-1;
+		  throw new IndexOutOfBoundsException("can't set cursor");
+	  else
+		  cursor = i;
+  }
+  public int getCursor(){
+	  return this.cursor;
+  }
   
   public int frequencyInR0(){
 	  
@@ -150,17 +177,31 @@ public class GrammarRuleRecord {
     return Arrays.toString(this.timeSeriesOccurrenceIndexes
         .toArray(new Integer[this.timeSeriesOccurrenceIndexes.size()]));
   }
+  public String r0OccurrencesToString() {
+	    return Arrays.toString(this.tsR0OccurenceIndexes
+	        .toArray(new Integer[this.tsR0OccurenceIndexes.size()]));
+	  }
 
   public ArrayList<Integer> getOccurrences() {
     return this.timeSeriesOccurrenceIndexes;
+  }
+  
+  public ArrayList<Integer> getR0Occurrences(){
+	  return this.tsR0OccurenceIndexes;
+  }
+  
+  public void addR0Occurrence(int idx){
+	  	  
+		  this.tsR0OccurenceIndexes.add(idx);
+	  
   }
 
   public void setOccurrences(int[] indexes) {
     this.timeSeriesOccurrenceIndexes = new ArrayList<Integer>();
     for (Integer idx : indexes) {
     	//qz survive from 0 index error
-    	if(!idx.equals(0))
-      this.timeSeriesOccurrenceIndexes.add(idx);
+    	//if(!idx.equals(0))
+    		this.timeSeriesOccurrenceIndexes.add(idx);
     }
   }
 
@@ -229,10 +270,19 @@ public class GrammarRuleRecord {
   public ArrayList<RuleInterval> getRuleIntervals() {
     return this.ruleIntervals;
   }
+  
+  public ArrayList<RuleInterval> getR0Intervals(){
+	  return this.r0Intervals;
+  }
+  
+public void setR0Intervals(ArrayList<RuleInterval> r0Intervals){
+	this.r0Intervals =  r0Intervals;
+  }
 
   public void setRuleIntervals(ArrayList<RuleInterval> resultIntervals) {
     this.ruleIntervals = resultIntervals;
   }
+  
 
   public String toString() {
     return "R" + this.ruleNumber + " -> " + this.ruleString;
