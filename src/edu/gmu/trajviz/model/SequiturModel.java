@@ -56,6 +56,10 @@ public class SequiturModel extends Observable {
 //	private static final int NOISYELIMINATIONTHRESHOLD = 5;
 	private ArrayList<HashSet<Integer>> clusters;
 	private ArrayList<Integer> filter;
+	private HashMap<Integer,Integer> filterMap;
+	HashMap<Integer, Integer> clusterMap;
+	private ArrayList<Integer> mapTrimed2Original; 
+	private ArrayList<Integer> mapR02Trimed;
 	private String dataFileName, fileNameOnly;
 	private static double lat_center;
 	private double latMax;
@@ -72,6 +76,7 @@ public class SequiturModel extends Observable {
 	public ArrayList<Double> paaLon;
 	public ArrayList<Double> lon;
 	private MotifChartData chartData;
+	
 	private double runTime = -1;
 	//private static GrammarRules filteredRules;
 	public ArrayList<NumerosityReductionMapEntry> trimedTrack;
@@ -363,7 +368,8 @@ public class SequiturModel extends Observable {
 		
 		//  HashMap<Integer,Integer> trackMap = new HashMap<Integer, Integer>();
 		  trimedTrack = new ArrayList<NumerosityReductionMapEntry>();
-		  
+		  mapTrimed2Original = new ArrayList<Integer>();  // The index is the position in trimmed array, and the content is position in original time series.
+		  mapR02Trimed = new ArrayList<Integer>();
 		  
 		  for (int i = 0; i<paaLat.size();i++){
 			  Location loc = new Location(paaLat.get(i),paaLon.get(i));
@@ -386,6 +392,7 @@ public class SequiturModel extends Observable {
 				  NumerosityReductionMapEntry<Integer, String> entry = new NumerosityReductionMapEntry<Integer, String>(new Integer(i),id.toString());
 		//		  System.out.println("entry: "+i+","+id);
 				  trimedTrack.add(entry);
+				  mapTrimed2Original.add(i);
 				  //put the new <index,id> pair into a map 
 				  //NumerosityReductionMapEntry entry = new NumerosityReductionMapEntry(i,id);
 			//	  trackMap.put(i, id);
@@ -394,8 +401,8 @@ public class SequiturModel extends Observable {
 			  
 			  				  
 		  }
-		  
-		  
+		  System.out.print("mapTrimed2Original: ");
+		  printArrayList(mapTrimed2Original);		  
 		  /*
 		   * Following is put the cleaned location data into block again
 		   */
@@ -417,10 +424,10 @@ public class SequiturModel extends Observable {
 	//	   filteredRuleMap = new ArrayList<Integer>(); // index is the rule# after filtering, Integer value is the actual rule number. 
 		  clusters = new ArrayList<HashSet<Integer>>();
 		  filter = new ArrayList<Integer>();
-		  HashMap<Integer, Integer> clusterMap = new HashMap<Integer,Integer>();
+		  clusterMap = new HashMap<Integer,Integer>();
 		   long buildMatrixTime = 0;
 		   long clusterTime = 0;
-		  GrammarRules originalRules = new GrammarRules();
+		  GrammarRules rules = new GrammarRules();
 		  try{
 			  SAXRecords saxFrequencyData = null;
 			  saxFrequencyData = SequiturFactory.entries2SAXRecords(trimedTrack);
@@ -434,19 +441,19 @@ public class SequiturModel extends Observable {
 			  consoleLogger.debug("collecting grammar rules data ...");
 			 // GrammarRules rules1 = sequiturGrammar.toGRD();
 			 // System.out.println("rules size: "+ rules1.size());			 
-	          originalRules = sequiturGrammar.toGrammarRulesData();
-	          System.out.println("rules size: "+ originalRules.size());
+	          rules = sequiturGrammar.toGrammarRulesData();
+	          System.out.println("rules size: "+ rules.size());
 	          //debug
 	          
 	          
 	          consoleLogger.debug("mapping rule intervals on timeseries ...");
 	          HashMap<String, Integer> hm = new HashMap<String, Integer>();
-	          GrammarRuleRecord rule0 = originalRules.get(0);
+	          GrammarRuleRecord rule0 = rules.get(0);
 	          //String rule0 = rules.get(0).getRuleString();
 	          r0 = rule0.getRuleString().split(" ");
 	          
-	          for(int i = 0; i<originalRules.size();i++){
-	        	  String key = originalRules.get(i).getRuleName();
+	          for(int i = 0; i<rules.size();i++){
+	        	  String key = rules.get(i).getRuleName();
 	        	//  System.out.println(rules.get(i));
 	        	  hm.put(key, 0);
 	          }
@@ -467,22 +474,28 @@ public class SequiturModel extends Observable {
 	        		  {
 	        		  	Integer currentRule = Integer.valueOf(r0[i].substring(1));
 	        		  	hm.put(r0[i], hm.get(r0[i])+1);
-	        		  	originalRules.get(currentRule).addR0Occurrence(currentIdx); // setOccurenceInR0
+	        		  	rules.get(currentRule).addR0Occurrence(currentIdx); // setOccurenceInR0
+	        		  	mapR02Trimed.add(currentIdx);
 	        		  	System.out.print(r0[i]+":"+currentIdx+" ");
-	        		    currentIdx = currentIdx + originalRules.get(currentRule).getRuleYield();
+	        		    currentIdx = currentIdx + rules.get(currentRule).getRuleYield();
 	        		  }
 	        	  else
 	        		  {
+	        		  mapR02Trimed.add(currentIdx);
+
 	        		  System.out.print(r0[i]+":"+currentIdx+" ");
+	        		  
 	        		  	currentIdx++;
 	        		  }
 	          }
 	          System.out.println();
+	          System.out.print("mapR02Trimed: ");
+	          printArrayList(mapR02Trimed);
 	          
-	          for(int i = 1; i<originalRules.size();i++){
+	          for(int i = 1; i<rules.size();i++){
 	        	  
-	        	  String key = originalRules.get(i).getRuleName();
-	        	  originalRules.get(i).setFrequencyInR0((hm.get(key)).intValue());
+	        	  String key = rules.get(i).getRuleName();
+	        	  rules.get(i).setFrequencyInR0((hm.get(key)).intValue());
 	          }
 	          
 	          
@@ -497,20 +510,23 @@ public class SequiturModel extends Observable {
 	          }
 	         
 	         */
-	          SequiturFactory.updateRuleIntervals(originalRules, saxFrequencyData, lat.size());
+	          SequiturFactory.updateRuleIntervals(rules, saxFrequencyData, lat.size());   //Both update intervals and intervals in R0
 
 	          
 	          /*
 	           * Postprocessing merge, connect
 	           */
-	          for (int i = 0; i<originalRules.size();i++){
-					if ((originalRules.get(i).frequencyInR0()>2&&originalRules.get(i).getRuleYield()>=minBlocks)||
-							(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getRuleIntervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
+	          filterMap = new HashMap<Integer,Integer>();
+	          for (int i = 0; i<rules.size();i++){
+					if ((rules.get(i).frequencyInR0()>2&&rules.get(i).getRuleYield()>=minBlocks))//||
+						//	(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getR0Intervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
 						{
 						//HashSet<Integer> set = new HashSet<Integer>();
 		//				System.out.println("Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
+						filterMap.put(i, filter.size());
 						filter.add(i);
-						if(originalRules.get(i).getRuleIntervals().size()<2)
+						
+						if(rules.get(i).getR0Intervals().size()<2)
 							System.out.println("Bug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+i);
 						}
 					
@@ -519,7 +535,7 @@ public class SequiturModel extends Observable {
 	          
 	          //HashMap<Integer,ArrayList<Integer>> mergeRecord = new HashMap<Integer, ArrayList<Integer>>();
 	          long t1s = System.currentTimeMillis();
-	          RuleDistanceMatrix rdm = new RuleDistanceMatrix(blocks,originalRules, filter,minBlocks, minLink); 
+	          RuleDistanceMatrix rdm = new RuleDistanceMatrix(blocks,rules, filter,minBlocks, minLink); 
 	          long t1e = System.currentTimeMillis();
 	          buildMatrixTime = t1e-t1s;
 	          
@@ -677,7 +693,7 @@ public class SequiturModel extends Observable {
 	  //        for(int i=0;i<filteredRules.size();i++)
 	  //      	  System.out.println(filteredRules.get(i));
 	  //        SequiturFactory.updateRuleIntervals(filteredRules,saxFrequencyData,lat.size());
-	            this.chartData.setGrammarRules(originalRules);
+	            this.chartData.setGrammarRules(rules);
 	   //       this.chartData.setGrammarRules(filteredRules);
 	          System.out.println("chartData size: "+ chartData.getRulesNumber());
 			
@@ -697,7 +713,7 @@ public class SequiturModel extends Observable {
 		  
           /*
            * 
-           *    replace rules with cluster ids
+           *    replace rules with rules' ids and clusters' ids
            * 
            */
 		  
@@ -708,53 +724,119 @@ public class SequiturModel extends Observable {
           for (int d = 0; d<words.size(); d++)
         	  System.out.print(words.get(d)+ " ");
           System.out.println();
-		  while(hasNewCluster){
+          System.out.print("BeforeR0: ");
+          
+          for(int i = 0; i<r0.length;i++){
+        	          
+          System.out.print(r0[i]+" ");
+          }
+          System.out.println();
+          while(hasNewCluster){
 			  iteration = iteration + 1;
 			  hasNewCluster = false;
+			  trimedTrack = new ArrayList<NumerosityReductionMapEntry>();
+		  /*
+		   * Replace Rules' Ids with Clusters' Ids
+		   */
           for (int i = 0; i<r0.length;i++){
         	  
         	  NumerosityReductionMapEntry<Integer, String> entry;
         	//  System.out.println("r0_"+i+"="+r0[i] );
         	  if (r0[i].charAt(0)=='R')
         		  {
-        		  	if(i==0)
-        		  		System.out.println("r0[i] = "+r0[i]);
+        		  //	if(i==0)
+        		  	//	System.out.println("r0[i] = "+r0[i]);
         		  	Integer ruleNumber = Integer.parseInt(r0[i].substring(1));
-        		  	int cursor = originalRules.get(ruleNumber).getCursor(); 
-        		  	if (clusterMap.containsKey(ruleNumber)){
-        		  		for (int j = originalRules.get(ruleNumber).getR0Intervals().get(cursor).getStartPos(); j<=originalRules.get(ruleNumber).getR0Intervals().get(cursor).getEndPos(); j++){
-        		  			String s = "I" + iteration + "C" + clusterMap.get(ruleNumber); 
-        		  			words.set(j,s);
+        		  	int cursor = rules.get(ruleNumber).getCursor(); 
+
+        		  	if (clusterMap.containsKey(filterMap.get(ruleNumber))){
+        		  	//	for (int j = originalRules.get(ruleNumber).getR0Intervals().get(cursor).getStartPos(); j<=originalRules.get(ruleNumber).getR0Intervals().get(cursor).getEndPos(); j++){
+        		  			String s = "I" + iteration + "C" + clusterMap.get(filterMap.get(ruleNumber));
+        		  			r0[i] = s;
+        		  			Integer pos1 = rules.get(ruleNumber).getR0Intervals().get(cursor).getStartPos();
+        		  			Integer pos2 = mapTrimed2Original.get(mapR02Trimed.get(i));
+        		  			if(pos1.equals(pos2))
+        		  			{entry = new NumerosityReductionMapEntry<Integer, String>(pos1, s);
+        		  			//entry = new NumerosityReductionMapEntry<Integer, String>(new Integer(mapTrimed2Original.get(mapR02Trimed.get(i))),s);
+        		  			trimedTrack.add(entry);
+        		  			}
+        		  			else
+        		  				{
+        		  				System.out.println("Rule number: "+rules.getRuleRecord(ruleNumber).getRuleNumber()+" Fre in R0: "+rules.get(ruleNumber).frequencyInR0()+" LEVEL: "+rules.get(ruleNumber).getRuleLevel()+" "+rules.get(ruleNumber)+" StringOccurence: "+rules.getRuleRecord(ruleNumber).occurrencesToString()+"OccurenceInR0: "+rules.get(ruleNumber).r0OccurrencesToString()+" Rule String: "+rules.getRuleRecord(ruleNumber).getExpandedRuleString()+" Rule Positions: "+rules.getRuleRecord(ruleNumber).getRuleIntervals());
+    		  					System.out.println("pos1,pos2"+pos1+","+pos2);
+
+        		  				throw new NullPointerException("pos1 != pos2");
+        		  				}
+        		  	//		words.set(j,s);
         		  			hasNewCluster = true;
-        		  		}
+        		  //		}
         		  	}
         		  	else{
-        		  		for (int j = originalRules.get(ruleNumber).getR0Intervals().get(cursor).getStartPos(); j<=originalRules.get(ruleNumber).getR0Intervals().get(cursor).getEndPos(); j++){
+        		  		//for (int j = originalRules.get(ruleNumber).getR0Intervals().get(cursor).getStartPos(); j<=originalRules.get(ruleNumber).getR0Intervals().get(cursor).getEndPos(); j++){
         		  			String s = "I" + iteration + r0[i];
-        		  			if (j < 7)
-        		  				System.out.println("j = "+j+" s = "+s+" i = "+i);
-        		  			words.set(j,s);
-        		  		}
+        		  			r0[i] = s;
+        		  			Integer pos1 = rules.get(ruleNumber).getR0Intervals().get(cursor).getStartPos();
+        		  			Integer pos2 = mapTrimed2Original.get(mapR02Trimed.get(i));
+        		  			if(pos1.equals(pos2))
+        		  				{
+        		  				entry = new NumerosityReductionMapEntry<Integer, String>(pos1, s);
+        		  				
+        		  				trimedTrack.add(entry);
+        		  				}
+        		  			else
+        		  				{
+        		  					System.out.println("Rule number: "+rules.getRuleRecord(ruleNumber).getRuleNumber()+" Fre in R0: "+rules.get(ruleNumber).frequencyInR0()+" LEVEL: "+rules.get(ruleNumber).getRuleLevel()+" "+rules.get(ruleNumber)+" StringOccurence: "+rules.getRuleRecord(ruleNumber).occurrencesToString()+"OccurenceInR0: "+rules.get(ruleNumber).r0OccurrencesToString()+" Rule String: "+rules.getRuleRecord(ruleNumber).getExpandedRuleString()+" Rule Positions: "+rules.getRuleRecord(ruleNumber).getRuleIntervals());
+
+        		  					System.out.println("pos1,pos2"+pos1+","+pos2);
+        		  					throw new NullPointerException("pos1 != pos2");
+        		  				}
+
+
+        		  		//	if (j < 7)
+        		  			//	System.out.println("j = "+j+" s = "+s+" i = "+i);
+        		  		//	words.set(j,s);
+        		  		//}
         		  	}
         		  		
         		  	//  	entry = new NumerosityReductionMapEntry<Integer, String>(originalRules.get(ruleNumber).getOccurrences().get(cursor),r0[i]);
         		  	
         		  	cursor++;
-        		  	originalRules.get(ruleNumber).setCursor(cursor);
+        		  	rules.get(ruleNumber).setCursor(cursor);
         		  	
         		  	
         		  }
+        	  else
+        	  {
+	  				entry = new NumerosityReductionMapEntry<Integer, String>(mapTrimed2Original.get(mapR02Trimed.get(i)), r0[i]);
+	  				trimedTrack.add(entry);
+
+        	  }
           }
-          hasNewCluster = false;
+         hasNewCluster = false;
+          /*
           System.out.println("after:");
           for (int d = 0; d<words.size(); d++)
         	  System.out.print(words.get(d)+ " ");
+          System.out.println();
+          */
+          System.out.print("AfterR0: ");
+          
+          for(int i = 0; i<r0.length;i++){ 
+        	  System.out.print(r0[i]+" ");
+          }          
+          
           System.out.println();
           
           
           
           
-		  }
+          
+          
+          
+          
+          
+          
+		  }  //end while
 		  
 		
 		  
@@ -777,7 +859,8 @@ public class SequiturModel extends Observable {
 		    int totalRuleCount = 0;
 		    int immergableRuleCount = 0;
 		    for(int i=0;i<filter.size();i++){
-		    	if(!clusterMap.containsKey(i)&&chartData.getRulePositionsByRuleNum(filter.get(i)).size()>=minBlocks) // getRulePositions() was modified to show the intervals only occurred in R0
+		    	// getRulePositions() was modified to show the intervals only occurred in R0
+		    	if(!clusterMap.containsKey(i)&&chartData.getRulePositionsByRuleNum(filter.get(i)).size()>=minBlocks) 
 		    		{
 		    		    ArrayList<RuleInterval> ri = chartData.getRulePositionsByRuleNum(filter.get(i));
 		    		  
@@ -814,6 +897,9 @@ public class SequiturModel extends Observable {
 		    				boolean hasMerged = false;
 		    				for(int k = 0; k<mergedIntervals.size();k++){
 		    					if(RuleInterval.isMergable(mergedIntervals.get(k),newComer)){
+		    						System.out.println("I still need merge here.");
+		    						System.out.println("1:" +mergedIntervals.get(k) +" 2:"+ newComer );
+		    							
 		    						RuleInterval newInterval = RuleInterval.merge(mergedIntervals.get(k), newComer);
 		    						mergedIntervals.set(k, newInterval);
 		    						hasMerged = true;
@@ -995,7 +1081,7 @@ public class SequiturModel extends Observable {
 		  /*
 		   * evaluation
 		   */
-	
+	/*
 		  double[] evalResult = evaluateMotifs(routes);
 		  double avgIntraDistance = evalResult[0];
 		  double avgIntraDistanceStdDev = evalResult[1];
@@ -1029,11 +1115,23 @@ public class SequiturModel extends Observable {
 			 
 			  e.printStackTrace();
 		  }
-		  
+		  */
 		 
 	  }
 	  
 	
+
+	public static void printArrayList(ArrayList<Integer> al) {
+		if(al == null || al.size()==0)
+			System.out.println("Null or empty ArrayList");
+		else 
+		{	
+		//	System.out.print("[ ");
+			for (int i = 0; i<al.size()&&i<1000;i++)
+				System.out.print(al.get(i)+" ");
+			System.out.println();
+		}
+	}
 
 	private boolean isMergable(double[][] distance, ArrayList<HashSet<Integer>> families, int x, int y, HashMap<Integer, Integer> map, double minLink) {
 		//boolean mergable = true;
@@ -1148,6 +1246,8 @@ public class SequiturModel extends Observable {
 			double sc;
 			
 			if(allMinimalInterDistances.size()>0&&allDistances.get(i)<allMinimalInterDistances.get(i)){
+		//		if(allDistances.get(i)<allMinimalInterDistances.get(i)){
+
 				sc = 1 - allDistances.get(i)/allMinimalInterDistances.get(i);
 			}
 			else{
