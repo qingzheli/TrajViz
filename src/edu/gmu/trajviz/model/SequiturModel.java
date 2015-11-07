@@ -52,7 +52,8 @@ public class SequiturModel extends Observable {
 	private static final String SPACE = " ";
 	private static final String CR = "\n";
 	private static final int STEP = 2;
-	
+    private boolean[] isCovered;
+
 //	private static final int NOISYELIMINATIONTHRESHOLD = 5;
 	private int alphabetSize;
 	private double minLink;
@@ -71,6 +72,7 @@ public class SequiturModel extends Observable {
 	private ArrayList<Integer> mapToOriginalTS;
 	public static ArrayList<ArrayList<Integer>> allMapToOriginalTS;
 	public static ArrayList<ArrayList<Integer>> allMapToPreviousR0;
+	public static HashMap<String, ArrayList<RuleInterval>> finalIntervals;
 	private boolean hasNewCluster = true;
 
 	private String dataFileName, fileNameOnly;
@@ -94,9 +96,10 @@ public class SequiturModel extends Observable {
 	public ArrayList<Double> lon;
 	private MotifChartData chartData;
 	private ArrayList<ArrayList<RuleInterval>> ruleIntervals;
-	private ArrayList<HashSet<Integer>> mapToOriginRules;
+//	private ArrayList<HashSet<Integer>> mapToOriginRules;
 	private double runTime = -1;
 	//private static GrammarRules filteredRules;
+	@SuppressWarnings("rawtypes")
 	public ArrayList<NumerosityReductionMapEntry> trimedTrack;
 	// index is the rule# after filtering, Integer value is the actual rule number
 //	private ArrayList<Integer> filteredRuleMap = new ArrayList<Integer>(); 
@@ -320,7 +323,7 @@ public class SequiturModel extends Observable {
 		  this.allR0 = new ArrayList<String[]>();
 		  this.allMapToPreviousR0 = new ArrayList<ArrayList<Integer>>();
 		  this.allMapToOriginalTS = new ArrayList<ArrayList<Integer>>();
-		  
+		  isCovered= new boolean[lat.size()];
 		  hasNewCluster = true;
 		  StringBuffer sb = new StringBuffer();
 		  if (null == this.lat ||null == this.lon|| this.lat.size()==0 || this.lon.size()==0 ){
@@ -387,7 +390,7 @@ public class SequiturModel extends Observable {
 		  setChanged();
 
 		
-		//  drawOnMap();
+		  drawOnMap();
 
 
 		  //test
@@ -414,12 +417,114 @@ public class SequiturModel extends Observable {
 		  for (int i=0;i<ruleIntervals.size();i++)
 			  frequency.add(ruleIntervals.get(i).size());
 			  */
-		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, this.chartData, ruleIntervals, mapToOriginRules));//, frequency ));
+		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, this.chartData, ruleIntervals));///, mapToOriginRules));//, frequency ));
 		  
 	  //evaluateResult();
 	  }
 	  
-
+	  private void drawOnMap(){
+		  // Generate All Motifs and record them on files respectively.
+	  	finalIntervals = new HashMap<String, ArrayList<RuleInterval>>();
+		ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
+    	int totalRuleCount = 0;
+	  	immergableRuleCount = 0;
+	    for (int i = 0 ; i<r0.length; i++){
+	    	String s = r0[i];
+	    	if(!isNumeric(s)){
+	          int startPos = mapToOriginalTS.get(i);
+	    	  int endPos = mapToOriginalTS.get((i+1))-1;
+	    	  RuleInterval interval = new RuleInterval(startPos,endPos);	
+	    	  if (!finalIntervals.containsKey(s)){
+	    		finalIntervals.put(s, new ArrayList<RuleInterval>());
+	    		finalIntervals.get(s).add(interval);
+	    	  }
+	    	  else{
+	    		finalIntervals.get(s).add(interval);
+	    	  }
+	    	}
+	    	else{
+	    	  int numStartPos = mapToOriginalTS.get(i);
+	    	  int numEndPos;
+	    	  if(i==(r0.length-1))
+	    		  numEndPos = mapToOriginalTS.get(i);
+	    	  else
+	    	  {
+	    		  numEndPos = mapToOriginalTS.get((i+1))-1;
+	    	  }
+	    	  for(int pos = numStartPos; pos<=numEndPos; pos++)
+	    		isCovered[pos] = false;
+	    	}
+	    }
+	    
+	    	    coverCount = 0;
+	  	Iterator it = finalIntervals.entrySet().iterator();
+	  	while (it.hasNext()){
+	  		@SuppressWarnings("unchecked")
+			Map.Entry<String,ArrayList<RuleInterval>> pair = (Map.Entry<String,ArrayList<RuleInterval>>)it.next();
+	  		ruleIntervals.add(pair.getValue());
+	  	}
+	  	totalSubTrajectory = 0;
+	  	for (int i = 0; i<ruleIntervals.size();i++){
+	  		totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i).size();
+	  		ArrayList<RuleInterval> positions = ruleIntervals.get(i);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
+    		int counter = 0;
+	  		ArrayList<Route> route = new ArrayList<Route>();
+	  			
+	  		for (int k=0;k<positions.size();k++)
+	  				  {
+	  					  Route singleRoute = new Route();
+	  					  int startPos = positions.get(k).getStartPos();
+	  						int endPos = positions.get(k).getEndPos();
+	  						
+	  						for(int index=startPos; index<=endPos;index++)
+	  							isCovered[index]=true;
+	  		//				System.out.println("startPos: "+startPos);
+	  		//				System.out.println("endPos: " +endPos);
+	  						
+	  					//	System.out.print("track#: "+counter+":       ");
+	  						for (int j = startPos; j<=endPos; j++){
+	  							
+	  							Location loca = new Location(lat.get(j),lon.get(j));
+	  				
+	  							singleRoute.addLocation(lat.get(j), lon.get(j));
+	  								
+	  						
+	  							
+	  						}
+	  						route.add(singleRoute);
+	  						
+	  						counter++;
+	  				  }
+	  		//		  System.out.println("position size: "+positions.size());
+	  			//	  System.out.println("route size: "+route.size());
+	  				
+	  				  //  if(route.size()>2)
+	  				     routes.add(route);
+	  				    
+	  				    
+	  				    
+	  				    
+	  				
+	  				 
+	  			  
+	  			  
+	  	
+	  		  	
+	  		  }	
+	  			for (int i = 0;i<isCovered.length;i++){
+	  				  if(isCovered[i]==true)
+	  					  coverCount++;
+	  			  }
+	  			  System.out.println("Cover Count: "+ coverCount);
+	  			  System.out.println("cover rate: " +(double)coverCount/isCovered.length);
+	  		 
+	  	
+			
+	  }
+	  	  /*
+	  	   * Generate All Motifs and record them on files respectively.
+	  	   */
+	 
 	  
 	  private Integer getPositionsInTS(ArrayList<Integer> mapToPreviousR0,ArrayList<Integer> previousMapToOriginalTS, int index) {
 		
@@ -495,6 +600,7 @@ public class SequiturModel extends Observable {
 		   // System.out.println("Should not see this msg.");
 		  
 		  for(int i=0;i<lat.size();i++){
+			  isCovered[i] = true;
 			/*  if((i%paaSize)==0){
 			  
 			  }
@@ -583,6 +689,8 @@ public class SequiturModel extends Observable {
 		 		
 	}
 
+	
+	
 	private void runSequitur(int iteration) {
 		chartData = new MotifChartData(this.dataFileName, paaLat, paaLon, 1, alphabetSize); //PAA is always 1.
 		  clusters = new ArrayList<HashSet<Integer>>();
@@ -711,7 +819,7 @@ public class SequiturModel extends Observable {
 	        		  //	if(i==0)
 	        		  	//	System.out.println("r0[i] = "+r0[i]);
 	        		  	Integer ruleNumber = Integer.parseInt(r0[i].substring(1));
-	        		  	int cursor = rules.get(ruleNumber).getCursor(); 
+	        		  //	int cursor = rules.get(ruleNumber).getCursor(); 
 
 	        		  	if (clusterMap.containsKey(filterMap.get(ruleNumber))){
 	        		  			hasNewCluster = true;
@@ -789,28 +897,29 @@ public class SequiturModel extends Observable {
 		//  allMapToOriginalTS.add(mapToOriginalTS);
 		  		
 	}
+	
+
 	  /*
 	   * Generate All Motifs and record them on files respectively.
 	   */
-
+/*
 	private void drawOnMap() {
-		  /*
-		   * Generate All Motifs and record them on files respectively.
-		   */
+		 // Generate All Motifs and record them on files respectively.
 		 // String header = "type,latitude,longitude";
 //		  System.out.println("Total rules:"+chartData.getRulesNumber());
 		  
 		//  ArrayList<SAXMotif> allMotifs = chartData.getAllMotifs();
 		//  for (int i=1; i<chartData.getRulesNumber();i++){
 		    // create merged rule interval data structure corresponding to "clusters" 
-		    ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
-	        mapToOriginRules = new ArrayList<HashSet<Integer>>();
+		    //ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
+	//        mapToOriginRules = new ArrayList<HashSet<Integer>>();
 	        
 		    int totalRuleCount = 0;
 		    immergableRuleCount = 0;
+		    
 		    for(int i=0;i<filter.size();i++){
 		    	// getRulePositions() was modified to show the intervals only occurred in R0
-		    	if(!clusterMap.containsKey(i)&&chartData.getRulePositionsByRuleNum(filter.get(i)).size()>=minBlocks) 
+		  //  	if(!clusterMap.containsKey(i)&&chartData.getRulePositionsByRuleNum(filter.get(i)).size()>=minBlocks) 
 		    		{
 		    		    ArrayList<RuleInterval> ri = chartData.getRulePositionsByRuleNum(filter.get(i));
 		    		  
@@ -826,6 +935,7 @@ public class SequiturModel extends Observable {
 		    		}
 		    }
 		    
+		    	
 		    for(int i = 0; i< clusters.size();i++){
 		    	
 		    	ArrayList<RuleInterval> mergedIntervals = new ArrayList<RuleInterval>();
@@ -834,6 +944,7 @@ public class SequiturModel extends Observable {
 		    	{
 		    		//System.out.println("cluster "+i+" : {" +clusters.get(i)+"}");
 		    		totalRuleCount = totalRuleCount+clusters.get(i).size();
+		    	
 		    	for(int r : clusters.get(i)){
 		    	
 		    		int rule = r; //filter.get(r);
@@ -900,9 +1011,7 @@ public class SequiturModel extends Observable {
 				  
 					//  File fname = new File("./rules/motif_"+i+".csv");
 					//  FileWriter motifPos = new FileWriter(fname);
-					/*
-					 * Generating evaluation file
-					 */
+				//Generating evaluation file
 					  
 					  int counter = 0;
 					  ArrayList<Route> route = new ArrayList<Route>();
@@ -920,14 +1029,7 @@ public class SequiturModel extends Observable {
 		//				System.out.println("startPos: "+startPos);
 		//				System.out.println("endPos: " +endPos);
 						boolean firstPoint = true;
-						/*
-						if(k==0){
-							route0Id = new Integer(blocks.findBlockIdForPoint(new Location(paaLat.get(startPos),paaLon.get(startPos))));
-						}
-						if(k==1){
-							route1Id = new Integer(blocks.findBlockIdForPoint(new Location(paaLat.get(startPos),paaLon.get(startPos))));
-						}
-						*/
+						
 					//	System.out.print("track#: "+counter+":       ");
 						for (int j = startPos; j<=endPos; j++){
 							
@@ -956,16 +1058,7 @@ public class SequiturModel extends Observable {
 				  }
 		//		  System.out.println("position size: "+positions.size());
 			//	  System.out.println("route size: "+route.size());
-				  /* bug fixed!!!
-				   if(!route0Id.equals(route1Id))
-				   {
-					   //route.remove(0);
-					   System.out.println("i: "+i);
-					  	System.out.println(chartData.getRule(filteredRuleMap.get(i)).getExpandedRuleString());
-					  	System.out.println(chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i)));
-					//  	System.out.println(singleRoute.);
-				   }
-				    */	
+				
 				  //  if(route.size()>2)
 				     routes.add(route);
 				    
@@ -993,6 +1086,7 @@ public class SequiturModel extends Observable {
 			  System.out.println("cover rate: " +(double)coverCount/isCovered.length);
 		 
 	}
+*/
 
 	private void clusterRules() {
 	      /*
@@ -1533,6 +1627,18 @@ public class SequiturModel extends Observable {
 	      }
 	    }
 	    return counter;
+	  }
+	  public static boolean isNumeric(String str)  
+	  {  
+	    try  
+	    {  
+	      double d = Double.parseDouble(str);  
+	    }  
+	    catch(NumberFormatException nfe)  
+	    {  
+	      return false;  
+	    }  
+	    return true;  
 	  }
 
 }

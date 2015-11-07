@@ -12,6 +12,7 @@ public class RuleInterval implements Comparable<RuleInterval> {
   public int endPos;
   public double coverage;
   public int id;
+  private String ruleName;
 
   public RuleInterval() {
     this.startPos = -1;
@@ -22,14 +23,21 @@ public class RuleInterval implements Comparable<RuleInterval> {
     this.startPos = startPos;
     this.endPos = endPos;
   }
-
+  public RuleInterval(String name, int startPos, int endPos) {
+	    this.ruleName = name;
+	    this.startPos = startPos;
+	    this.endPos = endPos;
+	    
+	  }
   public RuleInterval(int id, int startPos, int endPos, double coverage) {
     this.id = id;
     this.startPos = startPos;
     this.endPos = endPos;
     this.coverage = coverage;
   }
-
+  public String getRuleName(){
+	  return this.ruleName;
+  }
   /**
    * @param startPos starting position within the original time series
    */
@@ -89,8 +97,8 @@ public class RuleInterval implements Comparable<RuleInterval> {
   public int compareTo(RuleInterval arg0) {
     return Integer.valueOf(this.getLength()).compareTo(Integer.valueOf(arg0.getLength()));
   }
-
-  public void setId(int ruleIndex) {
+// do not allow reset ID
+  private void setId(int ruleIndex) {
     this.id = ruleIndex;
   }
 
