@@ -17,6 +17,7 @@ import ch.qos.logback.classic.Logger;
 import edu.gmu.trajviz.gi.GrammarRuleRecord;
 import edu.gmu.trajviz.logic.NumerosityReductionMapEntry;
 import edu.gmu.trajviz.logic.RuleInterval;
+import edu.gmu.trajviz.model.SequiturModel;
 import edu.gmu.trajviz.gi.GrammarRules;
 //import edu.hawaii.jmotif.logic.RuleInterval;
 //import edu.hawaii.jmotif.sax.NumerosityReductionStrategy;
@@ -140,7 +141,7 @@ public static void updateRuleIntervals(GrammarRules rules,
 	      // array of all words of this rule expanded form
 	      // String[] expandedRuleSplit = ruleContainer.getExpandedRuleString().trim().split(" ");
 	     
-	      int expandedRuleLength = countSpaces(ruleContainer.getExpandedRuleString());
+	      int expandedRuleLength = recursiveCountSpaces(ruleContainer.getExpandedRuleString());
 	//      System.out.println("getExStr: "+ruleContainer.getExpandedRuleString());
      
 	      // the auxiliary array that keeps lengths of all rule occurrences
@@ -259,6 +260,63 @@ public static void updateRuleIntervals(GrammarRules rules,
 
 }
 
+private static int recursiveCountSpaces(String expandedRuleString) {
+	
+	
+	
+	return 0;
+}
+
+private String parseRule(String string) {
+	StringBuffer sb = new StringBuffer();
+	System.out.println("string: "+string);
+	ArrayList<String> sa = new ArrayList<String>();
+	String[] stringArray = string.split(" ");
+	for (String s:stringArray){
+		if (s.charAt(0)=='I')
+		{
+			if(s.contains("r")){
+				int rIndex = s.indexOf("r");
+				Integer iteration = Integer.valueOf(s.substring(1, rIndex));
+				Integer rule = Integer.valueOf(s.substring(rIndex+1));
+				System.out.println("s: "+s+" iteration: "+iteration+" rule: "+rule);
+				String subRule = parseRule(SequiturModel.allRules.get(iteration).get(rule).getExpandedRuleString());
+				sa.add(subRule);
+				System.out.println(s+" = "+subRule );
+				
+			}
+			else if(s.contains("C")){
+				int cIndex = s.indexOf("C");
+				Integer iteration = Integer.valueOf(s.substring(1, cIndex));
+				Integer cluster = Integer.valueOf(s.substring(cIndex+1));
+				System.out.println("s: "+s+" iteration: "+iteration+" cluster: "+cluster);
+				Integer ruleInCluster = (Integer)SequiturModel.allClusters.get(iteration).get(cluster).toArray()[0];
+				String subRule = parseRule(SequiturModel.allRules.get(iteration).get(ruleInCluster).getExpandedRuleString());
+				sa.add(subRule);
+				System.out.println(s+" = "+subRule );
+
+			}
+		}
+		else if (s.charAt(0)=='R'){
+			throw new IllegalArgumentException("expect 'I' encounter 'R'");
+		}
+		
+		else	//Base Case
+		{
+			Integer test = Integer.valueOf(s);
+			sa.add(s);
+	//		System.out.println("s: "+ s);
+		}
+	}
+	for (int i = 0; i<sa.size()-1;i++){
+		sb.append(sa.get(i));
+		sb.append(" ");
+	}
+	if(sa.size()>0)
+	   sb.append(sa.get(sa.size()-1));
+	System.out.println("sb: "+sb.toString());
+	return sb.toString();
+}
 /**
  * Counts spaces in the string.
  * 

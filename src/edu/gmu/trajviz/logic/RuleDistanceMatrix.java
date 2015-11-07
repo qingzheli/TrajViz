@@ -41,8 +41,11 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 		for(int j = i+1; j<filter.size();j++){
 			if(rules.get(filter.get(i)).frequencyInR0()>2&&rules.get(filter.get(j)).frequencyInR0()>2)
 			{
-				String rule1 = rules.getRuleRecord(filter.get(i)).getExpandedRuleString();
-				String rule2 = rules.getRuleRecord(filter.get(j)).getExpandedRuleString();
+				String rule1 = parseRule(rules.getRuleRecord(filter.get(i)).getExpandedRuleString());
+				String rule2 = parseRule(rules.getRuleRecord(filter.get(j)).getExpandedRuleString());
+			//	String rule1 = rules.getRuleRecord(filter.get(i)).getExpandedRuleString();
+			//	String rule2 = rules.getRuleRecord(filter.get(j)).getExpandedRuleString();
+
 		//	matrix[0][j] = 100;//Double.MAX_VALUE;
 		//	matrix[i][0] = 100;//Double.MAX_VALUE;
 			matrix[i][j] = avgDTWDistance(blocks, toArrayList(rule1), toArrayList(rule2));
@@ -60,6 +63,58 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 		}
 	this.rules = rules;
 	printMatrix(matrix);
+}
+
+
+private String parseRule(String string) {
+	StringBuffer sb = new StringBuffer();
+	//System.out.println("string: "+string);
+	ArrayList<String> sa = new ArrayList<String>();
+	String[] stringArray = string.split(" ");
+	for (String s:stringArray){
+		if (s.charAt(0)=='I')
+		{
+			if(s.contains("r")){
+				int rIndex = s.indexOf("r");
+				Integer iteration = Integer.valueOf(s.substring(1, rIndex));
+				Integer rule = Integer.valueOf(s.substring(rIndex+1));
+			//	System.out.println("s: "+s+" iteration: "+iteration+" rule: "+rule);
+				String subRule = parseRule(SequiturModel.allRules.get(iteration).get(rule).getExpandedRuleString());
+				sa.add(subRule);
+		//		System.out.println(s+" = "+subRule );
+				
+			}
+			else if(s.contains("C")){
+				int cIndex = s.indexOf("C");
+				Integer iteration = Integer.valueOf(s.substring(1, cIndex));
+				Integer cluster = Integer.valueOf(s.substring(cIndex+1));
+			//	System.out.println("s: "+s+" iteration: "+iteration+" cluster: "+cluster);
+				Integer ruleInCluster = (Integer)SequiturModel.allClusters.get(iteration).get(cluster).toArray()[0];
+				String subRule = parseRule(SequiturModel.allRules.get(iteration).get(ruleInCluster).getExpandedRuleString());
+				sa.add(subRule);
+			//	System.out.println(s+" = "+subRule );
+
+			}
+		}
+		else if (s.charAt(0)=='R'){
+			throw new IllegalArgumentException("expect 'I' encounter 'R'");
+		}
+		
+		else	//Base Case
+		{
+			Integer test = Integer.valueOf(s);
+			sa.add(s);
+	//		System.out.println("s: "+ s);
+		}
+	}
+	for (int i = 0; i<sa.size()-1;i++){
+		sb.append(sa.get(i));
+		sb.append(" ");
+	}
+	if(sa.size()>0)
+	   sb.append(sa.get(sa.size()-1));
+	//System.out.println("sb: "+sb.toString());
+	return sb.toString();
 }
 private void printMatrix(double[][] matrix) {
 	NumberFormat formatter = new DecimalFormat("#0.00");     

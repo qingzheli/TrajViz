@@ -257,7 +257,9 @@ public class SAXRule {
 
     GrammarRuleRecord ruleRecord = arrRuleRecords.get(0);
     StringBuilder resultString = new StringBuilder(ruleRecord.getRuleString() + 8192);
+    
     int currentSearchStart = resultString.indexOf("R");
+  //  System.out.println("currentSearchStart"+currentSearchStart);
     while (currentSearchStart >= 0) {
       int spaceIdx = resultString.indexOf(" ", currentSearchStart);
       String ruleName = resultString.substring(currentSearchStart, spaceIdx + 1);
@@ -265,6 +267,8 @@ public class SAXRule {
       resultString.replace(spaceIdx - ruleName.length() + 1, spaceIdx + 1,
           arrRuleRecords.get(ruleId).getExpandedRuleString());
       currentSearchStart = resultString.indexOf("R");
+   //   System.out.println("loop: currentSearchStart"+currentSearchStart);
+
     }
     ruleRecord.setExpandedRuleString(resultString.toString().trim());
     // ruleRecord.setRuleYield(countSpaces(resultString));
