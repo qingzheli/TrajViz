@@ -500,16 +500,7 @@ public class SequiturModel extends Observable {
 	  				
 	  				  //  if(route.size()>2)
 	  				     routes.add(route);
-	  				    
-	  				    
-	  				    
-	  				    
-	  				
-	  				 
-	  			  
-	  			  
-	  	
-	  		  	
+	
 	  		  }	
 	  			for (int i = 0;i<isCovered.length;i++){
 	  				  if(isCovered[i]==true)
