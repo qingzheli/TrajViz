@@ -239,6 +239,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
     private SearchPanel searchPanel;
     private Rectangle magnifyRegion;
     private ArrayList<ArrayList<Route>> motifs;
+    private ArrayList<Route> allTrajectory;
     private ArrayList<Double> routeLat;// = new ArrayList<Double>();
     private ArrayList<Double> routeLon;// = new ArrayList<Double>(); 
     public MapPanel() {
@@ -256,6 +257,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
         }
           ruleDetails = -1;
           motifs = new ArrayList<ArrayList<Route>>();
+          allTrajectory = new ArrayList<Route>();
           setLayout(new MapLayout());
           setOpaque(true);
           setBackground(new Color(0xc0, 0xc0, 0xc0));
@@ -616,17 +618,28 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
             paintInternal(g);
             if(ruleDetails<0||ruleDetails>motifs.size())    // Display all motifs on left side map
             {
+              // draw all Trajectories in grey
+              for (int i = 0; i<allTrajectory.size(); i++){
+            	  route = allTrajectory.get(i);
+            	  int size = route.getLats().size();
+            	  paintRoute(g,route.getLats(),route.getLons(),i,Color.GRAY);
+            	  route = new Route();
+              }
+            	
+              
               for (int i = 0; i< motifs.size(); i++){
-              route = motifs.get(i).get(0);
+            	 for(int j = 0; j<motifs.get(i).size();j++){ 
+            	  route = motifs.get(i).get(j);
       //        System.out.println("route         #########################                      : "+route.getLats().get(i)+", "+route.getLats().get(2));
               int size = route.getLats().size();
-              String msgStart = "M"+i+"S";
-              String msgEnd = "M"+i+"E";
+          //    String msgStart = "M"+i+"S";
+          //    String msgEnd = "M"+i+"E";
           //    paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,msgStart);
-              paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
-              paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,msgEnd);
-              paintRoute(g,route.getLats(),route.getLons(),i);
+             // paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
+             // paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,msgEnd);
+              paintRoute(g,route.getLats(),route.getLons(),i, Color.BLUE);
               route = new Route();
+            	 }
               }
             }
             else if(motifs.size()>0&&ruleDetails<motifs.size()){    // Display all routes under the same rule on right side.
@@ -668,6 +681,9 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
     	this.motifs = motifs;
 		
 	}
+    public void setAllTrajectories(ArrayList<Route> allTrajectory){
+    	this.allTrajectory = allTrajectory;
+    }
     // set which rule to be displayed in details
     public void setRuleDetails(int filteredRule){
     	if(filteredRule>=0)
@@ -678,6 +694,44 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 	 * Draws a filled circle with given radius around each position.
 	 * Or resets and removes all positions from panel. 
 	 */
+	public void paintRoute(Graphics2D g, ArrayList<Double> latitudes, ArrayList<Double> longitudes,int index, Color color){
+		//g.setColor(Color.red);
+		float h,s,b,transparency;
+	//	Random randomGenerator = new Random();
+	
+		
+		/*
+		if (index<8)
+			index = index;
+		h = (float)(1/((index+1)*0.5))*360;
+		//s = (float) 0.1;
+		s = (float)(1/((index+1)*0.5));
+		b = index;
+		*/
+		transparency = (float) 0.4;
+		g.setColor(color);
+//		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, transparency));
+		int[] xPoints = new int[longitudes.size()];
+		int[] yPoints = new int[latitudes.size()];
+		Point[] p = new Point[latitudes.size()];
+		
+		for(int i = 0;i<latitudes.size();i++)
+		{
+			 p[i]= getScreenCoordinates(longitudes.get(i),latitudes.get(i));
+		//	 g.drawRect(p[i].x, p[i].y, 10, 10);
+		//	 g.draw3DRect(p[i].x, p[i].y, 10, 10, true);
+				 xPoints[i]=p[i].x;
+				 yPoints[i]=p[i].y;
+		}
+		//	g.drawPolyline(xPoints, yPoints, nPoints);
+	//	g.drawPolyline(xPoints, yPoints, nPoints);
+
+		g.setPaintMode();
+		g.setStroke(new BasicStroke(4));
+		g.drawPolyline(xPoints, yPoints, latitudes.size());
+		
+		
+	}
 	public void paintRoute(Graphics2D g, ArrayList<Double> latitudes, ArrayList<Double> longitudes,int index){
 		//g.setColor(Color.red);
 		float h,s,b,transparency;
@@ -718,7 +772,6 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 		
 		
 	}
-	
    
 	public void paintPoints(Graphics2D g, double latitude, double longitude, int id, String msg ){   //,String msg){
 		Point p = getScreenCoordinates(longitude,latitude);

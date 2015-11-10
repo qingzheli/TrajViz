@@ -90,12 +90,16 @@ public class SequiturModel extends Observable {
 	private static double lon_center;
 	//The outer arrayList includes all rules, the inner arrayList includes all route under the same rule
 	private static ArrayList<ArrayList<Route>> routes;  
+	private static ArrayList<Route> rawRoutes;  
+
 	public ArrayList<Double> lat;
 	public ArrayList<Double> paaLat;
 	public ArrayList<Double> paaLon;
 	public ArrayList<Double> lon;
 	private MotifChartData chartData;
 	private ArrayList<ArrayList<RuleInterval>> ruleIntervals;
+	private ArrayList<RuleInterval> rawAllIntervals;
+	private ArrayList<RuleInterval> anomalRuleIntervals;
 //	private ArrayList<HashSet<Integer>> mapToOriginRules;
 	private double runTime = -1;
 	//private static GrammarRules filteredRules;
@@ -323,6 +327,7 @@ public class SequiturModel extends Observable {
 		  this.allR0 = new ArrayList<String[]>();
 		  this.allMapToPreviousR0 = new ArrayList<ArrayList<Integer>>();
 		  this.allMapToOriginalTS = new ArrayList<ArrayList<Integer>>();
+		  this.rawRoutes = new ArrayList<Route>();
 		  isCovered= new boolean[lat.size()];
 		  hasNewCluster = true;
 		  StringBuffer sb = new StringBuffer();
@@ -341,10 +346,19 @@ public class SequiturModel extends Observable {
 			 
 			  this.log(sb.toString());
 		  }
+		  rawAllIntervals = new ArrayList<RuleInterval>();
 		  long beginTime = System.currentTimeMillis();
 			 // beginTime  =  System.nanoTime();
 			  System.out.println("begin time: "+beginTime);
 		  buildModel();
+		  /*
+		  for (int i = 0; i<rawAllIntervals.size();i++)
+			  System.out.println("Trajectory "+i+":" + rawAllIntervals.get(i));
+			  */
+		  drawRawTrajectories();
+
+		  
+		  
           allMapToPreviousR0.add(mapToPreviousR0);
 
 		//  runSequitur();
@@ -377,20 +391,25 @@ public class SequiturModel extends Observable {
         	  System.out.println("Iteration: "+iteration);
         	  
         //  if(hasNewCluster)
+        	  
         	  runSequitur(iteration);
         	  iteration = iteration + 1;
+        	 // this.minLink = this.minLink*2;
+        	  this.minLink = minLink*(iteration+1);
+
+        	   drawOnMap();
       }
 	  
 	  //end while
 		  
 		
-		  
+		 
 		  this.log("processed data, painting on map");
 		  consoleLogger.info("process finished");
 		  setChanged();
 
 		
-		  drawOnMap();
+		 
 
 
 		  //test
@@ -422,152 +441,7 @@ public class SequiturModel extends Observable {
 	  //evaluateResult();
 	  }
 	  
-	  private void drawOnMap(){
-		  // Generate All Motifs and record them on files respectively.
-	  	finalIntervals = new HashMap<String, ArrayList<RuleInterval>>();
-		ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
-    	int totalRuleCount = 0;
-	  	immergableRuleCount = 0;
-	    for (int i = 0 ; i<r0.length; i++){
-	    	String s = r0[i];
-	    	if(!isNumeric(s)){
-	          int startPos = mapToOriginalTS.get(i);
-	    	  int endPos = mapToOriginalTS.get((i+1))-1;
-	    	  RuleInterval interval = new RuleInterval(startPos,endPos);	
-	    	  if (!finalIntervals.containsKey(s)){
-	    		finalIntervals.put(s, new ArrayList<RuleInterval>());
-	    		finalIntervals.get(s).add(interval);
-	    	  }
-	    	  else{
-	    		finalIntervals.get(s).add(interval);
-	    	  }
-	    	}
-	    	else{
-	    	  int numStartPos = mapToOriginalTS.get(i);
-	    	  int numEndPos;
-	    	  if(i==(r0.length-1))
-	    		  numEndPos = mapToOriginalTS.get(i);
-	    	  else
-	    	  {
-	    		  numEndPos = mapToOriginalTS.get((i+1))-1;
-	    	  }
-	    	  for(int pos = numStartPos; pos<=numEndPos; pos++)
-	    		isCovered[pos] = false;
-	    	}
-	    }
-	    
-	    	    coverCount = 0;
-	  	Iterator it = finalIntervals.entrySet().iterator();
-	  	while (it.hasNext()){
-	  		@SuppressWarnings("unchecked")
-			Map.Entry<String,ArrayList<RuleInterval>> pair = (Map.Entry<String,ArrayList<RuleInterval>>)it.next();
-	  		ruleIntervals.add(pair.getValue());
-	  	}
-	  	totalSubTrajectory = 0;
-	  	for (int i = 0; i<ruleIntervals.size();i++){
-	  		totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i).size();
-	  		ArrayList<RuleInterval> positions = ruleIntervals.get(i);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
-    		int counter = 0;
-	  		ArrayList<Route> route = new ArrayList<Route>();
-	  			
-	  		for (int k=0;k<positions.size();k++)
-	  				  {
-	  					  Route singleRoute = new Route();
-	  					  int startPos = positions.get(k).getStartPos();
-	  						int endPos = positions.get(k).getEndPos();
-	  						
-	  						for(int index=startPos; index<=endPos;index++)
-	  							isCovered[index]=true;
-	  		//				System.out.println("startPos: "+startPos);
-	  		//				System.out.println("endPos: " +endPos);
-	  						
-	  					//	System.out.print("track#: "+counter+":       ");
-	  						for (int j = startPos; j<=endPos; j++){
-	  							
-	  							Location loca = new Location(lat.get(j),lon.get(j));
-	  				
-	  							singleRoute.addLocation(lat.get(j), lon.get(j));
-	  								
-	  						
-	  							
-	  						}
-	  						route.add(singleRoute);
-	  						
-	  						counter++;
-	  				  }
-	  		//		  System.out.println("position size: "+positions.size());
-	  			//	  System.out.println("route size: "+route.size());
-	  				
-	  				  //  if(route.size()>2)
-	  				     routes.add(route);
-	
-	  		  }	
-	  			for (int i = 0;i<isCovered.length;i++){
-	  				  if(isCovered[i]==true)
-	  					  coverCount++;
-	  			  }
-	  			  System.out.println("Cover Count: "+ coverCount);
-	  			  System.out.println("cover rate: " +(double)coverCount/isCovered.length);
-	  		 
-	  	
-			
-	  }
-	  	  /*
-	  	   * Generate All Motifs and record them on files respectively.
-	  	   */
-	 
-	  
-	  private Integer getPositionsInTS(ArrayList<Integer> mapToPreviousR0,ArrayList<Integer> previousMapToOriginalTS, int index) {
-		
-		
-		return previousMapToOriginalTS.get(mapToPreviousR0.get(index));
-	}
-
-	/*
-	   * evaluation
-	   */
-	private void evaluateResult() {
-		
-	
-	   
-		  double[] evalResult = evaluateMotifs(routes);
-		  double avgIntraDistance = evalResult[0];
-		  double avgIntraDistanceStdDev = evalResult[1];
-		  double minInterDistance = evalResult[2];
-		  double avgSilhouetteCoefficient = evalResult[3];
-		  
-		  
-	//	  eBlocks = new Blocks(EVAL_RESOLUTION,latMin, latMax, lonMin, lonMax);    // establish a grid map to evaluate the similarity
-		  
-	//	  String evalHead = "DataName,PaaSize,AlphabetSize,MinimalContinuousBlocks,NoiseCancellationThreshold\n";
-		  
-		  try{
-		  File evalFile = new File("./evaluation/"+"evaluate_"+(int)(minLink*1000)+"_"+alphabetSize+"_"+minBlocks+"_"+noiseThreshold+"_"+lat.size()+"_"+fileNameOnly);
-		  FileWriter fr = new FileWriter(evalFile);
-		  String sb1; // = new StringBuffer();
-		  //sb1.append(fileNameOnly+",");
-		  sb1 = (fileNameOnly+","+minLink+","+alphabetSize+","+minBlocks+","+noiseThreshold+","+runTime+","+avgIntraDistance+","+avgIntraDistanceStdDev+","+ minInterDistance+","+avgSilhouetteCoefficient+","+routes.size()+","+lat.size()+','+totalSubTrajectory+","+coverCount+","+immergableRuleCount+"\n");
-		  fr.append(sb1);
-		  System.out.println(EVALUATION_HEAD);
-		  System.out.println(sb1);
-		 // .append("running time: "+runTime+"\n");
-		  //fr.append(sb1);
-		//  fr.append(Average distances amon)
-		  this.log(EVALUATION_HEAD);
-		  this.log(sb1.toString());
-		  
-		  fr.flush();
-		  fr.close();
-		  }
-		  catch (IOException e){
-			 
-			  e.printStackTrace();
-		  }
-		  
-		 		
-	}
-
-	private void buildModel() {
+	  private void buildModel() {
 		 routes = new ArrayList< ArrayList<Route>>();
 		  paaLat = new ArrayList<Double>();
 		  paaLon = new ArrayList<Double>();
@@ -629,6 +503,8 @@ public class SequiturModel extends Observable {
 		  trimedTrack = new ArrayList<NumerosityReductionMapEntry>();
 		  mapTrimed2Original = new ArrayList<Integer>();  // The index is the position in trimmed array, and the content is position in original time series.
 		  mapToOriginalTS = new ArrayList<Integer>();
+		  int startPoint = 0;
+		  int endPoint = 0;
 		  for (int i = 0; i<paaLat.size();i++){
 			  Location loc = new Location(paaLat.get(i),paaLon.get(i));
 			//  blocks.addPoint2Block(loc); this should not work here because the point will change if it is a noisy point.
@@ -640,6 +516,13 @@ public class SequiturModel extends Observable {
 				  paaLon.set(i, paaLon.get(i-1));
 				  id = previousId;
 			  }
+			  if(id<-1000){
+				  endPoint = i-1;
+				  rawAllIntervals.add(new RuleInterval(startPoint, endPoint));
+				  startPoint = i+1;
+			  }
+		
+			  
 			  
 			words.add(id.toString());
 			
@@ -661,7 +544,6 @@ public class SequiturModel extends Observable {
 			  				  
 		  }
 		  System.out.print("mapTrimed2Original: ");
-		  
 	//	  printArrayList(mapTrimed2Original);		  
 		  /*
 		   * Following is put the cleaned location data into block again
@@ -680,214 +562,791 @@ public class SequiturModel extends Observable {
 		 		
 	}
 
-	
-	
-	private void runSequitur(int iteration) {
-		chartData = new MotifChartData(this.dataFileName, paaLat, paaLon, 1, alphabetSize); //PAA is always 1.
-		  clusters = new ArrayList<HashSet<Integer>>();
-		  filter = new ArrayList<Integer>();
-		  clusterMap = new HashMap<Integer,Integer>();
-		  mapToPreviousR0 = new ArrayList<Integer>();
-		  rules = new GrammarRules();
-			try{
-			  SAXRecords saxFrequencyData = null;
-			  saxFrequencyData = SequiturFactory.entries2SAXRecords(trimedTrack);
-			  System.out.println("String: " + saxFrequencyData.getSAXString(SPACE));
-			  consoleLogger.trace("String: " + saxFrequencyData.getSAXString(SPACE));
-			//  System.out.println("String: "+ saxFrequencyData.getSAXString(SPACE));
-			  consoleLogger.debug("running sequitur...");
-			  
-			  SAXRule sequiturGrammar = SequiturFactory.runSequitur(saxFrequencyData.getSAXString(SPACE));
-			//  System.out.println("sequiturGrammar: "+sequiturGrammar.toGrammarRulesData().getRuleRecord(1));
-			  consoleLogger.debug("collecting grammar rules data ...");
-			 // GrammarRules rules1 = sequiturGrammar.toGRD();
-			 // System.out.println("rules size: "+ rules1.size());			 
-	          rules = sequiturGrammar.toGrammarRulesData();
-	          allRules.add(rules);
-	          System.out.println("rules size: "+ rules.size());
-	          //debug
-	          
-	          
-	          consoleLogger.debug("mapping rule intervals on timeseries ...");
-	          HashMap<String, Integer> hm = new HashMap<String, Integer>();
-	          GrammarRuleRecord rule0 = rules.get(0);
-	          //String rule0 = rules.get(0).getRuleString();
-	          r0 = rule0.getRuleString().split(" ");
-	          allR0.add(r0);
-	          for(int i = 0; i<rules.size();i++){
-	        	  String key = rules.get(i).getRuleName();
-	        	//  System.out.println(rules.get(i));
-	        	  hm.put(key, 0);
-	          }
-	          
-	          System.out.println("R0: "+rule0.getRuleString());
-	          System.out.print("r0: ");
-	          
-	          for(int i = 0; i<r0.length;i++){
-	        	          
-	          System.out.print(r0[i]+" ");
-	          }
-	          System.out.println();
-	       //   System.out.println(r0);
-	          int currentIdx = 0;
-	       //   int[] indexes = new int[r0.length];
-	          for(int i=0;i<r0.length;i++){
-	        	  if(r0[i].charAt(0)=='R')
-	        		  {
-	        		  	Integer currentRule = Integer.valueOf(r0[i].substring(1));
-	        		  	hm.put(r0[i], hm.get(r0[i])+1);
-	        		  	rules.get(currentRule).addR0Occurrence(currentIdx); // setOccurenceInR0
-	        		  	mapToPreviousR0.add(currentIdx);
-	        		  	System.out.print(r0[i]+":"+currentIdx+" ");
-	        		    currentIdx = currentIdx + rules.get(currentRule).getRuleYield();
-	        		  }
-	        	  else
-	        		  {
-	        		  mapToPreviousR0.add(currentIdx);
-
-	        		  System.out.print(r0[i]+":"+currentIdx+" ");
-	        		  
-	        		  	currentIdx++;
-	        		  }
-	          }
-	          System.out.println();
-	          System.out.print("mapToPreviousR0: ");
-	  //        printArrayList(mapToPreviousR0);
-	          
-	          for(int i = 1; i<rules.size();i++){
-	        	  
-	        	  String key = rules.get(i).getRuleName();
-	        	  rules.get(i).setFrequencyInR0((hm.get(key)).intValue());
-	          }
-	          
-	          
-	         
-	          
-	          
-	        /* print all rule details
-	         */
-	          
-	          for(int i=0;i<rules.size();i++){
-	        	  System.out.println("Rule number: "+rules.getRuleRecord(i).getRuleNumber()+" Fre in R0: "+rules.get(i).frequencyInR0()+" LEVEL: "+rules.get(i).getRuleLevel()+" "+rules.get(i)+" StringOccurence: "+rules.getRuleRecord(i).occurrencesToString()+"OccurenceInR0: "+rules.get(i).r0OccurrencesToString()+" Rule String: "+rules.getRuleRecord(i).getExpandedRuleString()+" Rule Positions: "+rules.getRuleRecord(i).getRuleIntervals());
-	          }
-	         
-	       /*  */
-	          SequiturFactory.updateRuleIntervals(rules, saxFrequencyData, lat.size());   //Both update intervals and intervals in R0
-
-	          
-	    
-	          clusterRules();
-	       
-	          {
-	        	  System.out.print("mapToOriginalTS: ");
-	        	  ArrayList<Integer> previousMapToOriginalTS = mapToOriginalTS;
-	        	//  printArrayList(previousMapToOriginalTS);
-	        	  /*new ArrayList<Integer>();
-	        	  
-	        	  for (int i = 0; i<mapToOriginalTS.size();i++)
-	        	  	{
-	        		  previousMapToOriginalTS.add(mapToOriginalTS.get(i));
-	        	  	  System.out.print( mapToOriginalTS.get(i) + " ");
-	        	  	}
-	             System.out.println();
-	             */
-	              mapToOriginalTS = new ArrayList<Integer>();
-	              for(int i = 0; i<r0.length;i++){
-	            	          
-	              System.out.print(r0[i]+" ");
-	              }
-	              System.out.println();
-				  trimedTrack = new ArrayList<NumerosityReductionMapEntry>();
-			  /*
-			   * Replace Rules' Ids with Clusters' Ids
-			   */
-	          for (int i = 0; i<r0.length;i++){
-	        	  
-	        	  NumerosityReductionMapEntry<Integer, String> entry;
-	        	//  System.out.println("r0_"+i+"="+r0[i] );
-	        	  if (r0[i].charAt(0)=='R')
-	        		  {
-	        		  //	if(i==0)
-	        		  	//	System.out.println("r0[i] = "+r0[i]);
-	        		  	Integer ruleNumber = Integer.parseInt(r0[i].substring(1));
-	        		  //	int cursor = rules.get(ruleNumber).getCursor(); 
-
-	        		  	if (clusterMap.containsKey(filterMap.get(ruleNumber))){
-	        		  			hasNewCluster = true;
-	        		  			String s = "I" + (iteration) + "C" + clusterMap.get(filterMap.get(ruleNumber));
-	        		  			r0[i] = s;
-	        		  			Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
-	        		  			mapToOriginalTS.add(pos);
-	        	  				System.out.println("BlockID: " +r0[i]+" : "+pos);//mapTrimed2Original.get(mapToPreviousR0.get(i)));
-
-	        		  			entry = new NumerosityReductionMapEntry<Integer, String>(pos, s);
-	        		  			trimedTrack.add(entry);
-	        		  		
-	        		  	}
-	        		  	else{
-	        		  			String s = "I" + (iteration) + "r"+ruleNumber;
-	        		  			r0[i] = s;
-	        		  			Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
-	        		  			mapToOriginalTS.add(pos);
-
-	        		  			System.out.println("RuleID: " +r0[i]+" : "+pos);
-
-	        		  			entry = new NumerosityReductionMapEntry<Integer, String>(pos, s);
-	        	  				trimedTrack.add(entry);
+	private void drawRawTrajectories() {
 		
-	        		  	
-	        		  	}
-	        		  		
-	        			
-	        		  	
-	        		  }
-	        	  else
-	        	  {
-			  			Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
-			  			mapToOriginalTS.add(pos);
-
-		  				entry = new NumerosityReductionMapEntry<Integer, String>(pos, r0[i]);
-		  				System.out.println("BlockID: " +r0[i]+" : "+pos);//mapTrimed2Original.get(mapToPreviousR0.get(i)));
-		  				trimedTrack.add(entry);
-
-	        	  }
-	          }
-	          
-	          /*
-	          System.out.println("after:");
-	          for (int d = 0; d<words.size(); d++)
-	        	  System.out.print(words.get(d)+ " ");
-	          System.out.println();
-	          */
-	          System.out.print("AfterR0: ");
-	          
-	          for(int i = 0; i<r0.length;i++){ 
-	        	  System.out.print(r0[i]+" ");
-	          }          
-	          
-	          System.out.println();
-	          allMapToPreviousR0.add(mapToPreviousR0);
-	          }
-	         
-	          
-	          consoleLogger.debug("done ...");
-	          
-	          
-	          
-	          
-	          
-	          chartData.setGrammarRules(rules);
-	          System.out.println("chartData size: "+ chartData.getRulesNumber());
-			
+		
+		
+	  			
+	  		for (int k=0;k<rawAllIntervals.size();k++)
+	  				  {
+	  					  Route singleRoute = new Route();
+	  					  int startPos = rawAllIntervals.get(k).getStartPos();
+	  						int endPos = rawAllIntervals.get(k).getEndPos();
+	  						/*
+	  						for(int index=startPos; index<=endPos;index++)
+	  							isCovered[index]=true;
+	  							*/
+	  		//				System.out.println("startPos: "+startPos);
+	  		//				System.out.println("endPos: " +endPos);
+	  						
+	  					//	System.out.print("track#: "+counter+":       ");
+	  						for (int j = startPos; j<=endPos; j++){
+	  							
+	  							Location loca = new Location(lat.get(j),lon.get(j));
+	  				
+	  							singleRoute.addLocation(lat.get(j), lon.get(j));
+	  								
+	  						
+	  							
+	  						}
+	  						rawRoutes.add(singleRoute);
+	  						
+	  				  }
+	  		//		  System.out.println("position size: "+positions.size());
+	  			//	  System.out.println("route size: "+route.size());
+	  				
+	  				  //  if(route.size()>2)
 	
+	  		  	
+	}
+
+	private void runSequitur(int iteration) {
+			chartData = new MotifChartData(this.dataFileName, paaLat, paaLon, 1, alphabetSize); //PAA is always 1.
+			  clusters = new ArrayList<HashSet<Integer>>();
+			  filter = new ArrayList<Integer>();
+			  clusterMap = new HashMap<Integer,Integer>();
+			  mapToPreviousR0 = new ArrayList<Integer>();
+			  rules = new GrammarRules();
+				try{
+				  SAXRecords saxFrequencyData = null;
+				  saxFrequencyData = SequiturFactory.entries2SAXRecords(trimedTrack);
+				  System.out.println("String: " + saxFrequencyData.getSAXString(SPACE));
+				  consoleLogger.trace("String: " + saxFrequencyData.getSAXString(SPACE));
+				//  System.out.println("String: "+ saxFrequencyData.getSAXString(SPACE));
+				  consoleLogger.debug("running sequitur...");
+				  
+				  SAXRule sequiturGrammar = SequiturFactory.runSequitur(saxFrequencyData.getSAXString(SPACE));
+				//  System.out.println("sequiturGrammar: "+sequiturGrammar.toGrammarRulesData().getRuleRecord(1));
+				  consoleLogger.debug("collecting grammar rules data ...");
+				 // GrammarRules rules1 = sequiturGrammar.toGRD();
+				 // System.out.println("rules size: "+ rules1.size());			 
+		          rules = sequiturGrammar.toGrammarRulesData();
+		          allRules.add(rules);
+		          System.out.println("rules size: "+ rules.size());
+		          //debug
+		          
+		          
+		          consoleLogger.debug("mapping rule intervals on timeseries ...");
+		          HashMap<String, Integer> hm = new HashMap<String, Integer>();
+		          GrammarRuleRecord rule0 = rules.get(0);
+		          //String rule0 = rules.get(0).getRuleString();
+		          r0 = rule0.getRuleString().split(" ");
+		          allR0.add(r0);
+		          for(int i = 0; i<rules.size();i++){
+		        	  String key = rules.get(i).getRuleName();
+		        	//  System.out.println(rules.get(i));
+		        	  hm.put(key, 0);
+		          }
+		          
+		          System.out.println("R0: "+rule0.getRuleString());
+		          System.out.print("r0: ");
+		          
+		          for(int i = 0; i<r0.length;i++){
+		        	          
+		          System.out.print(r0[i]+" ");
+		          }
+		          System.out.println();
+		       //   System.out.println(r0);
+		          int currentIdx = 0;
+		       //   int[] indexes = new int[r0.length];
+		          for(int i=0;i<r0.length;i++){
+		        	  if(r0[i].charAt(0)=='R')
+		        		  {
+		        		  	Integer currentRule = Integer.valueOf(r0[i].substring(1));
+		        		  	hm.put(r0[i], hm.get(r0[i])+1);
+		        		  	rules.get(currentRule).addR0Occurrence(currentIdx); // setOccurenceInR0
+		        		  	mapToPreviousR0.add(currentIdx);
+		        //		  	System.out.print(r0[i]+":"+currentIdx+" ");
+		        		    currentIdx = currentIdx + rules.get(currentRule).getRuleYield();
+		        		  }
+		        	  else
+		        		  {
+		        		  mapToPreviousR0.add(currentIdx);
+	
+		        		  System.out.print(r0[i]+":"+currentIdx+" ");
+		        		  
+		        		  	currentIdx++;
+		        		  }
+		          }
+		          System.out.println();
+		          System.out.print("mapToPreviousR0: ");
+		  //        printArrayList(mapToPreviousR0);
+		          
+		          for(int i = 1; i<rules.size();i++){
+		        	  
+		        	  String key = rules.get(i).getRuleName();
+		        	  rules.get(i).setFrequencyInR0((hm.get(key)).intValue());
+		          }
+		          
+		          
+		         
+		          
+		          
+		        /* print all rule details
+		         */
+		    /*      
+		          for(int i=0;i<rules.size();i++){
+		        	  System.out.println("Rule number: "+rules.getRuleRecord(i).getRuleNumber()+" Fre in R0: "+rules.get(i).frequencyInR0()+" LEVEL: "+rules.get(i).getRuleLevel()+" "+rules.get(i)+" StringOccurence: "+rules.getRuleRecord(i).occurrencesToString()+"OccurenceInR0: "+rules.get(i).r0OccurrencesToString()+" Rule String: "+rules.getRuleRecord(i).getExpandedRuleString()+" Rule Positions: "+rules.getRuleRecord(i).getRuleIntervals());
+		          }
+		         */
+		       /*  */
+		          SequiturFactory.updateRuleIntervals(rules, saxFrequencyData, lat.size());   //Both update intervals and intervals in R0
+	
+		          
+		    
+		          clusterRules();
+		       
+		          {
+		        	  System.out.print("mapToOriginalTS: ");
+		        	  ArrayList<Integer> previousMapToOriginalTS = mapToOriginalTS;
+		        	//  printArrayList(previousMapToOriginalTS);
+		        	  /*new ArrayList<Integer>();
+		        	  
+		        	  for (int i = 0; i<mapToOriginalTS.size();i++)
+		        	  	{
+		        		  previousMapToOriginalTS.add(mapToOriginalTS.get(i));
+		        	  	  System.out.print( mapToOriginalTS.get(i) + " ");
+		        	  	}
+		             System.out.println();
+		             */
+		              mapToOriginalTS = new ArrayList<Integer>();
+		              for(int i = 0; i<r0.length;i++){
+		            	          
+		              System.out.print(r0[i]+" ");
+		              }
+		              System.out.println();
+					  trimedTrack = new ArrayList<NumerosityReductionMapEntry>();
+				  /*
+				   * Replace Rules' Ids with Clusters' Ids
+				   */
+		          for (int i = 0; i<r0.length;i++){
+		        	  
+		        	  NumerosityReductionMapEntry<Integer, String> entry;
+		        	//  System.out.println("r0_"+i+"="+r0[i] );
+		        	  if (r0[i].charAt(0)=='R')
+		        		  {
+		        		  //	if(i==0)
+		        		  	//	System.out.println("r0[i] = "+r0[i]);
+		        		  	Integer ruleNumber = Integer.parseInt(r0[i].substring(1));
+		        		  //	int cursor = rules.get(ruleNumber).getCursor(); 
+	
+		        		  	if (clusterMap.containsKey(filterMap.get(ruleNumber))){
+		        		  			hasNewCluster = true;
+		        		  			String s = "I" + (iteration) + "C" + clusterMap.get(filterMap.get(ruleNumber));
+		        		  			r0[i] = s;
+		        		  			Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
+		        		  			mapToOriginalTS.add(pos);
+		        //	  				System.out.println("BlockID: " +r0[i]+" : "+pos);//mapTrimed2Original.get(mapToPreviousR0.get(i)));
+	
+		        		  			entry = new NumerosityReductionMapEntry<Integer, String>(pos, s);
+		        		  			trimedTrack.add(entry);
+		        		  		
+		        		  	}
+		        		  	else{
+		        		  			String s = "I" + (iteration) + "r"+ruleNumber;
+		        		  			r0[i] = s;
+		        		  			Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
+		        		  			mapToOriginalTS.add(pos);
+	
+	//	        		  			System.out.println("RuleID: " +r0[i]+" : "+pos);
+	
+		        		  			entry = new NumerosityReductionMapEntry<Integer, String>(pos, s);
+		        	  				trimedTrack.add(entry);
+			
+		        		  	
+		        		  	}
+		        		  		
+		        			
+		        		  	
+		        		  }
+		        	  else
+		        	  {
+				  			Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
+				  			mapToOriginalTS.add(pos);
+	
+			  				entry = new NumerosityReductionMapEntry<Integer, String>(pos, r0[i]);
+			  	//			System.out.println("BlockID: " +r0[i]+" : "+pos);//mapTrimed2Original.get(mapToPreviousR0.get(i)));
+			  				trimedTrack.add(entry);
+	
+		        	  }
+		          }
+		          
+		          /*
+		          System.out.println("after:");
+		          for (int d = 0; d<words.size(); d++)
+		        	  System.out.print(words.get(d)+ " ");
+		          System.out.println();
+		          */
+		          System.out.print("AfterR0: ");
+		          
+		          for(int i = 0; i<r0.length;i++){ 
+		        	  System.out.print(r0[i]+" ");
+		          }          
+		          
+		          System.out.println();
+		          allMapToPreviousR0.add(mapToPreviousR0);
+		          }
+		         
+		          
+		          consoleLogger.debug("done ...");
+		          
+		          
+		          
+		          
+		          
+		          chartData.setGrammarRules(rules);
+		          System.out.println("chartData size: "+ chartData.getRulesNumber());
+				
+		
+			  }
+			  catch (TSException e){
+				  this.log("error while processing data "+StackTrace.toString(e));
+				  e.printStackTrace();
+			  }
+			//  allMapToOriginalTS.add(mapToOriginalTS);
+			  		
+		}
+
+	
+	 
+	  
+	  /*
+		   * Generate All Motifs and record them on files respectively.
+		   */
+	/*
+		private void drawOnMap() {
+			 // Generate All Motifs and record them on files respectively.
+			 // String header = "type,latitude,longitude";
+	//		  System.out.println("Total rules:"+chartData.getRulesNumber());
+			  
+			//  ArrayList<SAXMotif> allMotifs = chartData.getAllMotifs();
+			//  for (int i=1; i<chartData.getRulesNumber();i++){
+			    // create merged rule interval data structure corresponding to "clusters" 
+			    //ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
+		//        mapToOriginRules = new ArrayList<HashSet<Integer>>();
+		        
+			    int totalRuleCount = 0;
+			    immergableRuleCount = 0;
+			    
+			    for(int i=0;i<filter.size();i++){
+			    	// getRulePositions() was modified to show the intervals only occurred in R0
+			  //  	if(!clusterMap.containsKey(i)&&chartData.getRulePositionsByRuleNum(filter.get(i)).size()>=minBlocks) 
+			    		{
+			    		    ArrayList<RuleInterval> ri = chartData.getRulePositionsByRuleNum(filter.get(i));
+			    		  
+			    			{ruleIntervals.add(chartData.getRulePositionsByRuleNum(filter.get(i)));
+			    			HashSet<Integer> set = new HashSet<Integer>();
+			    			set.add(filter.get(i));
+			    			mapToOriginRules.add(set);
+			    			totalRuleCount++;
+			    			immergableRuleCount++;
+			    			}
+			    			  if(ri.size()<=2)
+			    		    	System.out.println("Error!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+ri);
+			    		}
+			    }
+			    
+			    	
+			    for(int i = 0; i< clusters.size();i++){
+			    	
+			    	ArrayList<RuleInterval> mergedIntervals = new ArrayList<RuleInterval>();
+			    	HashSet<Integer> set = new HashSet<Integer>();
+			    	if(clusters.get(i).size()>0)
+			    	{
+			    		//System.out.println("cluster "+i+" : {" +clusters.get(i)+"}");
+			    		totalRuleCount = totalRuleCount+clusters.get(i).size();
+			    	
+			    	for(int r : clusters.get(i)){
+			    	
+			    		int rule = r; //filter.get(r);
+			    		set.add(rule);
+			    		if(mergedIntervals.size()==0)
+			    			mergedIntervals.addAll(chartData.getRulePositionsByRuleNum(rule));
+			    		else{
+			    			ArrayList<RuleInterval> newIntervals = chartData.getRulePositionsByRuleNum(rule);
+			    			for(int j = 0; j<newIntervals.size();j++){
+			    				RuleInterval newComer = newIntervals.get(j);
+			    				boolean hasMerged = false;
+			    				for(int k = 0; k<mergedIntervals.size();k++){
+			    					if(RuleInterval.isMergable(mergedIntervals.get(k),newComer)){
+			    						System.out.println("I still need merge here.");
+			    						System.out.println("1:" +mergedIntervals.get(k) +" 2:"+ newComer );
+			    							
+			    						RuleInterval newInterval = RuleInterval.merge(mergedIntervals.get(k), newComer);
+			    						mergedIntervals.set(k, newInterval);
+			    						hasMerged = true;
+			    						//mergedIntervals.remove(k);
+			    						//mergedIntervals.add(newInterval);
+			    						//break;
+			    						
+			    					}
+			    					
+			    						
+			    				}
+			    				if(!hasMerged)
+			    					mergedIntervals.add(newComer);
+			    				
+			    			}
+			    		}
+			    		}
+			    	if(mergedIntervals.size()>2)
+			    	{	
+			    	ruleIntervals.add(mergedIntervals);
+			    	mapToOriginRules.add(set);
+			    	}
+			    	else
+			    		System.out.println("mergedIntervals.size = "+mergedIntervals.size());
+			    	}
+			    }
+			    System.out.println("Immergable Rule  = "+ immergableRuleCount);
+			    System.out.println("Total Rule Count = "+totalRuleCount);
+			    boolean[] isCovered = new boolean[lat.size()];
+			    coverCount = 0;
+			    for (int i = 0; i<isCovered.length;i++)
+			    	isCovered[i] = false;
+			    totalSubTrajectory = 0;
+				for (int i = 0; i<ruleIntervals.size();i++){
+			  	totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i).size();
+			  	
+				  {//(countSpaces(chartData.getRule(i).getExpandedRuleString())>minBlocks){
+				  ArrayList<RuleInterval> positions = ruleIntervals.get(i);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
+				  
+				//  ArrayList<RuleInterval> positions = chartData.getRulePositionsByRuleNum(i);	  
+			//	  System.out.println("rule" + i+" :  "+ positions);//.get(0).toString());
+				  
+				  
+				  if(true)//(positions.size()>2)
+					  //&&chartData.getRule(i).getMeanLength()>1)
+				  {
+					  
+					  
+						//  File fname = new File("./rules/motif_"+i+".csv");
+						//  FileWriter motifPos = new FileWriter(fname);
+					//Generating evaluation file
+						  
+						  int counter = 0;
+						  ArrayList<Route> route = new ArrayList<Route>();
+						 // Integer route0Id =-1;
+						 // Integer route1Id =-1;
+					  for (int k=0;k<positions.size();k++)
+					  {
+						  Route singleRoute = new Route();
+				//		  motifPos.append(header+"\n");
+						  int startPos = positions.get(k).getStartPos();
+							int endPos = positions.get(k).getEndPos();
+							
+							for(int index=startPos; index<=endPos;index++)
+								isCovered[index]=true;
+			//				System.out.println("startPos: "+startPos);
+			//				System.out.println("endPos: " +endPos);
+							boolean firstPoint = true;
+							
+						//	System.out.print("track#: "+counter+":       ");
+							for (int j = startPos; j<=endPos; j++){
+								
+					//			motifPos.append("T,"+lat.get(j)+","+lon.get(j));
+							//	if(counter<2){
+								Location loca = new Location(lat.get(j),lon.get(j));
+							//	  blocks.addPoint2Block(loc);
+						//		  Integer idss = new Integer(blocks.findBlockIdForPoint(loca));
+						//		  System.out.print(idss+", ");
+								singleRoute.addLocation(lat.get(j), lon.get(j));
+									
+							//	}
+								if(firstPoint)
+								{
+						//			motifPos.append(",Track "+counter+",red\n");
+									firstPoint = false;
+									
+								}
+						//		else motifPos.append("\n");
+								
+							}
+							route.add(singleRoute);
+							
+							counter++;
+						//	System.out.println();
+					  }
+			//		  System.out.println("position size: "+positions.size());
+				//	  System.out.println("route size: "+route.size());
+					
+					  //  if(route.size()>2)
+					     routes.add(route);
+					    
+					    
+					    
+					    
+					  //	motifPos.flush();
+					  //	motifPos.close();
+					  //	System.out.println(fname.getName());
+				//	  	route.get(0).print();
+					  	
+					 
+				  }
+				  
+				//  System.out.println("motif index: "+motif.getRuleIndex()+"   " +motif.toString());
+				  //FileWriter motifPos = new FileWriter(new File("./motif_"+motif.getRuleIndex()+".csv"));
+				 
+			  	}
+			  }	
+				for (int i = 0;i<isCovered.length;i++){
+					  if(isCovered[i]==true)
+						  coverCount++;
+				  }
+				  System.out.println("Cover Count: "+ coverCount);
+				  System.out.println("cover rate: " +(double)coverCount/isCovered.length);
+			 
+		}
+	*/
+	
+		private void clusterRules() {
+		      /*
+	         * Postprocessing merge, connect
+	         */
+			
+			/*
+			 * Warning: rules in clusters are real rules, rules in clusterMap are filter rules. 
+			 * 
+			 */
+	        filterMap = new HashMap<Integer,Integer>();
+	        for (int i = 0; i<rules.size();i++){
+					if ((rules.get(i).frequencyInR0()>=2))//&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=minBlocks))//||
+						//	(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getR0Intervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
+						{
+						//HashSet<Integer> set = new HashSet<Integer>();
+		//				System.out.println("Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
+						filterMap.put(i, filter.size());
+						filter.add(i);
+						
+						if(rules.get(i).getR0Intervals().size()<2)
+							System.out.println("Bug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+i);
+						}
+					
+				}
+	        System.out.println("filter Size = "+filter.size());
+	        allFilters.add(filter);
+	        if(filter.size()>1){
+	        //HashMap<Integer,ArrayList<Integer>> mergeRecord = new HashMap<Integer, ArrayList<Integer>>();
+	        long t1s = System.currentTimeMillis();
+	        RuleDistanceMatrix rdm;
+	        rdm = new RuleDistanceMatrix(blocks,rules, filter,minBlocks, minLink); 
+	        long t1e = System.currentTimeMillis();
+	        long buildMatrixTime = t1e-t1s;
+	        
+	  //      clusters = new ArrayList<HashSet<Integer>>(); 
+	       /*
+	        for(int i = 0; i<rdm.filter.size();i++){
+	      	 families.add(new HashSet<Integer>());
+	      	 
+	      	 
+	      	 families.get(i).add(i);
+	      	//  mergeRecord.put(i, family.add(i) );
+	        }
+	       */
+	        long t2s =System.currentTimeMillis();
+	        NumberFormat formatter = new DecimalFormat("#0.00");
+	        System.out.println("rdm.pq.size(): "+rdm.pq.size());
+	        int mergableCount = 0;
+	        while(rdm.pq.size()>0){
+	      	  PairDistance pair = rdm.pq.remove();
+	      	  int lineSize;
+	      	  int colSize;
+	      	  int totalSize;
+	      	  if(isMergable(rdm.matrix,clusters,pair.getLine(),pair.getCol(),clusterMap, minLink)){
+	      		  hasNewCluster=true;
+	      		  mergableCount++;
+	      	//	  merge(rules,rdm.filter.get(pair.getLine()),rdm.filter.get(pair.getCol()));
+	      		  if(clusterMap.containsKey(pair.getLine())||clusterMap.containsKey(pair.getCol()))
+	      		  {
+	      			  if(!clusterMap.containsKey(pair.getLine())){
+	      				  clusters.get(clusterMap.get(pair.getCol())).add(filter.get(pair.getLine()));
+	      				  clusterMap.put(pair.getLine(), clusterMap.get(pair.getCol()));
+	      			//	  System.out.println("Adding Line  to a cluster, Line:"+pair.getLine()+" Colu:"+pair.getCol()+clusters.get(clusterMap.get(pair.getCol())));
+	      				  //System.out.println("Map:"+clusterMap);
+	      				  
+	      			  }
+	      			  else if(!clusterMap.containsKey(pair.getCol())){
+	      				  clusters.get(clusterMap.get(pair.getLine())).add(filter.get(pair.getCol()));
+	      				  clusterMap.put(pair.getCol(), clusterMap.get(pair.getLine()));
+	      			//	  System.out.println("Adding Colum to a cluster,Colum:"+pair.getCol()+" Colu:"+pair.getCol()+clusters.get(clusterMap.get(pair.getLine())));
+	      				  //System.out.println("Map:"+clusterMap);
+	      			  }
+	      			  else{
+	      				  if(!clusterMap.get(pair.getLine()).equals(clusterMap.get(pair.getCol())))
+	      				  {
+	      				//  System.out.println("Before Merge, line in cluster:"+clusterMap.get(pair.getLine())+clusters.get(clusterMap.get(pair.getLine()))+" colu in cluster:"+clusterMap.get(pair.getCol())+clusters.get(clusterMap.get(pair.getCol())));
+	      				  lineSize = clusters.get(clusterMap.get(pair.getLine())).size();
+	      				  colSize = clusters.get(clusterMap.get(pair.getCol())).size();
+	      				  clusters.get(clusterMap.get(pair.getLine())).addAll(clusters.get(clusterMap.get(pair.getCol())));
+	      				  int colCluster = clusterMap.get(pair.getCol());
+	      				  for(int v : clusters.get(clusterMap.get(pair.getCol())))
+	      					  {
+	      				//	  System.out.print("v: "+v+" ");
+	      					  clusterMap.put(filterMap.get(v), clusterMap.get(pair.getLine()));
+	      				//	  clusters.get(clusterMap.get(pair.getLine())).add(v);
+	      					  }
+	      				  //System.out.println();
+	      				  clusters.get(colCluster).clear();
+	      				 // System.out.println("After  Merge, Line:"+pair.getLine()+clusters.get(clusterMap.get(pair.getLine()))+" Colu:"+pair.getCol()+clusters.get(colCluster));
+	      				 // System.out.println("Map:"+clusterMap);
+	      				  totalSize = clusters.get(clusterMap.get(pair.getLine())).size();
+	      				  //if((lineSize+colSize)!=totalSize){
+	      					//  System.out.println("Error Candidate here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	      				  //}
+	      				  }
+	      				  //else
+	      					// System.out.println("Same Cluster! "+clusterMap.get(pair.getLine())+","+clusterMap.get(pair.getCol()));
+	      			  }
+	      		  }
+	      		  else{
+	      			  HashSet<Integer> set = new HashSet<Integer>();
+	      			  set.add(filter.get(pair.getLine()));            
+	      			  set.add(filter.get(pair.getCol()));
+	      			  clusters.add(set);
+	      			  clusterMap.put(pair.getLine(), clusters.size()-1);
+	      			  clusterMap.put(pair.getCol(), clusters.size()-1);
+	      			 // System.out.println("Created a cluster: "+clusters.get(clusters.size()-1));
+	      		//	  System.out.println("Map:"+clusterMap);
+	      		  }
+	      		  
+	      		  /*
+	      		  clusters.get(pair.getLine()).addAll(clusters.get(pair.getCol()));
+	      		  clusters.get(pair.getCol()).addAll(clusters.get(pair.getLine()));
+	      		  
+	      		  for(int i: families.get(pair.getCol()))
+	      			  families.get(pair.getLine()).add(i);
+	      		  for(int i: families.get(pair.getLine()))
+	      			  families.get(pair.getCol()).add(i);
+	      			  */	        		
+	      	//	  System.out.print("Merged Pair: <"+pair.getLine()+", "+pair.getCol()+"> = "+rdm.matrix[pair.getLine()][pair.getCol()]);
+	      	//	  System.out.print(" all distances: ");
+	      		  /*
+	      		  for (int i : clusters.get(clusterMap.get(pair.getLine())))
+	    				for(int j : clusters.get(clusterMap.pair.getCol()))
+	    				{
+	    				
+	    				System.out.print(formatter.format(rdm.matrix[i][j])+", ");
+	    					
+	    				}*/
+	      	//	  System.out.println();
+	      	  }
+	        }
+	        
+		  
+	        
+	        
+	        System.out.println("MergableCount: "+mergableCount);
+	        
+	        /*
+	        ArrayList<HashSet<Integer>> tempCluster = new ArrayList<HashSet<Integer>>();
+	        for(int i=0;i<clusters.size();i++)
+	        {
+	      	  if(clusters.get(i).size()>0)
+	      		  tempCluster.add(clusters.get(i));
+	        }
+	        clusters = tempCluster; // be aware!!!! hashMap did not update here, but who cares?
+	        */
+	        allClusters.add(clusters);
+	        long t2e = System.currentTimeMillis();
+	        long clusterTime = t2e -t2s;
+	    	System.out.println("build matrix: "+(double)(buildMatrixTime/1000.0));
+			  System.out.println("Clustering Time: "+(clusterTime/1000.0));
+	        /*
+	        for(int i = 0; i<clusters.size();i++){
+	      	  System.out.println("i = "+i+" : "+clusters.get(i));
+	        }
+	        */
+	       
+			  System.out.println("cluster map size = "+ clusterMap.size());
+			    System.out.println("clusterMap:   "+clusterMap);
+	        }
+	        
+		}
+
+	private void drawOnMap(){
+			  // Generate All Motifs and record them on files respectively.
+			for(int i = 0; i<isCovered.length;i++)
+				isCovered[i] = true;
+		  	finalIntervals = new HashMap<String, ArrayList<RuleInterval>>();
+			ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
+			routes = new ArrayList<ArrayList<Route>>();
+			int anomalyCount = 0;
+			int totalRuleCount = 0;
+		  	immergableRuleCount = 0;
+		    for (int i = 0 ; i<r0.length; i++){
+		    	String s = r0[i];
+		    	if(!isNumeric(s)){
+		    	
+		    	  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
+			  //  	System.out.println("r0: "+i+" : "+r0[i]+" : "+RuleDistanceMatrix.parseRule(s));
+		
+		          int startPos = mapToOriginalTS.get(i);
+		    	  int endPos = mapToOriginalTS.get((i+1))-1;
+		    	  RuleInterval interval = new RuleInterval(startPos,endPos);	
+		    	  	if (!finalIntervals.containsKey(s)){
+		    		finalIntervals.put(s, new ArrayList<RuleInterval>());
+		    		finalIntervals.get(s).add(interval);
+		    	  	}
+		    	    else{
+		    		finalIntervals.get(s).add(interval);
+		    	  	}
+		    	  }
+		    	  else{
+		    		  int unsatisfiedStartPos = mapToOriginalTS.get(i);
+			    	  int unsatisfiedEndPos;
+			    	  if(i==(r0.length-1))
+			    		  unsatisfiedEndPos = mapToOriginalTS.get(i);
+			    	  else
+			    	  {
+			    		  unsatisfiedEndPos = mapToOriginalTS.get((i+1))-1;
+			    	  }
+			    	  for(int pos = unsatisfiedStartPos; pos<=unsatisfiedEndPos; pos++)
+			    		{
+			    		  
+			    		  isCovered[pos] = false;
+				    	  anomalyCount++;
+			
+			    		}
+		    	  }
+		    	}
+		    	else{
+		    		if(Integer.valueOf(s)<0)
+		    		;
+		    			//	System.out.println(s);
+		    		else{
+		    	  int numStartPos = mapToOriginalTS.get(i);
+		    	  int numEndPos;
+		    	  if(i==(r0.length-1))
+		    		  numEndPos = mapToOriginalTS.get(i);
+		    	  else
+		    	  {
+		    		  numEndPos = mapToOriginalTS.get((i+1))-1;
+		    	  }
+		    	  for(int pos = numStartPos; pos<=numEndPos; pos++)
+		    		{
+		    		  
+		    		  isCovered[pos] = false;
+			    	  anomalyCount++;
+		
+		    		}
+		    	}
+		    	}
+		    }
+		    
+		    	    coverCount = 0;
+		  	Iterator it = finalIntervals.entrySet().iterator();
+		  	while (it.hasNext()){
+		  		@SuppressWarnings("unchecked")
+				Map.Entry<String,ArrayList<RuleInterval>> pair = (Map.Entry<String,ArrayList<RuleInterval>>)it.next();
+		  		ruleIntervals.add(pair.getValue());
+		  	}
+		  	totalSubTrajectory = 0;
+		  	for (int i = 0; i<ruleIntervals.size();i++){
+		  		totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i).size();
+		  		ArrayList<RuleInterval> positions = ruleIntervals.get(i);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
+				int counter = 0;
+		  		ArrayList<Route> route = new ArrayList<Route>();
+		  			
+		  		for (int k=0;k<positions.size();k++)
+		  				  {
+		  					  Route singleRoute = new Route();
+		  					  int startPos = positions.get(k).getStartPos();
+		  						int endPos = positions.get(k).getEndPos();
+		  						/*
+		  						for(int index=startPos; index<=endPos;index++)
+		  							isCovered[index]=true;
+		  							*/
+		  		//				System.out.println("startPos: "+startPos);
+		  		//				System.out.println("endPos: " +endPos);
+		  						
+		  					//	System.out.print("track#: "+counter+":       ");
+		  						for (int j = startPos; j<=endPos; j++){
+		  							
+		  							Location loca = new Location(lat.get(j),lon.get(j));
+		  				
+		  							singleRoute.addLocation(lat.get(j), lon.get(j));
+		  								
+		  						
+		  							
+		  						}
+		  						route.add(singleRoute);
+		  						
+		  						counter++;
+		  				  }
+		  		//		  System.out.println("position size: "+positions.size());
+		  			//	  System.out.println("route size: "+route.size());
+		  				
+		  				  //  if(route.size()>2)
+		  				     routes.add(route);
+		
+		  		  }	
+		  			for (int i = 0;i<isCovered.length;i++){
+		  				  if(isCovered[i]==true)
+		  					  coverCount++;
+		  			  }
+		  			  System.out.println("Cover Count: "+ coverCount);
+		  			  System.out.println("Anomaly Count: "+ anomalyCount);
+		  			  System.out.println("cover rate: " +(double)coverCount/isCovered.length);
+		  		 
+		  		//	evaluateResult();
+				
 		  }
-		  catch (TSException e){
-			  this.log("error while processing data "+StackTrace.toString(e));
+
+	private Integer getPositionsInTS(ArrayList<Integer> mapToPreviousR0,ArrayList<Integer> previousMapToOriginalTS, int index) {
+		
+		
+		return previousMapToOriginalTS.get(mapToPreviousR0.get(index));
+	}
+
+	/*
+	   * evaluation
+	   */
+	private void evaluateResult() {
+		
+	
+	   
+		  double[] evalResult = evaluateMotifs(routes);
+		  double avgIntraDistance = evalResult[0];
+		  double avgIntraDistanceStdDev = evalResult[1];
+		  double minInterDistance = evalResult[2];
+		  double avgSilhouetteCoefficient = evalResult[3];
+		  
+		  
+	//	  eBlocks = new Blocks(EVAL_RESOLUTION,latMin, latMax, lonMin, lonMax);    // establish a grid map to evaluate the similarity
+		  
+	//	  String evalHead = "DataName,PaaSize,AlphabetSize,MinimalContinuousBlocks,NoiseCancellationThreshold\n";
+		  
+		  try{
+		  File evalFile = new File("./evaluation/"+"evaluate_"+(int)(minLink*1000)+"_"+alphabetSize+"_"+minBlocks+"_"+noiseThreshold+"_"+lat.size()+"_"+fileNameOnly);
+		  FileWriter fr = new FileWriter(evalFile);
+		  String sb1; // = new StringBuffer();
+		  //sb1.append(fileNameOnly+",");
+		  sb1 = (fileNameOnly+","+minLink+","+alphabetSize+","+minBlocks+","+noiseThreshold+","+runTime+","+avgIntraDistance+","+avgIntraDistanceStdDev+","+ minInterDistance+","+avgSilhouetteCoefficient+","+routes.size()+","+lat.size()+','+totalSubTrajectory+","+coverCount+","+immergableRuleCount+"\n");
+		  fr.append(sb1);
+		  System.out.println(EVALUATION_HEAD);
+		  System.out.println(sb1);
+		 // .append("running time: "+runTime+"\n");
+		  //fr.append(sb1);
+		//  fr.append(Average distances amon)
+		  this.log(EVALUATION_HEAD);
+		  this.log(sb1.toString());
+		  
+		  fr.flush();
+		  fr.close();
+		  }
+		  catch (IOException e){
+			 
 			  e.printStackTrace();
 		  }
-		//  allMapToOriginalTS.add(mapToOriginalTS);
-		  		
+		  
+		 		
 	}
+
+	
+
+	
+	
+	
 	
 
 	  /*
@@ -1078,170 +1537,6 @@ public class SequiturModel extends Observable {
 		 
 	}
 */
-
-	private void clusterRules() {
-	      /*
-         * Postprocessing merge, connect
-         */
-		
-		/*
-		 * Warning: rules in clusters are real rules, rules in clusterMap are filter rules. 
-		 * 
-		 */
-        filterMap = new HashMap<Integer,Integer>();
-        for (int i = 0; i<rules.size();i++){
-				if ((rules.get(i).frequencyInR0()>2))//&&rules.get(i).getRuleYield()>=minBlocks))//||
-					//	(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getR0Intervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
-					{
-					//HashSet<Integer> set = new HashSet<Integer>();
-	//				System.out.println("Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
-					filterMap.put(i, filter.size());
-					filter.add(i);
-					
-					if(rules.get(i).getR0Intervals().size()<2)
-						System.out.println("Bug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+i);
-					}
-				
-			}
-        System.out.println("filter Size = "+filter.size());
-        allFilters.add(filter);
-        if(filter.size()>1){
-        //HashMap<Integer,ArrayList<Integer>> mergeRecord = new HashMap<Integer, ArrayList<Integer>>();
-        long t1s = System.currentTimeMillis();
-        RuleDistanceMatrix rdm;
-        rdm = new RuleDistanceMatrix(blocks,rules, filter,minBlocks, minLink); 
-        long t1e = System.currentTimeMillis();
-        long buildMatrixTime = t1e-t1s;
-        
-  //      clusters = new ArrayList<HashSet<Integer>>(); 
-       /*
-        for(int i = 0; i<rdm.filter.size();i++){
-      	 families.add(new HashSet<Integer>());
-      	 
-      	 
-      	 families.get(i).add(i);
-      	//  mergeRecord.put(i, family.add(i) );
-        }
-       */
-        long t2s =System.currentTimeMillis();
-        NumberFormat formatter = new DecimalFormat("#0.00");
-        System.out.println("rdm.pq.size(): "+rdm.pq.size());
-        int mergableCount = 0;
-        while(rdm.pq.size()>0){
-      	  PairDistance pair = rdm.pq.remove();
-      	  int lineSize;
-      	  int colSize;
-      	  int totalSize;
-      	  if(isMergable(rdm.matrix,clusters,pair.getLine(),pair.getCol(),clusterMap, minLink)){
-      		  hasNewCluster=true;
-      		  mergableCount++;
-      	//	  merge(rules,rdm.filter.get(pair.getLine()),rdm.filter.get(pair.getCol()));
-      		  if(clusterMap.containsKey(pair.getLine())||clusterMap.containsKey(pair.getCol()))
-      		  {
-      			  if(!clusterMap.containsKey(pair.getLine())){
-      				  clusters.get(clusterMap.get(pair.getCol())).add(filter.get(pair.getLine()));
-      				  clusterMap.put(pair.getLine(), clusterMap.get(pair.getCol()));
-      			//	  System.out.println("Adding Line  to a cluster, Line:"+pair.getLine()+" Colu:"+pair.getCol()+clusters.get(clusterMap.get(pair.getCol())));
-      				  //System.out.println("Map:"+clusterMap);
-      				  
-      			  }
-      			  else if(!clusterMap.containsKey(pair.getCol())){
-      				  clusters.get(clusterMap.get(pair.getLine())).add(filter.get(pair.getCol()));
-      				  clusterMap.put(pair.getCol(), clusterMap.get(pair.getLine()));
-      			//	  System.out.println("Adding Colum to a cluster,Colum:"+pair.getCol()+" Colu:"+pair.getCol()+clusters.get(clusterMap.get(pair.getLine())));
-      				  //System.out.println("Map:"+clusterMap);
-      			  }
-      			  else{
-      				  if(!clusterMap.get(pair.getLine()).equals(clusterMap.get(pair.getCol())))
-      				  {
-      				//  System.out.println("Before Merge, line in cluster:"+clusterMap.get(pair.getLine())+clusters.get(clusterMap.get(pair.getLine()))+" colu in cluster:"+clusterMap.get(pair.getCol())+clusters.get(clusterMap.get(pair.getCol())));
-      				  lineSize = clusters.get(clusterMap.get(pair.getLine())).size();
-      				  colSize = clusters.get(clusterMap.get(pair.getCol())).size();
-      				  clusters.get(clusterMap.get(pair.getLine())).addAll(clusters.get(clusterMap.get(pair.getCol())));
-      				  int colCluster = clusterMap.get(pair.getCol());
-      				  for(int v : clusters.get(clusterMap.get(pair.getCol())))
-      					  {
-      				//	  System.out.print("v: "+v+" ");
-      					  clusterMap.put(filterMap.get(v), clusterMap.get(pair.getLine()));
-      				//	  clusters.get(clusterMap.get(pair.getLine())).add(v);
-      					  }
-      				  //System.out.println();
-      				  clusters.get(colCluster).clear();
-      				 // System.out.println("After  Merge, Line:"+pair.getLine()+clusters.get(clusterMap.get(pair.getLine()))+" Colu:"+pair.getCol()+clusters.get(colCluster));
-      				 // System.out.println("Map:"+clusterMap);
-      				  totalSize = clusters.get(clusterMap.get(pair.getLine())).size();
-      				  //if((lineSize+colSize)!=totalSize){
-      					//  System.out.println("Error Candidate here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-      				  //}
-      				  }
-      				  //else
-      					// System.out.println("Same Cluster! "+clusterMap.get(pair.getLine())+","+clusterMap.get(pair.getCol()));
-      			  }
-      		  }
-      		  else{
-      			  HashSet<Integer> set = new HashSet<Integer>();
-      			  set.add(filter.get(pair.getLine()));            
-      			  set.add(filter.get(pair.getCol()));
-      			  clusters.add(set);
-      			  clusterMap.put(pair.getLine(), clusters.size()-1);
-      			  clusterMap.put(pair.getCol(), clusters.size()-1);
-      			 // System.out.println("Created a cluster: "+clusters.get(clusters.size()-1));
-      		//	  System.out.println("Map:"+clusterMap);
-      		  }
-      		  
-      		  /*
-      		  clusters.get(pair.getLine()).addAll(clusters.get(pair.getCol()));
-      		  clusters.get(pair.getCol()).addAll(clusters.get(pair.getLine()));
-      		  
-      		  for(int i: families.get(pair.getCol()))
-      			  families.get(pair.getLine()).add(i);
-      		  for(int i: families.get(pair.getLine()))
-      			  families.get(pair.getCol()).add(i);
-      			  */	        		
-      	//	  System.out.print("Merged Pair: <"+pair.getLine()+", "+pair.getCol()+"> = "+rdm.matrix[pair.getLine()][pair.getCol()]);
-      	//	  System.out.print(" all distances: ");
-      		  /*
-      		  for (int i : clusters.get(clusterMap.get(pair.getLine())))
-    				for(int j : clusters.get(clusterMap.pair.getCol()))
-    				{
-    				
-    				System.out.print(formatter.format(rdm.matrix[i][j])+", ");
-    					
-    				}*/
-      	//	  System.out.println();
-      	  }
-        }
-        
-	  
-        
-        
-        System.out.println("MergableCount: "+mergableCount);
-        
-        /*
-        ArrayList<HashSet<Integer>> tempCluster = new ArrayList<HashSet<Integer>>();
-        for(int i=0;i<clusters.size();i++)
-        {
-      	  if(clusters.get(i).size()>0)
-      		  tempCluster.add(clusters.get(i));
-        }
-        clusters = tempCluster; // be aware!!!! hashMap did not update here, but who cares?
-        */
-        allClusters.add(clusters);
-        long t2e = System.currentTimeMillis();
-        long clusterTime = t2e -t2s;
-    	System.out.println("build matrix: "+(double)(buildMatrixTime/1000.0));
-		  System.out.println("Clustering Time: "+(clusterTime/1000.0));
-        
-        for(int i = 0; i<clusters.size();i++){
-      	  System.out.println("i = "+i+" : "+clusters.get(i));
-        }
-        
-       
-		  System.out.println("cluster map size = "+ clusterMap.size());
-		    System.out.println("clusterMap:   "+clusterMap);
-        }
-        
-	}
 
 	public static void printArrayList(ArrayList<Integer> al) {
 		if(al == null || al.size()==0)
@@ -1584,6 +1879,9 @@ public class SequiturModel extends Observable {
     public static ArrayList<ArrayList<Route>> getMotifs(){
     	return routes;
     }
+    public static ArrayList<Route> getRawTrajectory(){
+    	return rawRoutes; 
+    }
 	public static String map2String(HashMap map){
 		  String string = new String();
 		  Iterator it = map.entrySet().iterator();
@@ -1611,12 +1909,14 @@ public class SequiturModel extends Observable {
 	   * @return The number of spaces.
 	   */
 	  private static int countSpaces(String str) {
-	    int counter = 0;
+	    int counter = 1;
+	    
 	    for (int i = 0; i < str.length(); i++) {
 	      if (str.charAt(i) == ' ') {
 	        counter++;
 	      }
 	    }
+	//    System.out.println("string: "+str+"   length = "+counter);
 	    return counter;
 	  }
 	  public static boolean isNumeric(String str)  

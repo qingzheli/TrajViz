@@ -42,7 +42,9 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 			if(rules.get(filter.get(i)).frequencyInR0()>2&&rules.get(filter.get(j)).frequencyInR0()>2)
 			{
 				String rule1 = parseRule(rules.getRuleRecord(filter.get(i)).getExpandedRuleString());
+	
 				String rule2 = parseRule(rules.getRuleRecord(filter.get(j)).getExpandedRuleString());
+				
 			//	String rule1 = rules.getRuleRecord(filter.get(i)).getExpandedRuleString();
 			//	String rule2 = rules.getRuleRecord(filter.get(j)).getExpandedRuleString();
 
@@ -52,6 +54,10 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 			matrix[j][i] = matrix[i][j];
 			if(matrix[i][j]>0&&matrix[i][j]<minLink){//&&matrix[i][j]<minDistance){
 				pq.add(new PairDistance(i,j,matrix[i][j]));
+		//		System.out.println("distance = "+matrix[i][j]);
+		//		System.out.println("Rule 1: "+rule1);
+			//	System.out.println("Rule 2: "+rule2);
+				
 			/*
 				minDistance = matrix[i][j];
 				minPair[0] = i;
@@ -66,7 +72,7 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 }
 
 
-private String parseRule(String string) {
+public static String parseRule(String string) {
 	StringBuffer sb = new StringBuffer();
 	//System.out.println("string: "+string);
 	ArrayList<String> sa = new ArrayList<String>();
@@ -155,19 +161,19 @@ public static ArrayList<Integer> toArrayList(String rule) {
 
 private double avgDTWDistance(Blocks blocks,ArrayList<Integer> s,
 		ArrayList<Integer> t) {
+	double totalDistance = 0;
+	System.out.print("s::::::::::size:"+s.size());
 	
-//	System.out.print("s::::::::::size:"+s.size());
-	/*
 	for(int i=0; i<s.size();i++)
 		System.out.print(" "+s.get(i));
-		*/
-//	System.out.println();
-//	System.out.print("t::::::::::size:"+t.size()+"   ");
-	/*
+		
+	System.out.println();
+	System.out.print("t::::::::::size:"+t.size()+"   ");
+	
 	for(int i=0; i<t.size();i++)
 		System.out.print(" "+t.get(i));
-		*/
-//	System.out.println();
+		
+	System.out.println();
 	int n = s.size();
 	int m = t.size();
 	double[][] DTW = new double[n+1][m+1];
@@ -178,7 +184,11 @@ private double avgDTWDistance(Blocks blocks,ArrayList<Integer> s,
 		DTW[0][i+1] = Double.MAX_VALUE;
 	DTW[0][0] = 0;
 	for (int i=0;i<n;i++){
+		if (i>0)
+			totalDistance = totalDistance + blocks.distance(s.get(i), s.get(i-1));
 		for(int j=0;j<m;j++){
+			if(i==0&&j>0)
+				totalDistance = totalDistance + blocks.distance(t.get(j), t.get(j-1));
 			cost = blocks.distance(s.get(i),t.get(j));
 		//	System.out.println("cost_"+i+","+j+": "+cost);
 			DTW[i+1][j+1]=cost+minimum(DTW[i][j+1],		// insertion
@@ -202,11 +212,15 @@ private double avgDTWDistance(Blocks blocks,ArrayList<Integer> s,
 	}
 //	System.out.println("step: "+step);
 	double avg = DTW[n][m]/step;
+/*
 	if (m<n)
 		avg = avg*((double)minBlocks/m)*((double)minBlocks/m);
 	else
 		avg = avg*((double)minBlocks/n)*((double)minBlocks/n);
 //	System.out.println("avgDTW:::::"+avg);
+*/
+	//System.out.println("avg : totalDistance"+avg+" : "+totalDistance);
+	avg = avg* (2*avg/totalDistance);
 	return avg;
 }
 

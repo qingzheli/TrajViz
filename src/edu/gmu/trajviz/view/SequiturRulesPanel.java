@@ -226,7 +226,7 @@ public void valueChanged(ListSelectionEvent arg) {
     //String actualRules = clusters.get(Integer.valueOf(rule)).toString();
     System.out.println("rule:::::"+rule);
     this.firePropertyChange(FIRING_PROPERTY, this.selectedSequiturRule, rule);
-    System.out.println("Original rules:::::"+map.get(Integer.valueOf(rule)));
+ //   System.out.println("Original rules:::::"+map.get(Integer.valueOf(rule)));
     System.out.println("Rule Intervals:::::"+ruleIntervals.get(Integer.valueOf(rule)));
 
  //   this.selectedSequiturRule = actualRule;

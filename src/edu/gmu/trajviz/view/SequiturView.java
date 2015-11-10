@@ -558,6 +558,7 @@ public class SequiturView implements Observer, ActionListener{
 	    	  this.controller.getSession().setNoisePointThreshold(Integer.valueOf(this.noiseThresholdField.getText()));
 	    	  this.controller.getProcessDataListener().actionPerformed(new ActionEvent(this,2,null));
 	    	  mapPanel.setMotifs(SequiturModel.getMotifs());
+	    	  mapPanel.setAllTrajectories(SequiturModel.getRawTrajectory());
 	    	  mapPanel1.setMotifs(SequiturModel.getMotifs());
 	    	  
 	       }
