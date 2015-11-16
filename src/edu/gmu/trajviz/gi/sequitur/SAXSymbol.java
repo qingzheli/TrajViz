@@ -35,7 +35,7 @@ public abstract class SAXSymbol {
    * Apparently, this limits the possible number of terminals, ids of non-terminals start after this
    * num.
    */
-  protected static final int numTerminals = 100000;
+  protected static final int numTerminals = 10000000;
 
   /** Seed the size of hash table? */
   private static final int prime = 2265539;

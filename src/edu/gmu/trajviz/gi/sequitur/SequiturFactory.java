@@ -99,18 +99,20 @@ public final class SequiturFactory {
 
     // while there are tokens
     int currentPosition = 0;
+    //int line = 0;
     while (st.hasMoreTokens()) {
-
+    
       String token = st.nextToken();
       // System.out.println("  processing the token " + token);
-
+    // System.out.println("line:"+line+":"+token);
+      //line++;
       // extract next token
       SAXTerminal symbol = new SAXTerminal(token, currentPosition);
 
       // append to the end of the current sequitur string
       // ... As each new input symbol is observed, append it to rule S....
       resRule.last().insertAfter(symbol);
-
+   //   System.out.println(sym);
       // once appended, check if the resulting digram is new or recurrent
       //
       // ... Each time a link is made between two symbols if the new digram is repeated elsewhere
@@ -118,9 +120,9 @@ public final class SequiturFactory {
       // replace the new digram with the non-terminal symbol that heads the rule,
       // otherwise,form a new rule and replace both digrams with the new non-terminal symbol
       // otherwise, insert the digram into the index...
+    
       resRule.last().p.check();
-
-      currentPosition++;
+            currentPosition++;
 
       // consoleLogger.debug("Current grammar:\n" + SAXRule.getRules());
     }

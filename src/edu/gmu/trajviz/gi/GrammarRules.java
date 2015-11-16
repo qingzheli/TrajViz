@@ -43,4 +43,9 @@ private void remove(int id){
 	
 }
 
+public void setParsedString() {
+	for(int i = 0; i<rules.size();i++)
+		rules.get(i).setParsedStringAndRuleYield();
+}
+
 }

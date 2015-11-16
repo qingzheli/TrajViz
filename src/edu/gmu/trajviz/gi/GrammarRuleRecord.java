@@ -1,7 +1,10 @@
 package edu.gmu.trajviz.gi;
 import java.util.ArrayList;
 import java.util.Arrays;
+
+import edu.gmu.trajviz.gi.sequitur.SAXRule;
 import edu.gmu.trajviz.logic.RuleInterval;
+import edu.gmu.trajviz.model.SequiturModel;
 
 /**
  * Data container for SAX rules. Provides an abstraction which is used for transferring grammars
@@ -18,9 +21,13 @@ public class GrammarRuleRecord {
   /* The rule string, this may contain non-terminal symbols. */
   private String ruleString;
 
-  /* The expanded rule string, this contains only terminal symbols. */
+  /* The expanded rule string, this contains previous symbols. */
   private String expandedRuleString;
-
+  
+  /* The expanded rule string, this contains only terminal symbols. */
+  private String actualRuleString;
+  
+  
   /* The indexes at which the rule occurs in the discretized time series. */
   private ArrayList<Integer> timeSeriesOccurrenceIndexes = new ArrayList<Integer>();
   
@@ -54,9 +61,11 @@ public class GrammarRuleRecord {
   /* The rule period error. */
   private double periodError;
 
-  /* The rule yield - how many terminals it produces in extended form. */
+  /* The rule yield - how many terminals it produces in previous extended form. */
   private int ruleYield;
-
+  
+  /* The rule yield - how many terminals it produces in extended form. */
+  private int actualRuleYield;
   /*-qz
    * Frequency in R0
    */
@@ -285,7 +294,7 @@ public void setR0Intervals(ArrayList<RuleInterval> r0Intervals){
   
 
   public String toString() {
-    return "R" + this.ruleNumber + " -> " + this.ruleString;
+    return "R" + this.ruleNumber + " -> " + this.ruleString + " -> " + this.actualRuleString;
   }
 
   public int getRuleNumber() {
@@ -296,4 +305,16 @@ public void setMinLength() {
 	// TODO Auto-generated method stub
 	
 }
+public void setParsedStringAndRuleYield() {
+	this.actualRuleString = SequiturModel.parseRule((this.getExpandedRuleString()))+" ";
+	this.actualRuleYield = SequiturModel.countSpaces(actualRuleString);
+//	System.out.println("actualRuleString: "+this.actualRuleString + ": "+this.actualRuleYield);
+}
+public String getParsedString(){
+	return this.actualRuleString;
+}
+public int getActualRuleYield(){
+	return this.actualRuleYield;
+}
+
 }

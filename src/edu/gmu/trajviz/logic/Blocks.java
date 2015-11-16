@@ -52,7 +52,7 @@ public class Blocks {
 		{
 			blocks.add(new Block(i,nLon,latCut,lonCut,latMin,lonMin));
 		}
-		printBlockMap();
+	//	printBlockMap();
 
 	}
 	public void addPoint2Block(Location point){
@@ -99,7 +99,7 @@ public class Blocks {
 		double lon2 = lonMin+lonCut*lonBlock2+0.5*lonCut;
 		double distance = distFrom(lat1,lon1,lat2,lon2);
 		double distance1 = Math.sqrt((latBlock1-latBlock2)*(latBlock1-latBlock2)*latCutKm*latCutKm+(lonBlock1-lonBlock2)*(lonBlock1-lonBlock2)*lonCutKm*lonCutKm);
-		System.out.println("block1:block2:dis1:dis2"+"   "+block1+"("+latBlock1+","+lonBlock2+")"+": "+block2+"   "+distance+" : "+distance1);
+	//	System.out.println("block1:block2:dis1:dis2"+"   "+block1+"("+latBlock1+","+lonBlock2+")"+": "+block2+"   "+distance+" : "+distance1);
 		return distance;
 	}
 	public static double distFrom(double lat1, double lng1, double lat2, double lng2) {

@@ -19,12 +19,15 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Observable;
+import java.util.SortedMap;
+import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.LoggerFactory;
@@ -52,6 +55,7 @@ public class SequiturModel extends Observable {
 	private static final String SPACE = " ";
 	private static final String CR = "\n";
 	private static final int STEP = 2;
+	private static final int DEFAULT_TIME_GAP = 80;
     private boolean[] isCovered;
 
 //	private static final int NOISYELIMINATIONTHRESHOLD = 5;
@@ -61,6 +65,7 @@ public class SequiturModel extends Observable {
 	private GrammarRules rules;
 	public static HashMap<String, ArrayList<String>> allPostions;
 	public static ArrayList<GrammarRules> allRules;
+	public static TreeMap<String, GrammarRuleRecord> sortedRuleMap;
 	public static ArrayList< ArrayList<HashSet<Integer>>> allClusters;
 	private ArrayList<HashSet<Integer>> clusters;
 	private ArrayList<Integer> filter;
@@ -74,7 +79,7 @@ public class SequiturModel extends Observable {
 	public static ArrayList<ArrayList<Integer>> allMapToPreviousR0;
 	public static HashMap<String, ArrayList<RuleInterval>> finalIntervals;
 	private boolean hasNewCluster = true;
-
+	private int sortedCounter;
 	private String dataFileName, fileNameOnly;
 	private static double lat_center;
 	private double latMax;
@@ -91,7 +96,7 @@ public class SequiturModel extends Observable {
 	//The outer arrayList includes all rules, the inner arrayList includes all route under the same rule
 	private static ArrayList<ArrayList<Route>> routes;  
 	private static ArrayList<Route> rawRoutes;  
-
+	private static ArrayList<Route> anomalyRoutes;
 	public ArrayList<Double> lat;
 	public ArrayList<Double> paaLat;
 	public ArrayList<Double> paaLon;
@@ -99,6 +104,7 @@ public class SequiturModel extends Observable {
 	private MotifChartData chartData;
 	private ArrayList<ArrayList<RuleInterval>> ruleIntervals;
 	private ArrayList<RuleInterval> rawAllIntervals;
+	private ArrayList<RuleInterval> anomalyIntervals;
 	private ArrayList<RuleInterval> anomalRuleIntervals;
 //	private ArrayList<HashSet<Integer>> mapToOriginRules;
 	private double runTime = -1;
@@ -112,6 +118,7 @@ public class SequiturModel extends Observable {
 	private int minBlocks; 
 	private static Logger consoleLogger;
 	  private static Level LOGGING_LEVEL = Level.DEBUG;
+	
 	  static {
 	    consoleLogger = (Logger) LoggerFactory.getLogger(SequiturModel.class);
 	    consoleLogger.setLevel(LOGGING_LEVEL);
@@ -196,7 +203,7 @@ public class SequiturModel extends Observable {
 					  int value2 = Integer.parseInt(lineSplit[2]);
 					  int value3 = Integer.parseInt(lineSplit[3]);
 					  
-					  if((lineCounter<=1)||(Math.abs(value3-timeAsUnixEpoc.get(timeAsUnixEpoc.size()-1))<=300))
+					  if((lineCounter<=1)||(Math.abs(value3-timeAsUnixEpoc.get(timeAsUnixEpoc.size()-1))<=DEFAULT_TIME_GAP))
 					  {
 						  
 					  
@@ -317,6 +324,7 @@ public class SequiturModel extends Observable {
 	  
 	  
 	  public synchronized void processData(double minLink, int alphabetSize, int minBlocks, int noiseThreshold)throws IOException{
+		  sortedCounter = 0;
 		  this.minLink = minLink;
 		  this.minBlocks = minBlocks;
 		  this.noiseThreshold = noiseThreshold;
@@ -328,6 +336,56 @@ public class SequiturModel extends Observable {
 		  this.allMapToPreviousR0 = new ArrayList<ArrayList<Integer>>();
 		  this.allMapToOriginalTS = new ArrayList<ArrayList<Integer>>();
 		  this.rawRoutes = new ArrayList<Route>();
+		  this.anomalyRoutes = new ArrayList<Route>();
+		  Comparator<String> expandedRuleComparator = new Comparator<String>(){
+			  @Override public int compare(String r1, String r2)
+			  {
+				  Integer iteration1 = 0;
+				  Integer iteration2 = 0;
+				  Integer rule1 = 0;
+				  Integer rule2 = 0;
+				  if (r1.charAt(0)=='I' )
+					{
+						if(r1.contains("r")){
+							int rIndex = r1.indexOf("r");
+							iteration1 = Integer.valueOf(r1.substring(1, rIndex));
+							rule1 = Integer.valueOf(r1.substring(rIndex+1));
+						//	System.out.println("r1: "+r1+" iteration: "+iteration1+" rule1: "+rule1);
+							
+					//		System.out.println(s+" = "+subRule );
+						}
+						else 
+							throw new IllegalArgumentException(r1+" is not comparable with "+ r2);
+					}
+				  else
+					 throw new IllegalArgumentException(r1+" is not comparable with "+ r2);
+				  if (r2.charAt(0)=='I' )
+					{
+						if(r2.contains("r")){
+							int rIndex = r2.indexOf("r");
+							iteration2 = Integer.valueOf(r2.substring(1, rIndex));
+							rule2 = Integer.valueOf(r2.substring(rIndex+1));
+						//	System.out.println("r2: "+r2+" iteration2: "+iteration2+" rule2: "+rule2);
+							
+					//		System.out.println(s+" = "+subRule );
+							
+						}
+						else 
+							throw new IllegalArgumentException(r1+" is not comparable with "+ r2);
+					}
+				  else
+					  new IllegalArgumentException(r1+" is not comparable with "+ r2);
+			
+				  if(allRules.get(iteration2).get(rule2).getActualRuleYield() > allRules.get(iteration1).get(rule1).getActualRuleYield())
+						  return 1;
+				 
+				  else 
+					  return -1;
+				   
+			  }
+		  };
+
+		  SequiturModel.sortedRuleMap = new TreeMap<String, GrammarRuleRecord>(expandedRuleComparator);
 		  isCovered= new boolean[lat.size()];
 		  hasNewCluster = true;
 		  StringBuffer sb = new StringBuffer();
@@ -383,7 +441,6 @@ public class SequiturModel extends Observable {
            * run the algorithm
            */
          
-         
           while(hasNewCluster){
 	  		  int lastIteration = iteration;
 	  		  hasNewCluster = false;
@@ -398,12 +455,29 @@ public class SequiturModel extends Observable {
         	  this.minLink = minLink*(iteration+1);
 
         	   drawOnMap();
+           	System.out.println("total anomalies: "+anomalyRoutes.size());
+
       }
 	  
 	  //end while
 		  
-		
-		 
+         
+		  System.out.println("Sorted Map.size = "+ sortedRuleMap.size()+ "sortedCounter = "+sortedCounter);
+		  /*
+		  for (int i = 0 ; i<r0.length;i++)
+			  System.out.println(i+ " : "+r0[i]);
+		  while(sortedRuleMap.size()>0)
+		  {
+			 
+			  Entry<String, GrammarRuleRecord> entry = sortedRuleMap.pollFirstEntry();
+		//	  System.out.println(entry.getKey()+" : "+entry.getValue());
+		  }
+		  */
+	//	  AnomalyDetection();
+  
+		  
+		  
+		  
 		  this.log("processed data, painting on map");
 		  consoleLogger.info("process finished");
 		  setChanged();
@@ -430,7 +504,7 @@ public class SequiturModel extends Observable {
 
 		  System.out.println("running time: "+runTime);
 		  ArrayList<Integer> frequency = new ArrayList<Integer>();
-	
+		  	
 
 		  /*
 		  for (int i=0;i<ruleIntervals.size();i++)
@@ -509,6 +583,7 @@ public class SequiturModel extends Observable {
 			  Location loc = new Location(paaLat.get(i),paaLon.get(i));
 			//  blocks.addPoint2Block(loc); this should not work here because the point will change if it is a noisy point.
 			  Integer id = new Integer(blocks.findBlockIdForPoint(loc));
+			  /*
 			  if(isNoise(id,i,noiseThreshold)){
 				 // lat.set(i, lat.get(i-1));
 				  paaLat.set(i, paaLat.get(i-1));
@@ -516,20 +591,21 @@ public class SequiturModel extends Observable {
 				  paaLon.set(i, paaLon.get(i-1));
 				  id = previousId;
 			  }
+			  */
 			  if(id<-1000){
 				  endPoint = i-1;
 				  rawAllIntervals.add(new RuleInterval(startPoint, endPoint));
 				  startPoint = i+1;
 			  }
 		
-			  
-			  
+			 
 			words.add(id.toString());
 			
 		//	  System.out.println("previousId, id:  "+previousId+",   "+id+"        i:   "+i+"   Lat,Lon: "+paaLat.get(i)+","+paaLon.get(i));
-			  
+			  Integer trimedIndex = 0;
 			  if (!id.equals(previousId))
 			  {
+				  
 				  NumerosityReductionMapEntry<Integer, String> entry = new NumerosityReductionMapEntry<Integer, String>(new Integer(i),id.toString());
 		//		  System.out.println("entry: "+i+","+id);
 				  trimedTrack.add(entry);
@@ -557,8 +633,9 @@ public class SequiturModel extends Observable {
 		  for(int i=0; i<trimedTrack.size();i++){
 			  System.out.println(i+" : "+trimedTrack.get(i).getValue()+" ");
 		  }
+		  */
 		  System.out.println();
-		*/  
+		  
 		 		
 	}
 
@@ -621,6 +698,7 @@ public class SequiturModel extends Observable {
 				 // GrammarRules rules1 = sequiturGrammar.toGRD();
 				 // System.out.println("rules size: "+ rules1.size());			 
 		          rules = sequiturGrammar.toGrammarRulesData();
+		          rules.setParsedString();
 		          allRules.add(rules);
 		          System.out.println("rules size: "+ rules.size());
 		          //debug
@@ -630,10 +708,16 @@ public class SequiturModel extends Observable {
 		          HashMap<String, Integer> hm = new HashMap<String, Integer>();
 		          GrammarRuleRecord rule0 = rules.get(0);
 		          //String rule0 = rules.get(0).getRuleString();
+		          int length3 = countSpaces(rule0.getRuleString());
+		        		  
 		          r0 = rule0.getRuleString().split(" ");
+		          int length4 = r0.length;
+		          if (length3!=length4)
+	        		  throw new IndexOutOfBoundsException(length3+":"+length4);;
 		          allR0.add(r0);
 		          for(int i = 0; i<rules.size();i++){
 		        	  String key = rules.get(i).getRuleName();
+		        	 // String expandedString = rules.get(i).getExpandedRuleString();
 		        	//  System.out.println(rules.get(i));
 		        	  hm.put(key, 0);
 		          }
@@ -646,27 +730,47 @@ public class SequiturModel extends Observable {
 		          System.out.print(r0[i]+" ");
 		          }
 		          System.out.println();
-		       //   System.out.println(r0);
+		      //    System.out.println(r0);
 		          int currentIdx = 0;
 		       //   int[] indexes = new int[r0.length];
+		         
 		          for(int i=0;i<r0.length;i++){
+		        	  if(r0[i]==" ")
+		        		  throw new IndexOutOfBoundsException(i+" : |"+r0[i]+"|");
+  
 		        	  if(r0[i].charAt(0)=='R')
 		        		  {
 		        		  	Integer currentRule = Integer.valueOf(r0[i].substring(1));
 		        		  	hm.put(r0[i], hm.get(r0[i])+1);
 		        		  	rules.get(currentRule).addR0Occurrence(currentIdx); // setOccurenceInR0
 		        		  	mapToPreviousR0.add(currentIdx);
-		        //		  	System.out.print(r0[i]+":"+currentIdx+" ");
+		        		  //	System.out.println(i+" : "+r0[i]+":"+currentIdx+" ");
+		        		  	int length1 = rules.get(currentRule).getRuleYield();
+		        		  	int length2 = countSpaces(rules.get(currentRule).getExpandedRuleString());
 		        		    currentIdx = currentIdx + rules.get(currentRule).getRuleYield();
+		        		    if(currentIdx>mapToOriginalTS.size())
+		        		    	
+		        		    {
+				        		  throw new IndexOutOfBoundsException(i+" : "+r0[i]+":"+currentIdx+" expandRule:  "+rules.get(currentRule).getExpandedRuleString()+" length1:length2 = "+length1+":"+length2);
+
+		        		    }
 		        		  }
 		        	  else
 		        		  {
+		        			  
 		        		  mapToPreviousR0.add(currentIdx);
 	
-		        		  System.out.print(r0[i]+":"+currentIdx+" ");
+		        //		  System.out.println(i+" : "+r0[i]+":"+currentIdx+" ");
 		        		  
 		        		  	currentIdx++;
+		        		  	if(currentIdx>mapToOriginalTS.size())
+		        		    	
+		        		    {
+				        		  System.out.println(i+" : "+r0[i]+":"+currentIdx);
+
+		        		    }
 		        		  }
+		        		  
 		          }
 		          System.out.println();
 		          System.out.print("mapToPreviousR0: ");
@@ -679,18 +783,18 @@ public class SequiturModel extends Observable {
 		          }
 		          
 		          
-		         
+		          SequiturFactory.updateRuleIntervals(rules, saxFrequencyData, lat.size());   //Both update intervals and intervals in R0
 		          
 		          
 		        /* print all rule details
 		         */
-		    /*      
+		        /* 
 		          for(int i=0;i<rules.size();i++){
 		        	  System.out.println("Rule number: "+rules.getRuleRecord(i).getRuleNumber()+" Fre in R0: "+rules.get(i).frequencyInR0()+" LEVEL: "+rules.get(i).getRuleLevel()+" "+rules.get(i)+" StringOccurence: "+rules.getRuleRecord(i).occurrencesToString()+"OccurenceInR0: "+rules.get(i).r0OccurrencesToString()+" Rule String: "+rules.getRuleRecord(i).getExpandedRuleString()+" Rule Positions: "+rules.getRuleRecord(i).getRuleIntervals());
 		          }
 		         */
 		       /*  */
-		          SequiturFactory.updateRuleIntervals(rules, saxFrequencyData, lat.size());   //Both update intervals and intervals in R0
+		         
 	
 		          
 		    
@@ -719,6 +823,7 @@ public class SequiturModel extends Observable {
 				  /*
 				   * Replace Rules' Ids with Clusters' Ids
 				   */
+					  System.out.println("r0.length: "+r0.length);
 		          for (int i = 0; i<r0.length;i++){
 		        	  
 		        	  NumerosityReductionMapEntry<Integer, String> entry;
@@ -728,7 +833,11 @@ public class SequiturModel extends Observable {
 		        		  //	if(i==0)
 		        		  	//	System.out.println("r0[i] = "+r0[i]);
 		        		  	Integer ruleNumber = Integer.parseInt(r0[i].substring(1));
-		        		  //	int cursor = rules.get(ruleNumber).getCursor(); 
+		        		  	String currentRule = "I"+iteration+"r"+ruleNumber;
+		        		  	sortedRuleMap.put(currentRule, rules.get(ruleNumber));
+		        		  //	System.out.println("sortedRuleMap.size() = " + sortedRuleMap.size()+" "+currentRule+" : "+rules.get(ruleNumber)+" "+sortedRuleMap);
+		        		  	sortedCounter++;
+		        		//  	int cursor = rules.get(ruleNumber).getCursor(); 
 	
 		        		  	if (clusterMap.containsKey(filterMap.get(ruleNumber))){
 		        		  			hasNewCluster = true;
@@ -760,8 +869,11 @@ public class SequiturModel extends Observable {
 		        		  	
 		        		  }
 		        	  else
+		        		  
 		        	  {
-				  			Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
+				  		
+		        		   
+		        		  	Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
 				  			mapToOriginalTS.add(pos);
 	
 			  				entry = new NumerosityReductionMapEntry<Integer, String>(pos, r0[i]);
@@ -780,7 +892,6 @@ public class SequiturModel extends Observable {
 		          System.out.print("AfterR0: ");
 		          
 		          for(int i = 0; i<r0.length;i++){ 
-		        	  System.out.print(r0[i]+" ");
 		          }          
 		          
 		          System.out.println();
@@ -1010,16 +1121,17 @@ public class SequiturModel extends Observable {
 			 */
 	        filterMap = new HashMap<Integer,Integer>();
 	        for (int i = 0; i<rules.size();i++){
-					if ((rules.get(i).frequencyInR0()>=2))//&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=minBlocks))//||
+					if ((rules.get(i).frequencyInR0()>=1))//&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=minBlocks))//||
 						//	(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getR0Intervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
 						{
 						//HashSet<Integer> set = new HashSet<Integer>();
 		//				System.out.println("Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
 						filterMap.put(i, filter.size());
 						filter.add(i);
-						
+					/*	
 						if(rules.get(i).getR0Intervals().size()<2)
 							System.out.println("Bug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+i);
+						*/
 						}
 					
 				}
@@ -1162,13 +1274,59 @@ public class SequiturModel extends Observable {
 	        }
 	        
 		}
+/*
+	private void AnomalyDetection() {
+		ArrayList<RuleInterval> anomalyCandidate = new ArrayList<RuleInterval>();
+		int start = 0;
+		int end = 0;
+		for(int i = 0; i<r0.length; i++){
+			
+			if(!isNumeric(r0[i])){
+				end = getPositionInOriginalTrimedString(i)-1;
+				if(end>0) 
+					{
+						RuleInterval ruleInterval = new RuleInterval(start,end);
+						anomalyCandidate.add(ruleInterval);
+						System.out.println("r0[i]: "+r0[i]+ruleInterval);//anomalyCandidate.get(anomalyCandidate.size()-1));
+					}
+				start = end + 2;	
+			}
+			else if(Integer.valueOf(r0[i])<0){
+				end = getPositionInOriginalTrimedString(i)-1;
+				if(end>0) 
+					{
+						RuleInterval ruleInterval = new RuleInterval(start,end);
+						anomalyCandidate.add(ruleInterval);
+						System.out.println("r0[i]: "+r0[i]+ruleInterval);//anomalyCandidate.get(anomalyCandidate.size()-1));
+					}
+				start = end + 2;
+			}
+		}
+	}
+	*/
+	/*
+	private int getPositionInOriginalTrimedString(int index) {
+		int ans = -1;
+		int idx = index;
+		int iter = allMapToPreviousR0.size()-1;
+		//int ans = -1;
+		ArrayList<Integer> map = new ArrayList<Integer>();
+		while(iter>= 0){
+			map = allMapToPreviousR0.get(iter);
+			idx = map.get(idx);
+		}
+		ans = 
+		return ans;
+	}
 
+*/
 	private void drawOnMap(){
 			  // Generate All Motifs and record them on files respectively.
 			for(int i = 0; i<isCovered.length;i++)
 				isCovered[i] = true;
 		  	finalIntervals = new HashMap<String, ArrayList<RuleInterval>>();
 			ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
+			anomalyIntervals = new ArrayList<RuleInterval>();
 			routes = new ArrayList<ArrayList<Route>>();
 			int anomalyCount = 0;
 			int totalRuleCount = 0;
@@ -1191,6 +1349,12 @@ public class SequiturModel extends Observable {
 		    		finalIntervals.get(s).add(interval);
 		    	  	}
 		    	  }
+		    	  /*
+		    	   * 
+		    	   *   Don't consider subtrajectories < minBlocks as anomalies.
+		    	   * 
+		    	   */
+		    	  /*
 		    	  else{
 		    		  int unsatisfiedStartPos = mapToOriginalTS.get(i);
 			    	  int unsatisfiedEndPos;
@@ -1208,6 +1372,7 @@ public class SequiturModel extends Observable {
 			
 			    		}
 		    	  }
+		    	  */
 		    	}
 		    	else{
 		    		if(Integer.valueOf(s)<0)
@@ -1280,10 +1445,41 @@ public class SequiturModel extends Observable {
 		  				     routes.add(route);
 		
 		  		  }	
-		  			for (int i = 0;i<isCovered.length;i++){
-		  				  if(isCovered[i]==true)
-		  					  coverCount++;
+		  	
+		  			
+		  			int startAnomalyPos = 0;
+		  			int endAnomalyPos = 0;
+		  			int i = 0;
+		  			while  (i<isCovered.length){
+		  			//	System.out.println(i + " isCovered :"+isCovered[i]);
+		  				  if(isCovered[i])
+		  					  {
+		  					  	
+		  					  	coverCount++;
+		  					  	i++;
+		  					  	if(i<isCovered.length && lat.get(i)>-999 && !isCovered[i]){
+		  					  		startAnomalyPos = i;
+		  					  		endAnomalyPos = i;
+		  					  		
+		  					  		while(i<isCovered.length && lat.get(i)>-999&&!isCovered[i]){
+		  					  			endAnomalyPos = i;
+		  					  			
+		  					  			i++;
+		  					  			//System.out.println("inner loop :"+i);
+		  					  		}
+		  					  		
+		  					  		RuleInterval ri = new RuleInterval(startAnomalyPos,endAnomalyPos);
+	  					  			anomalyIntervals.add(ri);
+	  					  	//	System.out.println("new intervals :"+anomalyIntervals.size()+" : " + ri);
+		  					  	
+		  					  	}
+		  					  	
+		  					  }
+		  				  else
+		  					  i++;
+		  				
 		  			  }
+		  			  drawAnomaly();
 		  			  System.out.println("Cover Count: "+ coverCount);
 		  			  System.out.println("Anomaly Count: "+ anomalyCount);
 		  			  System.out.println("cover rate: " +(double)coverCount/isCovered.length);
@@ -1293,8 +1489,10 @@ public class SequiturModel extends Observable {
 		  }
 
 	private Integer getPositionsInTS(ArrayList<Integer> mapToPreviousR0,ArrayList<Integer> previousMapToOriginalTS, int index) {
-		
-		
+		/*
+		if(mapToPreviousR0.get(index)>76576)
+				System.out.println("index = "+index +" mapToPreviousR0.get(index) ="+mapToPreviousR0.get(index)+"  previousMapToOriginalTS.get(mapToPreviousR0.get(index))  ="+previousMapToOriginalTS.get(mapToPreviousR0.get(index)));
+	   */
 		return previousMapToOriginalTS.get(mapToPreviousR0.get(index));
 	}
 
@@ -1882,6 +2080,54 @@ public class SequiturModel extends Observable {
     public static ArrayList<Route> getRawTrajectory(){
     	return rawRoutes; 
     }
+    public static ArrayList<Route> getAnomaly(){
+    	return anomalyRoutes; 
+    }
+    private void drawAnomaly() {
+    	this.anomalyRoutes = new ArrayList<Route>();
+		
+		
+			
+  		for (int k=0;k<anomalyIntervals.size();k++)
+  				  {
+  					  Route singleRoute = new Route();
+  					  int startPos = anomalyIntervals.get(k).getStartPos();
+  						int endPos = anomalyIntervals.get(k).getEndPos();
+  						double distance = 0;
+  						/*
+  						for(int index=startPos; index<=endPos;index++)
+  							isCovered[index]=true;
+  							*/
+  		//				System.out.println("startPos: "+startPos);
+  		//				System.out.println("endPos: " +endPos);
+  						
+  					//	System.out.print("track#: "+counter+":       ");
+  						
+  						Location loca = new Location(lat.get(startPos),lon.get(startPos));
+  						//Location endLoc = new Location(lat.get(startPos),lon.get(startPos));
+  						
+  						for (int j = startPos; j<=endPos; j++){
+  							Location previousLoc =loca;
+  							loca = new Location(lat.get(j),lon.get(j));
+  							distance = distance + blocks.distance(blocks.findBlockIdForPoint(previousLoc), blocks.findBlockIdForPoint(loca)); 
+  							singleRoute.addLocation(lat.get(j), lon.get(j));
+  								
+  						
+  							
+  						}
+  						if (distance>0.1) // remove the false anomalies in the same block.
+  						{
+  						anomalyRoutes.add(singleRoute);
+  						}
+  				  }
+  		//		  System.out.println("position size: "+positions.size());
+  			//	  System.out.println("route size: "+route.size());
+  				
+  				  //  if(route.size()>2)
+
+  		  	
+}
+
 	public static String map2String(HashMap map){
 		  String string = new String();
 		  Iterator it = map.entrySet().iterator();
@@ -1908,8 +2154,8 @@ public class SequiturModel extends Observable {
 	   * @param str The string.
 	   * @return The number of spaces.
 	   */
-	  private static int countSpaces(String str) {
-	    int counter = 1;
+	  public static int countSpaces(String str) {
+	    int counter = 0;
 	    
 	    for (int i = 0; i < str.length(); i++) {
 	      if (str.charAt(i) == ' ') {
@@ -1931,5 +2177,57 @@ public class SequiturModel extends Observable {
 	    }  
 	    return true;  
 	  }
+
+	public static String parseRule(String string) {
+		StringBuffer sb = new StringBuffer();
+		//System.out.println("string: "+string);
+		ArrayList<String> sa = new ArrayList<String>();
+		String[] stringArray = string.split(" ");
+		for (String s:stringArray){
+			if (s.charAt(0)=='I')
+			{
+				if(s.contains("r")){
+					int rIndex = s.indexOf("r");
+					Integer iteration = Integer.valueOf(s.substring(1, rIndex));
+					Integer rule = Integer.valueOf(s.substring(rIndex+1));
+				//	System.out.println("s: "+s+" iteration: "+iteration+" rule: "+rule);
+					String subRule = parseRule(allRules.get(iteration).get(rule).getExpandedRuleString());
+					sa.add(subRule);
+			//		System.out.println(s+" = "+subRule );
+					
+				}
+				else if(s.contains("C")){
+					int cIndex = s.indexOf("C");
+					Integer iteration = Integer.valueOf(s.substring(1, cIndex));
+					Integer cluster = Integer.valueOf(s.substring(cIndex+1));
+				//	System.out.println("s: "+s+" iteration: "+iteration+" cluster: "+cluster);
+					Integer ruleInCluster = (Integer)allClusters.get(iteration).get(cluster).toArray()[0];
+					String subRule = parseRule(allRules.get(iteration).get(ruleInCluster).getExpandedRuleString());
+					sa.add(subRule);
+				//	System.out.println(s+" = "+subRule );
+	
+				}
+			}
+			else if (s.charAt(0)=='R'){
+				throw new IllegalArgumentException("expect 'I' encounter 'R'");
+			}
+			
+			else	//Base Case
+			{
+				Integer test = Integer.valueOf(s);
+				sa.add(s);
+		//		System.out.println("s: "+ s);
+			}
+		}
+		for (int i = 0; i<sa.size()-1;i++){
+			sb.append(sa.get(i));
+			sb.append(" ");
+		}
+		if(sa.size()>0)
+		   sb.append(sa.get(sa.size()-1));
+		//System.out.println("sb: "+sb.toString());
+		String ans = sb.toString();
+		return ans;
+	}
 
 }

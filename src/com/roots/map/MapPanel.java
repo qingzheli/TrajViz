@@ -240,6 +240,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
     private Rectangle magnifyRegion;
     private ArrayList<ArrayList<Route>> motifs;
     private ArrayList<Route> allTrajectory;
+    private ArrayList<Route> allAnomaly;
     private ArrayList<Double> routeLat;// = new ArrayList<Double>();
     private ArrayList<Double> routeLon;// = new ArrayList<Double>(); 
     public MapPanel() {
@@ -258,6 +259,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
           ruleDetails = -1;
           motifs = new ArrayList<ArrayList<Route>>();
           allTrajectory = new ArrayList<Route>();
+          allAnomaly = new ArrayList<Route>();
           setLayout(new MapLayout());
           setOpaque(true);
           setBackground(new Color(0xc0, 0xc0, 0xc0));
@@ -622,10 +624,13 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
               for (int i = 0; i<allTrajectory.size(); i++){
             	  route = allTrajectory.get(i);
             	  int size = route.getLats().size();
-            	  paintRoute(g,route.getLats(),route.getLons(),i,Color.GRAY);
+            	 // paintPoints(g,route.getLats().get(0),route.getLons().get(0),i,i+"S");
+                 // paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
+                 // paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,i+"E");
+            	  paintRoute(g,route.getLats(),route.getLons(),i,Color.GRAY,1);
             	  route = new Route();
               }
-            	
+              
               
               for (int i = 0; i< motifs.size(); i++){
             	 for(int j = 0; j<motifs.get(i).size();j++){ 
@@ -637,9 +642,18 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
           //    paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,msgStart);
              // paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
              // paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,msgEnd);
-              paintRoute(g,route.getLats(),route.getLons(),i, Color.BLUE);
+              paintRoute(g,route.getLats(),route.getLons(),i, Color.BLUE,1);
               route = new Route();
             	 }
+              }
+              for (int i = 0; i<allAnomaly.size(); i++){
+            	  route = allAnomaly.get(i);
+            	  int size = route.getLats().size();
+            	 // paintPoints(g,route.getLats().get(0),route.getLons().get(0),i,i+"S");
+                 // paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
+                 // paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,i+"E");
+            	  paintRoute(g,route.getLats(),route.getLons(),i,Color.RED,2);
+            	  route = new Route();
               }
             }
             else if(motifs.size()>0&&ruleDetails<motifs.size()){    // Display all routes under the same rule on right side.
@@ -649,8 +663,8 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
               int size = route.getLats().size();
               String msgStart = "M"+ruleDetails+"_T"+i+"S";
               String msgEnd = "M"+ruleDetails+"_T"+i+"E";
-              paintPoints(g,route.getLats().get(0),route.getLons().get(0),i,msgStart);
-              paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,msgEnd);
+        //      paintPoints(g,route.getLats().get(0),route.getLons().get(0),i,msgStart);
+         //     paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,msgEnd);
               paintRoute(g,route.getLats(),route.getLons(),i);
               route = new Route();
               }
@@ -684,6 +698,9 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
     public void setAllTrajectories(ArrayList<Route> allTrajectory){
     	this.allTrajectory = allTrajectory;
     }
+    public void setAllAnomalies(ArrayList<Route> allAnomaly){
+    	this.allAnomaly = allAnomaly;
+    }
     // set which rule to be displayed in details
     public void setRuleDetails(int filteredRule){
     	if(filteredRule>=0)
@@ -694,7 +711,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 	 * Draws a filled circle with given radius around each position.
 	 * Or resets and removes all positions from panel. 
 	 */
-	public void paintRoute(Graphics2D g, ArrayList<Double> latitudes, ArrayList<Double> longitudes,int index, Color color){
+	public void paintRoute(Graphics2D g, ArrayList<Double> latitudes, ArrayList<Double> longitudes,int index, Color color, int stroke){
 		//g.setColor(Color.red);
 		float h,s,b,transparency;
 	//	Random randomGenerator = new Random();
@@ -727,7 +744,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 	//	g.drawPolyline(xPoints, yPoints, nPoints);
 
 		g.setPaintMode();
-		g.setStroke(new BasicStroke(4));
+		g.setStroke(new BasicStroke(stroke));
 		g.drawPolyline(xPoints, yPoints, latitudes.size());
 		
 		
@@ -767,7 +784,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 	//	g.drawPolyline(xPoints, yPoints, nPoints);
 
 		g.setPaintMode();
-		g.setStroke(new BasicStroke(4));
+		g.setStroke(new BasicStroke(2));
 		g.drawPolyline(xPoints, yPoints, latitudes.size());
 		
 		
@@ -789,7 +806,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 		g.setColor(Color.getHSBColor(h, s, b));
 		//g.setColor(Color.black);
 		transparency = (float) 0.9;
-		g.setFont(new Font("helvetica",Font.ITALIC,8));
+		g.setFont(new Font("helvetica",Font.BOLD,20));
 		
 	//	g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, transparency));
 		g.setPaintMode();

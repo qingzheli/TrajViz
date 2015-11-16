@@ -162,7 +162,7 @@ public static ArrayList<Integer> toArrayList(String rule) {
 private double avgDTWDistance(Blocks blocks,ArrayList<Integer> s,
 		ArrayList<Integer> t) {
 	double totalDistance = 0;
-	System.out.print("s::::::::::size:"+s.size());
+/*	System.out.print("s::::::::::size:"+s.size());
 	
 	for(int i=0; i<s.size();i++)
 		System.out.print(" "+s.get(i));
@@ -174,6 +174,7 @@ private double avgDTWDistance(Blocks blocks,ArrayList<Integer> s,
 		System.out.print(" "+t.get(i));
 		
 	System.out.println();
+	*/
 	int n = s.size();
 	int m = t.size();
 	double[][] DTW = new double[n+1][m+1];
@@ -220,7 +221,7 @@ private double avgDTWDistance(Blocks blocks,ArrayList<Integer> s,
 //	System.out.println("avgDTW:::::"+avg);
 */
 	//System.out.println("avg : totalDistance"+avg+" : "+totalDistance);
-	avg = avg* (2*avg/totalDistance);
+	avg = avg* (avg/totalDistance);
 	return avg;
 }
 
