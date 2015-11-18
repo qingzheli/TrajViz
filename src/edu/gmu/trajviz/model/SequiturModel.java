@@ -55,7 +55,7 @@ public class SequiturModel extends Observable {
 	private static final String SPACE = " ";
 	private static final String CR = "\n";
 	private static final int STEP = 2;
-	private static final int DEFAULT_TIME_GAP = 80;
+	private static final int DEFAULT_TIME_GAP = 6;
     private boolean[] isCovered;
 
 //	private static final int NOISYELIMINATIONTHRESHOLD = 5;
@@ -203,7 +203,7 @@ public class SequiturModel extends Observable {
 					  int value2 = Integer.parseInt(lineSplit[2]);
 					  int value3 = Integer.parseInt(lineSplit[3]);
 					  
-					  if((lineCounter<=1)||(Math.abs(value3-timeAsUnixEpoc.get(timeAsUnixEpoc.size()-1))<=DEFAULT_TIME_GAP))
+					  if((lineCounter<=1)||(Math.abs(value3-timeAsUnixEpoc.get(timeAsUnixEpoc.size()-1))<=DEFAULT_TIME_GAP &&(value3-timeAsUnixEpoc.get(timeAsUnixEpoc.size()-1))!=0))
 					  {
 						  
 					  
@@ -797,7 +797,7 @@ public class SequiturModel extends Observable {
 		         
 	
 		          
-		    
+		       //  if(this.alphabetSize<=100)
 		          clusterRules();
 		       
 		          {
@@ -1121,7 +1121,7 @@ public class SequiturModel extends Observable {
 			 */
 	        filterMap = new HashMap<Integer,Integer>();
 	        for (int i = 0; i<rules.size();i++){
-					if ((rules.get(i).frequencyInR0()>=1))//&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=minBlocks))//||
+					if ((rules.get(i).frequencyInR0()>=1&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>3))//||
 						//	(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getR0Intervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
 						{
 						//HashSet<Integer> set = new HashSet<Integer>();
@@ -1331,8 +1331,12 @@ public class SequiturModel extends Observable {
 			int anomalyCount = 0;
 			int totalRuleCount = 0;
 		  	immergableRuleCount = 0;
-		    for (int i = 0 ; i<r0.length; i++){
-		    	String s = r0[i];
+		    //for (int i = 0 ; i<r0.length; i++){
+		  	int i = 0;
+		  	int cnt = 0;
+		    while (i<r0.length){
+		 //   	System.out.println("i:"+i);
+		  		String s = r0[i];
 		    	if(!isNumeric(s)){
 		    	
 		    	  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
@@ -1349,6 +1353,7 @@ public class SequiturModel extends Observable {
 		    		finalIntervals.get(s).add(interval);
 		    	  	}
 		    	  }
+		    	  i++;
 		    	  /*
 		    	   * 
 		    	   *   Don't consider subtrajectories < minBlocks as anomalies.
@@ -1375,18 +1380,32 @@ public class SequiturModel extends Observable {
 		    	  */
 		    	}
 		    	else{
-		    		if(Integer.valueOf(s)<0)
-		    		;
-		    			//	System.out.println(s);
-		    		else{
-		    	  int numStartPos = mapToOriginalTS.get(i);
-		    	  int numEndPos;
-		    	  if(i==(r0.length-1))
-		    		  numEndPos = mapToOriginalTS.get(i);
-		    	  else
-		    	  {
-		    		  numEndPos = mapToOriginalTS.get((i+1))-1;
-		    	  }
+		    		int numStartPos = mapToOriginalTS.get(i);
+			    	  int numEndPos;
+			    	  if(Integer.valueOf(r0[i])>=0&&(getNextNonTerminal(i)-i)>=minBlocks){
+		    	     
+		    	 
+		    		  int nextNonTerminal = getNextNonTerminal(i);
+		    		  
+		    		  
+		    		  if(nextNonTerminal>=r0.length)
+		    			  nextNonTerminal = r0.length-1;
+		    		  
+		    		//  System.out.println("ii:"+i);
+		    		  numEndPos = mapToOriginalTS.get(nextNonTerminal)-1;
+		    		/*
+		    		  System.out.print(cnt+": [");
+		    		  cnt++;
+		    		  for (int a = i; a<=nextNonTerminal; a++)
+		    			  {
+		    			  	System.out.print(" "+parseRule(r0[a]));
+		    			  
+		    			  }
+		    		  System.out.println("]");
+		    		  */
+		    		//  System.out.println("i_nextNon : "+i+":"+nextNonTerminal+"["+numStartPos+"-"+numEndPos);
+		    		//  numEndPos = mapToOriginalTS.get((i+minBlocks))-1;
+		    	  
 		    	  for(int pos = numStartPos; pos<=numEndPos; pos++)
 		    		{
 		    		  
@@ -1394,9 +1413,13 @@ public class SequiturModel extends Observable {
 			    	  anomalyCount++;
 		
 		    		}
+		    	  i = nextNonTerminal;
 		    	}
+			    	  else
+			    		  i++;
 		    	}
 		    }
+		    System.out.println("r0.length="+r0.length);
 		    
 		    	    coverCount = 0;
 		  	Iterator it = finalIntervals.entrySet().iterator();
@@ -1406,9 +1429,9 @@ public class SequiturModel extends Observable {
 		  		ruleIntervals.add(pair.getValue());
 		  	}
 		  	totalSubTrajectory = 0;
-		  	for (int i = 0; i<ruleIntervals.size();i++){
-		  		totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i).size();
-		  		ArrayList<RuleInterval> positions = ruleIntervals.get(i);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
+		  	for (int i1 = 0; i1<ruleIntervals.size();i1++){
+		  		totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i1).size();
+		  		ArrayList<RuleInterval> positions = ruleIntervals.get(i1);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
 				int counter = 0;
 		  		ArrayList<Route> route = new ArrayList<Route>();
 		  			
@@ -1449,22 +1472,22 @@ public class SequiturModel extends Observable {
 		  			
 		  			int startAnomalyPos = 0;
 		  			int endAnomalyPos = 0;
-		  			int i = 0;
-		  			while  (i<isCovered.length){
+		  			int i1 = 0;
+		  			while  (i1<isCovered.length){
 		  			//	System.out.println(i + " isCovered :"+isCovered[i]);
-		  				  if(isCovered[i])
+		  				  if(isCovered[i1])
 		  					  {
 		  					  	
 		  					  	coverCount++;
-		  					  	i++;
-		  					  	if(i<isCovered.length && lat.get(i)>-999 && !isCovered[i]){
-		  					  		startAnomalyPos = i;
-		  					  		endAnomalyPos = i;
+		  					  	i1++;
+		  					  	if(i1<isCovered.length && lat.get(i1)>-999 && !isCovered[i1]){
+		  					  		startAnomalyPos = i1;
+		  					  		endAnomalyPos = i1;
 		  					  		
-		  					  		while(i<isCovered.length && lat.get(i)>-999&&!isCovered[i]){
-		  					  			endAnomalyPos = i;
+		  					  		while(i1<isCovered.length && lat.get(i1)>-999&&!isCovered[i1]){
+		  					  			endAnomalyPos = i1;
 		  					  			
-		  					  			i++;
+		  					  			i1++;
 		  					  			//System.out.println("inner loop :"+i);
 		  					  		}
 		  					  		
@@ -1476,7 +1499,7 @@ public class SequiturModel extends Observable {
 		  					  	
 		  					  }
 		  				  else
-		  					  i++;
+		  					  i1++;
 		  				
 		  			  }
 		  			  drawAnomaly();
@@ -1487,6 +1510,37 @@ public class SequiturModel extends Observable {
 		  		//	evaluateResult();
 				
 		  }
+
+	private int getNextNonTerminal(int i) {
+		int j = i+1;
+	//	System.out.println("j: "+j);
+		while(j<r0.length&&isNumeric(r0[j])&&Integer.valueOf(r0[j])>=0)
+		{
+			j++;
+			
+		}
+		
+		return j;
+	}
+
+	private boolean isNumberAhead( int i) {
+		
+		for (int j = i; j<r0.length&&j<(i+minBlocks);j++)
+			{
+				if(!isNumeric(r0[j])||Integer.valueOf(r0[j])<0)
+			
+				return false;
+			}
+		
+		System.out.print("r0_"+i+"_"+(i+minBlocks-1)+": [");
+		for (int j = i; j<r0.length&&j<(i+minBlocks);j++)
+		{
+			System.out.print(r0[j]+" ");
+		}
+		System.out.println("]");
+		
+		return true;
+	}
 
 	private Integer getPositionsInTS(ArrayList<Integer> mapToPreviousR0,ArrayList<Integer> previousMapToOriginalTS, int index) {
 		/*

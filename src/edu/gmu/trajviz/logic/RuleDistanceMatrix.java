@@ -221,6 +221,7 @@ private double avgDTWDistance(Blocks blocks,ArrayList<Integer> s,
 //	System.out.println("avgDTW:::::"+avg);
 */
 	//System.out.println("avg : totalDistance"+avg+" : "+totalDistance);
+	
 	avg = avg* (avg/totalDistance);
 	return avg;
 }

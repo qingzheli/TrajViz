@@ -263,7 +263,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
           setLayout(new MapLayout());
           setOpaque(true);
           setBackground(new Color(0xc0, 0xc0, 0xc0));
-    //      add(overlayPanel);
+       //   add(overlayPanel);
           add(controlPanel);
         addMouseListener(mouseListener);
         addMouseMotionListener(mouseListener);
@@ -649,9 +649,9 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
               for (int i = 0; i<allAnomaly.size(); i++){
             	  route = allAnomaly.get(i);
             	  int size = route.getLats().size();
-            	 // paintPoints(g,route.getLats().get(0),route.getLons().get(0),i,i+"S");
+           // 	  paintPoints(g,route.getLats().get(0),route.getLons().get(0),i,i+"S");
                  // paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
-                 // paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,i+"E");
+             //     paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,i+"E");
             	  paintRoute(g,route.getLats(),route.getLons(),i,Color.RED,2);
             	  route = new Route();
               }
@@ -765,9 +765,12 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 		s = (float)(1/((index+1)*0.5));
 		b = index;
 		*/
-		transparency = (float) 0.4;
-		g.setColor(Color.getHSBColor(h, s, b));
-//		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, transparency));
+		transparency = (float) 0.1;
+		//g.setColor(Color.getHSBColor(h, s, b));
+		
+		g.setColor(new Color(0f,0f,1f,transparency));
+		
+		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, transparency));
 		int[] xPoints = new int[longitudes.size()];
 		int[] yPoints = new int[latitudes.size()];
 		Point[] p = new Point[latitudes.size()];
@@ -784,7 +787,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 	//	g.drawPolyline(xPoints, yPoints, nPoints);
 
 		g.setPaintMode();
-		g.setStroke(new BasicStroke(2));
+		g.setStroke(new BasicStroke(6));
 		g.drawPolyline(xPoints, yPoints, latitudes.size());
 		
 		

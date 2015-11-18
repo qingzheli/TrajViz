@@ -463,7 +463,8 @@ public class SequiturView implements Observer, ActionListener{
 		    logTextArea.setCaretPosition(logTextArea.getDocument().getLength());
 		    logTextPane.setBorder(BorderFactory.createEtchedBorder(BevelBorder.LOWERED));
 		    logTextPane.setAutoscrolls(true);
-		    log(Level.INFO, "running TrajViz 1.0 demo");		
+		    log(Level.INFO, "running TrajViz 1.0 demo");
+		    log(Level.INFO, "require data file format: latitude, longitude, status, time in UNIX epoch format");
 	}
 	  /**
 	   * Logs message.
