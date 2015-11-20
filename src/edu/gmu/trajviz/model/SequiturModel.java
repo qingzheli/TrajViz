@@ -1445,6 +1445,7 @@ public class SequiturModel extends Observable {
 
 		  		ruleIntervals.add(pair.getValue());
 		  	}
+		  	
 		  	totalSubTrajectory = 0;
 		  	for (int i1 = 0; i1<ruleIntervals.size();i1++){
 		  		totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i1).size();
