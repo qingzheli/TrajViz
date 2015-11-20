@@ -536,6 +536,7 @@ public class SequiturView implements Observer, ActionListener{
 	        mapPanel1.setZoom(12);
 	     //   mapPanel1.setRuleDetails(-1);
 			  double lat = SequiturModel.getLatitudeCenter();
+			  
 			  double lon = SequiturModel.getLongitudeCenter();
 			  System.out.println("View:  lat:  "+lat+"       lon: "+lon);
 			  Point position = mapPanel.computePosition(new Point2D.Double(lon, lat));

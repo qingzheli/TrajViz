@@ -620,6 +620,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
             paintInternal(g);
             if(ruleDetails<0||ruleDetails>motifs.size())    // Display all motifs on left side map
             {
+            	
               // draw all Trajectories in grey
               for (int i = 0; i<allTrajectory.size(); i++){
             	  route = allTrajectory.get(i);
@@ -630,7 +631,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
             	  paintRoute(g,route.getLats(),route.getLons(),i,Color.GRAY,1);
             	  route = new Route();
               }
-              
+            
               
               for (int i = 0; i< motifs.size(); i++){
             	 for(int j = 0; j<motifs.get(i).size();j++){ 

@@ -55,8 +55,9 @@ public class SequiturModel extends Observable {
 	private static final String SPACE = " ";
 	private static final String CR = "\n";
 	private static final int STEP = 2;
-	private static final int DEFAULT_TIME_GAP = 6;
+	private static final int DEFAULT_TIME_GAP = 6;//180;
     private boolean[] isCovered;
+    private boolean[] ruleCovered;
 
 //	private static final int NOISYELIMINATIONTHRESHOLD = 5;
 	private int alphabetSize;
@@ -387,6 +388,7 @@ public class SequiturModel extends Observable {
 
 		  SequiturModel.sortedRuleMap = new TreeMap<String, GrammarRuleRecord>(expandedRuleComparator);
 		  isCovered= new boolean[lat.size()];
+		  ruleCovered = new boolean[lat.size()];
 		  hasNewCluster = true;
 		  StringBuffer sb = new StringBuffer();
 		  if (null == this.lat ||null == this.lon|| this.lat.size()==0 || this.lon.size()==0 ){
@@ -540,6 +542,7 @@ public class SequiturModel extends Observable {
 		  
 		  for(int i=0;i<lat.size();i++){
 			  isCovered[i] = true;
+			 
 			/*  if((i%paaSize)==0){
 			  
 			  }
@@ -1121,7 +1124,7 @@ public class SequiturModel extends Observable {
 			 */
 	        filterMap = new HashMap<Integer,Integer>();
 	        for (int i = 0; i<rules.size();i++){
-					if ((rules.get(i).frequencyInR0()>=1&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>3))//||
+					if ((rules.get(i).frequencyInR0()>=1&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=3))//||
 						//	(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getR0Intervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
 						{
 						//HashSet<Integer> set = new HashSet<Integer>();
@@ -1323,7 +1326,10 @@ public class SequiturModel extends Observable {
 	private void drawOnMap(){
 			  // Generate All Motifs and record them on files respectively.
 			for(int i = 0; i<isCovered.length;i++)
-				isCovered[i] = true;
+				{
+					isCovered[i] = true;
+					ruleCovered[i] = false;
+				}
 		  	finalIntervals = new HashMap<String, ArrayList<RuleInterval>>();
 			ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
 			anomalyIntervals = new ArrayList<RuleInterval>();
@@ -1334,17 +1340,25 @@ public class SequiturModel extends Observable {
 		    //for (int i = 0 ; i<r0.length; i++){
 		  	int i = 0;
 		  	int cnt = 0;
+		  	int totalRuleLength = 0;
+		  	int amountR0RuleLength = 0;
+		  	int nonTerminalCounter = 0;
+		  //	int totalNonTerminal = 0;
 		    while (i<r0.length){
 		 //   	System.out.println("i:"+i);
 		  		String s = r0[i];
 		    	if(!isNumeric(s)){
-		    	
+		    	  nonTerminalCounter++;	
+		    	  amountR0RuleLength = amountR0RuleLength + countSpaces(RuleDistanceMatrix.parseRule(s));  	
 		    	  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
 			  //  	System.out.println("r0: "+i+" : "+r0[i]+" : "+RuleDistanceMatrix.parseRule(s));
 		
 		          int startPos = mapToOriginalTS.get(i);
 		    	  int endPos = mapToOriginalTS.get((i+1))-1;
-		    	  RuleInterval interval = new RuleInterval(startPos,endPos);	
+		    	  RuleInterval interval = new RuleInterval(startPos,endPos);
+		    	  for (int a = startPos; a<=endPos; a++){
+		    		  ruleCovered[a] = true;
+		    	  }
 		    	  	if (!finalIntervals.containsKey(s)){
 		    		finalIntervals.put(s, new ArrayList<RuleInterval>());
 		    		finalIntervals.get(s).add(interval);
@@ -1382,7 +1396,7 @@ public class SequiturModel extends Observable {
 		    	else{
 		    		int numStartPos = mapToOriginalTS.get(i);
 			    	  int numEndPos;
-			    	  if(Integer.valueOf(r0[i])>=0&&(getNextNonTerminal(i)-i)>=minBlocks){
+			    	  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=minBlocks){
 		    	     
 		    	 
 		    		  int nextNonTerminal = getNextNonTerminal(i);
@@ -1405,7 +1419,7 @@ public class SequiturModel extends Observable {
 		    		  */
 		    		//  System.out.println("i_nextNon : "+i+":"+nextNonTerminal+"["+numStartPos+"-"+numEndPos);
 		    		//  numEndPos = mapToOriginalTS.get((i+minBlocks))-1;
-		    	  
+		    	 
 		    	  for(int pos = numStartPos; pos<=numEndPos; pos++)
 		    		{
 		    		  
@@ -1413,6 +1427,7 @@ public class SequiturModel extends Observable {
 			    	  anomalyCount++;
 		
 		    		}
+		    		
 		    	  i = nextNonTerminal;
 		    	}
 			    	  else
@@ -1426,6 +1441,8 @@ public class SequiturModel extends Observable {
 		  	while (it.hasNext()){
 		  		@SuppressWarnings("unchecked")
 				Map.Entry<String,ArrayList<RuleInterval>> pair = (Map.Entry<String,ArrayList<RuleInterval>>)it.next();
+		    	  totalRuleLength = totalRuleLength + countSpaces(RuleDistanceMatrix.parseRule(pair.getKey()));
+
 		  		ruleIntervals.add(pair.getValue());
 		  	}
 		  	totalSubTrajectory = 0;
@@ -1472,7 +1489,22 @@ public class SequiturModel extends Observable {
 		  			
 		  			int startAnomalyPos = 0;
 		  			int endAnomalyPos = 0;
+		  			int anomalyCount1 = 0;
+		  			
+		  			
+		  			
+		  			
+		  			for (int a = 0; a<isCovered.length;a++){
+		  				if(!isCovered[a]){
+		  					anomalyCount1++;
+		  					//System.out.println("i: "+a+"\t block: "+blocks.findBlockIdForPoint(new Location(lat.get(a),lon.get(a))));
+		  				}
+		  			}
 		  			int i1 = 0;
+		  			
+		  			
+		  			
+		  			
 		  			while  (i1<isCovered.length){
 		  			//	System.out.println(i + " isCovered :"+isCovered[i]);
 		  				  if(isCovered[i1])
@@ -1498,14 +1530,32 @@ public class SequiturModel extends Observable {
 		  					  	}
 		  					  	
 		  					  }
+		  				  /*
+		  				  if(ruleCovered[i1]){
+		  					  
+		  				  }
+		  				  */
 		  				  else
 		  					  i1++;
 		  				
 		  			  }
+		  			int ruleCoverCount = 0;
+		  			
+		  			
+		  			
+		  			for (int a = 0;a<ruleCovered.length;a++){
+		  				if(ruleCovered[a])
+		  					ruleCoverCount++;
+		  			}
 		  			  drawAnomaly();
 		  			  System.out.println("Cover Count: "+ coverCount);
-		  			  System.out.println("Anomaly Count: "+ anomalyCount);
-		  			  System.out.println("cover rate: " +(double)coverCount/isCovered.length);
+		  			  System.out.println("Anomaly Count/count1: "+ anomalyCount+","+ anomalyCount1 );
+		  			  
+		  			  System.out.println("isCover rate: " +(double)coverCount/(isCovered.length-trajCounter));
+		  			  System.out.println("satisfied rules: "+finalIntervals.size()+ " longRuleRate: ");
+		  			  System.out.println("RuleCoverCount: "+ruleCoverCount+" RuleCoverRate: "+(double)ruleCoverCount/(ruleCovered.length-trajCounter));
+		  			  System.out.println("total number of rules in R0: "+finalIntervals.size()+ "avg rule length: "+ (double)totalRuleLength/finalIntervals.size());
+		  			  System.out.println("total number of nonterminals in R0: "+nonTerminalCounter+ " avg rule length in R0: "+ (double)amountR0RuleLength/nonTerminalCounter);
 		  		 
 		  		//	evaluateResult();
 				
