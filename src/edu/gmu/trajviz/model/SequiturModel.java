@@ -56,6 +56,7 @@ public class SequiturModel extends Observable {
 	private static final String CR = "\n";
 	private static final int STEP = 2;
 	private static final int DEFAULT_TIME_GAP = 6;//180;
+//	private static final int DEFAULT_TIME_GAP = 180;
     private boolean[] isCovered;
     private boolean[] ruleCovered;
 
@@ -99,9 +100,11 @@ public class SequiturModel extends Observable {
 	private static ArrayList<Route> rawRoutes;  
 	private static ArrayList<Route> anomalyRoutes;
 	public ArrayList<Double> lat;
-	public ArrayList<Double> paaLat;
-	public ArrayList<Double> paaLon;
+	//public ArrayList<Double> paaLat;
+	//public ArrayList<Double> paaLon;
 	public ArrayList<Double> lon;
+	public ArrayList<Double> latOri;
+	public ArrayList<Double> lonOri;
 	private MotifChartData chartData;
 	private ArrayList<ArrayList<RuleInterval>> ruleIntervals;
 	private ArrayList<RuleInterval> rawAllIntervals;
@@ -266,8 +269,8 @@ public class SequiturModel extends Observable {
 		  }
 		  
 		
-			  this.lat = new ArrayList<Double>();
-			  this.lon = new ArrayList<Double>();
+			  this.latOri = new ArrayList<Double>();
+			  this.lonOri = new ArrayList<Double>();
 			  
 		latMax = Double.valueOf(data.get(0));
 		lonMax = Double.valueOf(data1.get(0));
@@ -277,8 +280,8 @@ public class SequiturModel extends Observable {
 			  double temp_latitude = Double.valueOf(data.get(i));
 			  double temp_longitude = Double.valueOf(data1.get(i));
 			//  System.out.println("i = "+i+": "+temp_latitude+","+temp_longitude);
-			  this.lat.add(temp_latitude);
-			  this.lon.add(temp_longitude);
+			  this.latOri.add(temp_latitude);
+			  this.lonOri.add(temp_longitude);
 			  if((temp_latitude>=-90)&&temp_latitude>latMax)
 				  
 				  {
@@ -304,13 +307,13 @@ public class SequiturModel extends Observable {
 		  System.out.println("lonMax:  "+lonMax+"       lonMin: "+lonMin);
 		  System.out.println("latMax:  "+latMax+"       latMin: "+latMin);
 		  System.out.println("Number of trajectories: "+trajCounter);
-		  consoleLogger.debug("loaded " + this.lat.size() + " points and "+trajCounter+" Trajecoties... ");
-		  this.log("loaded " + this.lat.size() + " points from " + this.dataFileName);
+		  consoleLogger.debug("loaded " + this.latOri.size() + " points and "+trajCounter+" Trajecoties... ");
+		  this.log("loaded " + this.latOri.size() + " points from " + this.dataFileName);
 		  
 		  
 		  
 		  setChanged();
-		  notifyObservers(new SequiturMessage(SequiturMessage.TIME_SERIES_MESSAGE, this.lat,this.lon));
+		  notifyObservers(new SequiturMessage(SequiturMessage.TIME_SERIES_MESSAGE, this.latOri,this.lonOri));
 		  
 	}
 	  public static double getLatitudeCenter(){
@@ -338,6 +341,8 @@ public class SequiturModel extends Observable {
 		  this.allMapToOriginalTS = new ArrayList<ArrayList<Integer>>();
 		  this.rawRoutes = new ArrayList<Route>();
 		  this.anomalyRoutes = new ArrayList<Route>();
+		  this.lat = new ArrayList<Double>();
+		  this.lon = new ArrayList<Double>();
 		  Comparator<String> expandedRuleComparator = new Comparator<String>(){
 			  @Override public int compare(String r1, String r2)
 			  {
@@ -387,11 +392,10 @@ public class SequiturModel extends Observable {
 		  };
 
 		  SequiturModel.sortedRuleMap = new TreeMap<String, GrammarRuleRecord>(expandedRuleComparator);
-		  isCovered= new boolean[lat.size()];
-		  ruleCovered = new boolean[lat.size()];
+		  
 		  hasNewCluster = true;
 		  StringBuffer sb = new StringBuffer();
-		  if (null == this.lat ||null == this.lon|| this.lat.size()==0 || this.lon.size()==0 ){
+		  if (null == this.latOri ||null == this.lonOri|| this.latOri.size()==0 || this.lonOri.size()==0 ){
 			  this.log("unable to \"Process data\" - no data were loaded...");
 		  }
 		  else{
@@ -411,6 +415,7 @@ public class SequiturModel extends Observable {
 			 // beginTime  =  System.nanoTime();
 			  System.out.println("begin time: "+beginTime);
 		  buildModel();
+		 
 		  /*
 		  for (int i = 0; i<rawAllIntervals.size();i++)
 			  System.out.println("Trajectory "+i+":" + rawAllIntervals.get(i));
@@ -519,10 +524,10 @@ public class SequiturModel extends Observable {
 	  
 	  private void buildModel() {
 		 routes = new ArrayList< ArrayList<Route>>();
-		  paaLat = new ArrayList<Double>();
-		  paaLon = new ArrayList<Double>();
-		  ArrayList<Double> latBuffer=new ArrayList<Double>();
-		  ArrayList<Double> lonBuffer=new ArrayList<Double>();
+		//  paaLat = new ArrayList<Double>();
+		//  paaLon = new ArrayList<Double>();
+		//  ArrayList<Double> latBuffer=new ArrayList<Double>();
+		//  ArrayList<Double> lonBuffer=new ArrayList<Double>();
 		  double avgLat;
 		  double avgLon;
 		  /*
@@ -540,38 +545,45 @@ public class SequiturModel extends Observable {
 		  */
 		   // System.out.println("Should not see this msg.");
 		  
+		  
+		  
+		  
+		  
+
+	//	  System.out.println("oriLon" + lon);
+		 
+		  
+		  blocks = new Blocks(alphabetSize,latMin,latMax,lonMin,lonMax);
+		  double latCut = blocks.latCut;
+		  double lonCut = blocks.lonCut;
+		  resample(latCut,lonCut);
+		  isCovered= new boolean[lat.size()];
+		  ruleCovered = new boolean[lat.size()];
 		  for(int i=0;i<lat.size();i++){
 			  isCovered[i] = true;
-			 
+			 // System.out.println(lat.get(i)+" , "+lon.get(i));
 			/*  if((i%paaSize)==0){
 			  
 			  }
 			  */
-			  latBuffer.add(lat.get(i));
-			  lonBuffer.add(lon.get(i));
-			  if((i+1==lat.size())||((i+1)%1)==0){
+			//  latBuffer.add(lat.get(i));
+			 // lonBuffer.add(lon.get(i));
+			 // if((i+1==lat.size())||((i+1)%1)==0){
 				  //compute the avg of the buffered arrayList into paaLat and paaLon
-				  avgLat = avg(latBuffer);
-				  avgLon = avg(lonBuffer);
+				//  avgLat = avg(latBuffer);
+				//  avgLon = avg(lonBuffer);
+				  /*
 				  for(int j=0; j<latBuffer.size();j++){
 					  paaLat.add(avgLat);
 					  paaLon.add(avgLon);
 				  }
+				  */
 				  // refresh
-				  latBuffer=new ArrayList<Double>();
-				  lonBuffer=new ArrayList<Double>();
-			  }
+				 // latBuffer=new ArrayList<Double>();
+				 // lonBuffer=new ArrayList<Double>();
+			  //}
 			  
 		  }
-		  
-		/*  
-		  System.out.println("oriLat" + lat);
-		  System.out.println("paaLat:  " +paaLat);
-		  System.out.println("oriLon" + lon);
-		  System.out.println("paaLon:  " +paaLon);
-		  */
-		  blocks = new Blocks(alphabetSize,latMin,latMax,lonMin,lonMax);
-		  
 		  words = new ArrayList<String>();
 		  // add all points into blocks.
 		  Integer previousId=(Integer)(-1);
@@ -582,8 +594,8 @@ public class SequiturModel extends Observable {
 		  mapToOriginalTS = new ArrayList<Integer>();
 		  int startPoint = 0;
 		  int endPoint = 0;
-		  for (int i = 0; i<paaLat.size();i++){
-			  Location loc = new Location(paaLat.get(i),paaLon.get(i));
+		  for (int i = 0; i<lat.size();i++){
+			  Location loc = new Location(lat.get(i),lon.get(i));
 			//  blocks.addPoint2Block(loc); this should not work here because the point will change if it is a noisy point.
 			  Integer id = new Integer(blocks.findBlockIdForPoint(loc));
 			  /*
@@ -642,6 +654,68 @@ public class SequiturModel extends Observable {
 		 		
 	}
 
+	/*
+	 * resample latitude and longitude when two points skip blocks.
+	 */
+	private void resample(double latCut, double lonCut) {
+		int i = 1;
+		double latPre = latOri.get(0);
+		double lonPre = lonOri.get(0);
+		lat.add(latPre);
+		lon.add(lonPre);
+		boolean firstPoint = true;
+		while(i<latOri.size())
+		{
+		/*	
+			if (i>10000000)
+				throw new ArrayIndexOutOfBoundsException(lat.size());
+			*/
+			
+			if(latOri.get(i)<-180)
+				{
+					lat.add(latOri.get(i));
+					lon.add(lonOri.get(i));
+					i++;
+					firstPoint = true;
+				}
+			else{
+				if(firstPoint){
+					lat.add(latOri.get(i));
+					lon.add(lonOri.get(i));
+					i++;
+					firstPoint = false;
+				}
+				else{
+				double latStep = Math.abs(latOri.get(i)-latOri.get(i-1));
+				double lonStep = Math.abs(lonOri.get(i)-lonOri.get(i-1));
+				
+				if(latStep>latCut||lonStep>lonCut){
+					int skip = Math.max((int)Math.round(latStep/latCut),(int)Math.round(lonStep/lonCut));
+					double latstep = (latOri.get(i)-latOri.get(i-1))/skip;
+					double lonstep = (lonOri.get(i)-lonOri.get(i-1))/skip;
+					for (int j = 0; j<skip; j++){
+						lat.add((latOri.get(i-1)+latstep*(j+1)));
+						lon.add((lonOri.get(i-1)+lonstep*(j+1)));
+						//  System.out.println(lat.get(i+j)+" , "+lon.get(i+j));
+
+					}
+					lat.add(latOri.get(i));
+					lon.add(lonOri.get(i));
+					i++;
+				}
+				else
+					{
+					lat.add(latOri.get(i));
+					lon.add(lonOri.get(i));
+					i++;
+					}
+				}
+			}
+			
+		}
+		
+	}
+
 	private void drawRawTrajectories() {
 		
 		
@@ -681,7 +755,7 @@ public class SequiturModel extends Observable {
 	}
 
 	private void runSequitur(int iteration) {
-			chartData = new MotifChartData(this.dataFileName, paaLat, paaLon, 1, alphabetSize); //PAA is always 1.
+			chartData = new MotifChartData(this.dataFileName, lat, lon, 1, alphabetSize); //PAA is always 1.
 			  clusters = new ArrayList<HashSet<Integer>>();
 			  filter = new ArrayList<Integer>();
 			  clusterMap = new HashMap<Integer,Integer>();
@@ -690,7 +764,7 @@ public class SequiturModel extends Observable {
 				try{
 				  SAXRecords saxFrequencyData = null;
 				  saxFrequencyData = SequiturFactory.entries2SAXRecords(trimedTrack);
-				  System.out.println("String: " + saxFrequencyData.getSAXString(SPACE));
+				  System.out.println("Input String Length: " + countSpaces(saxFrequencyData.getSAXString(SPACE)));
 				  consoleLogger.trace("String: " + saxFrequencyData.getSAXString(SPACE));
 				//  System.out.println("String: "+ saxFrequencyData.getSAXString(SPACE));
 				  consoleLogger.debug("running sequitur...");
@@ -2122,7 +2196,7 @@ public class SequiturModel extends Observable {
 		  if((i+noiseThreshold)>lat.size())
 			  return false;
 		  for(int j = 1; j<noiseThreshold;j++)
-		  {	Location loc = new Location(paaLat.get(i+j),paaLon.get(i+j));
+		  {	Location loc = new Location(lat.get(i+j),lon.get(i+j));
 		  	//blocks.addPoint2Block(loc);
 		  	Integer currentId = new Integer(blocks.findBlockIdForPoint(loc));
 		  	

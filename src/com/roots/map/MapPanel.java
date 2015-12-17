@@ -647,6 +647,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
               route = new Route();
             	 }
               }
+              
               for (int i = 0; i<allAnomaly.size(); i++){
             	  route = allAnomaly.get(i);
             	  int size = route.getLats().size();
@@ -656,6 +657,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
             	  paintRoute(g,route.getLats(),route.getLons(),i,Color.RED,2);
             	  route = new Route();
               }
+              
             }
             else if(motifs.size()>0&&ruleDetails<motifs.size()){    // Display all routes under the same rule on right side.
               for(int i=0; i<motifs.get(ruleDetails).size();i++){
