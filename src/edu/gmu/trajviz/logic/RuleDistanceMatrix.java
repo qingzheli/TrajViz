@@ -16,6 +16,7 @@ private double minDistance;
 private int[] minPair = new int[2];
 private GrammarRules rules;
 private int minBlocks;
+private double minLink;
 public RuleDistanceMatrix(){}
 public ArrayList<Integer> filter;
 public PriorityQueue<PairDistance> pq; 
@@ -24,6 +25,7 @@ private PairDistanceComparator comparator;
 public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> filter, int minBlocks,double minLink){
 	this.minBlocks = minBlocks;
 	this.filter = filter;
+	this.minLink = minLink;
 	/*
 	for (int i=0; i<filter.size();i++)
 	System.out.println(i+" : "+filter.get(i)+" ");
@@ -50,7 +52,13 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 
 		//	matrix[0][j] = 100;//Double.MAX_VALUE;
 		//	matrix[i][0] = 100;//Double.MAX_VALUE;
+			
+			/*
+			 * DTW Distance	
+			*/ 
 			matrix[i][j] = avgDTWDistance(blocks, toArrayList(rule1), toArrayList(rule2));
+			
+		//	matrix[i][j] = lcssDistance(blocks,toArrayList(rule1),toArrayList(rule2));
 			matrix[j][i] = matrix[i][j];
 			if(matrix[i][j]>0&&matrix[i][j]<minLink){//&&matrix[i][j]<minDistance){
 				pq.add(new PairDistance(i,j,matrix[i][j]));
@@ -70,6 +78,8 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 	this.rules = rules;
 	printMatrix(matrix);
 }
+
+
 
 
 public static String parseRule(String string) {
@@ -158,6 +168,37 @@ public static ArrayList<Integer> toArrayList(String rule) {
 	}
 	return al;
 }
+private double lcssDistance(Blocks blocks, ArrayList<Integer> x, ArrayList<Integer> y) {
+	int m = x.size();
+	int n = y.size();
+	if(Math.abs(m-n)>5)
+		return 1000;
+	int[][] opt = new int[m+1][n+1];
+	double ans;
+	for(int i = m-1; i>= 0; i--)
+		for(int j = n-1; j>=0; j--)
+		{
+			//if(x.get(i).equals(y.get(j)))
+			//if(blocks.latBlockCount(x.get(i),y.get(j))<=Math.max(m,n)/minBlocks&&blocks.lonBlockCount(x.get(i), y.get(j))<=Math.max(m, n)/minBlocks)  //epsilon
+//			if(blocks.latBlockCount(x.get(i),y.get(j))<=minBlocks&&blocks.lonBlockCount(x.get(i), y.get(j))<=minBlocks)  //epsilon
+			if(blocks.latBlockCount(x.get(i),y.get(j))<=2&&blocks.lonBlockCount(x.get(i), y.get(j))<=2)  //epsilon
+
+				opt[i][j] = opt[i+1][j+1]+1;
+			else
+//				opt[i][j] = Math.max(opt[i+1][j], opt[i][j+1])-Math.max(blocks.latBlockCount(x.get(i),y.get(j))-minBlocks,blocks.lonBlockCount(x.get(i), y.get(j))-minBlocks); //penalty
+				opt[i][j] = Math.max(opt[i+1][j], opt[i][j+1])-(blocks.latBlockCount(x.get(i),y.get(j))+blocks.lonBlockCount(x.get(i), y.get(j)))/2; //penalty
+
+		}
+	ans = 1- Math.max(0.0,(double)opt[0][0])/(Math.max(m, n));
+	/*
+	if(ans<=minLink){
+	System.out.println("x: "+x);
+	System.out.println("y: "+y);
+	System.out.println("ans: "+ans+" opt00 = "+opt[0][0]);
+	}
+	*/
+	return ans;
+}
 
 private double avgDTWDistance(Blocks blocks,ArrayList<Integer> s,
 		ArrayList<Integer> t) {
@@ -175,6 +216,7 @@ private double avgDTWDistance(Blocks blocks,ArrayList<Integer> s,
 		
 	System.out.println();
 	*/
+
 	int n = s.size();
 	int m = t.size();
 	double[][] DTW = new double[n+1][m+1];

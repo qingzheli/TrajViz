@@ -47,17 +47,25 @@ public class SequiturModel extends Observable {
 //	public static double MINLINK = 0.0;
 //	public final static double (minLink*2) = 0.0;
 	public final static int EVAL_RESOLUTION = 500;
+	
 	final static Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 	public final static String EVALUATION_HEAD = "DataName,MinLink,AlphabetSize,MinBlocks,NCThreshold,RunningTime,AvgDistance,AvgeStdDev,MinInterDistance,SilhouetteCoefficient,TotalRules,TotalDataPoints, TotalSubTrajectories,CoveredPoints, ImmergableRuleCount\n";
 //	public static final int ALPHABETSIZE = 50;
 //	public static final int CONTINUALBLOCKTHRESHOLD = 10;
 	//public static final int paaSize = 10;
+	private ArrayList<Integer> status;
 	private static final String SPACE = " ";
 	private static final String CR = "\n";
 	private static final int STEP = 2;
 	private static final int DEFAULT_TIME_GAP = 6;//180;
 //	private static final int DEFAULT_TIME_GAP = 180;
     private boolean[] isCovered;
+    private boolean[] groundTruth;
+    private int breakPoint; // the positions<breakPoint are normal, otherwise are abnormal.
+    private int trueAnomalyCount;
+    private int falsePositiveCount;
+    private int trueNegativeCount;
+    private int falseNegativeCount;
     private boolean[] ruleCovered;
 
 //	private static final int NOISYELIMINATIONTHRESHOLD = 5;
@@ -187,7 +195,7 @@ public class SequiturModel extends Observable {
 		  // init the data array
 		  ArrayList<Double> data = new ArrayList<Double>();
 		  ArrayList<Double> data1 = new ArrayList<Double>();
-		  ArrayList<Integer> status = new ArrayList<Integer>();    // taxi loading status
+		  status = new ArrayList<Integer>();    // taxi loading status
 		  ArrayList<Integer> timeAsUnixEpoc = new ArrayList<Integer>();   //number of seconds since Jan. 1 1970 midnight GMT, if the time is in milliseconds, it will need to be converted to seconds,otherwise it may over Integer's limite. 
 		  
 		  try{
@@ -206,7 +214,8 @@ public class SequiturModel extends Observable {
 					  double value1 = new BigDecimal(lineSplit[1]).doubleValue();
 					  int value2 = Integer.parseInt(lineSplit[2]);
 					  int value3 = Integer.parseInt(lineSplit[3]);
-					  
+					  if(value2==1000)
+						  breakPoint = status.size();
 					  if((lineCounter<=1)||(Math.abs(value3-timeAsUnixEpoc.get(timeAsUnixEpoc.size()-1))<=DEFAULT_TIME_GAP &&(value3-timeAsUnixEpoc.get(timeAsUnixEpoc.size()-1))!=0))
 					  {
 						  
@@ -217,6 +226,7 @@ public class SequiturModel extends Observable {
 					  
 							  data1.add(value1);
 							  status.add(value2);
+							 
 							  timeAsUnixEpoc.add(value3);
 						  }
 						  else
@@ -556,7 +566,11 @@ public class SequiturModel extends Observable {
 		  blocks = new Blocks(alphabetSize,latMin,latMax,lonMin,lonMax);
 		  double latCut = blocks.latCut;
 		  double lonCut = blocks.lonCut;
-		  resample(latCut,lonCut);
+		  
+		 // resample(latCut,lonCut);
+		  lat = latOri;
+		  lon = lonOri;
+		  
 		  isCovered= new boolean[lat.size()];
 		  ruleCovered = new boolean[lat.size()];
 		  for(int i=0;i<lat.size();i++){
@@ -666,10 +680,9 @@ public class SequiturModel extends Observable {
 		boolean firstPoint = true;
 		while(i<latOri.size())
 		{
-		/*	
-			if (i>10000000)
-				throw new ArrayIndexOutOfBoundsException(lat.size());
-			*/
+			if(status.get(i)==1000)
+				breakPoint = lat.size();
+			
 			
 			if(latOri.get(i)<-180)
 				{
@@ -784,10 +797,12 @@ public class SequiturModel extends Observable {
 		          consoleLogger.debug("mapping rule intervals on timeseries ...");
 		          HashMap<String, Integer> hm = new HashMap<String, Integer>();
 		          GrammarRuleRecord rule0 = rules.get(0);
+		          
 		          //String rule0 = rules.get(0).getRuleString();
 		          int length3 = countSpaces(rule0.getRuleString());
 		        		  
 		          r0 = rule0.getRuleString().split(" ");
+		          System.out.println("R0 = "+r0);
 		          int length4 = r0.length;
 		          if (length3!=length4)
 	        		  throw new IndexOutOfBoundsException(length3+":"+length4);;
@@ -1399,6 +1414,10 @@ public class SequiturModel extends Observable {
 */
 	private void drawOnMap(){
 			  // Generate All Motifs and record them on files respectively.
+		    trueAnomalyCount = 0;
+		    falsePositiveCount = 0;
+		    trueNegativeCount = 0;
+		    falseNegativeCount = 0;
 			for(int i = 0; i<isCovered.length;i++)
 				{
 					isCovered[i] = true;
@@ -1425,7 +1444,8 @@ public class SequiturModel extends Observable {
 		    	  nonTerminalCounter++;	
 		    	  amountR0RuleLength = amountR0RuleLength + countSpaces(RuleDistanceMatrix.parseRule(s));  	
 		    	  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
-			  //  	System.out.println("r0: "+i+" : "+r0[i]+" : "+RuleDistanceMatrix.parseRule(s));
+		    	 // if(true){
+		    	  //  	System.out.println("r0: "+i+" : "+r0[i]+" : "+RuleDistanceMatrix.parseRule(s));
 		
 		          int startPos = mapToOriginalTS.get(i);
 		    	  int endPos = mapToOriginalTS.get((i+1))-1;
@@ -1470,9 +1490,9 @@ public class SequiturModel extends Observable {
 		    	else{
 		    		int numStartPos = mapToOriginalTS.get(i);
 			    	  int numEndPos;
-			    	  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=minBlocks){
+			    //	  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=minBlocks){
 		    	     
-		    	 
+			    	  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=0){
 		    		  int nextNonTerminal = getNextNonTerminal(i);
 		    		  
 		    		  
@@ -1574,6 +1594,14 @@ public class SequiturModel extends Observable {
 		  					anomalyCount1++;
 		  					//System.out.println("i: "+a+"\t block: "+blocks.findBlockIdForPoint(new Location(lat.get(a),lon.get(a))));
 		  				}
+		  				if(isCovered[a] && a<breakPoint)
+		  					trueNegativeCount++;
+		  				if(isCovered[a] && a>=breakPoint)
+		  					falseNegativeCount++;
+		  				if(!isCovered[a]&& a<breakPoint)
+		  					falsePositiveCount++;
+		  				if(!isCovered[a]&& a>=breakPoint)
+		  					trueAnomalyCount++;
 		  			}
 		  			int i1 = 0;
 		  			
@@ -1631,7 +1659,10 @@ public class SequiturModel extends Observable {
 		  			  System.out.println("RuleCoverCount: "+ruleCoverCount+" RuleCoverRate: "+(double)ruleCoverCount/(ruleCovered.length-trajCounter));
 		  			  System.out.println("total number of rules in R0: "+finalIntervals.size()+ "avg rule length: "+ (double)totalRuleLength/finalIntervals.size());
 		  			  System.out.println("total number of nonterminals in R0: "+nonTerminalCounter+ " avg rule length in R0: "+ (double)amountR0RuleLength/nonTerminalCounter);
-		  		 
+		  			  System.out.println("latSize = "+lat.size()+"  normalcount = "+breakPoint+"   anomalyCount = "+(lat.size()-breakPoint));
+		  			  System.out.println("Confusion Matrix:");
+		  			  System.out.println("True Anomaly:\t"+ trueAnomalyCount+"\t"+ falseNegativeCount);
+		  			  System.out.println("False Anomaly:\t"+ falsePositiveCount+"\t"+ trueNegativeCount);
 		  		//	evaluateResult();
 				
 		  }

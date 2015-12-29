@@ -102,6 +102,25 @@ public class Blocks {
 	//	System.out.println("block1:block2:dis1:dis2"+"   "+block1+"("+latBlock1+","+lonBlock2+")"+": "+block2+"   "+distance+" : "+distance1);
 		return distance;
 	}
+	public int latBlockCount(Integer b1,Integer b2){
+		int latBlock1 = b1/nLon;
+	//	int lonBlock1 = b1%nLon;
+		
+		int latBlock2 = b2/nLon;
+	//	int lonBlock2 = b2%nLon;
+		
+		return (Math.abs(latBlock2-latBlock1));
+	}
+	public int lonBlockCount(Integer b1,Integer b2){
+//		int latBlock1 = b1/nLon;
+		int lonBlock1 = b1%nLon;
+		
+	//	int latBlock2 = b2/nLon;
+		int lonBlock2 = b2%nLon;
+		
+		return (Math.abs(lonBlock2-lonBlock1));
+	}
+	
 	public static double distFrom(double lat1, double lng1, double lat2, double lng2) {
 	    double earthRadius = 6371.0; //3958.75 miles or 6371.0 kilometers
 	    double dLat = Math.toRadians(lat2-lat1);

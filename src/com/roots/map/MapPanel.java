@@ -638,12 +638,15 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
             	  route = motifs.get(i).get(j);
       //        System.out.println("route         #########################                      : "+route.getLats().get(i)+", "+route.getLats().get(2));
               int size = route.getLats().size();
-          //    String msgStart = "M"+i+"S";
-          //    String msgEnd = "M"+i+"E";
-          //    paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,msgStart);
-             // paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
-             // paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,msgEnd);
+              /*
+              String msgStart = "M"+i+"S";
+              String msgEnd = "M"+i+"E";
+              paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,msgStart);
+              paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
+              paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,msgEnd);
+              */
               paintRoute(g,route.getLats(),route.getLons(),i, Color.BLUE,1);
+              
               route = new Route();
             	 }
               }
@@ -654,7 +657,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
            // 	  paintPoints(g,route.getLats().get(0),route.getLons().get(0),i,i+"S");
                  // paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
              //     paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,i+"E");
-            	  paintRoute(g,route.getLats(),route.getLons(),i,Color.RED,2);
+            	  paintRoute(g,route.getLats(),route.getLons(),i,Color.RED,1);
             	  route = new Route();
               }
               
@@ -769,9 +772,9 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 		b = index;
 		*/
 		transparency = (float) 0.1;
-		//g.setColor(Color.getHSBColor(h, s, b));
+		g.setColor(Color.getHSBColor(h, s, b));
 		
-		g.setColor(new Color(0f,0f,1f,transparency));
+	//	g.setColor(new Color(0f,0f,1f,transparency));
 		
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, transparency));
 		int[] xPoints = new int[longitudes.size()];
@@ -790,7 +793,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 	//	g.drawPolyline(xPoints, yPoints, nPoints);
 
 		g.setPaintMode();
-		g.setStroke(new BasicStroke(6));
+		g.setStroke(new BasicStroke(2));
 		g.drawPolyline(xPoints, yPoints, latitudes.size());
 		
 		

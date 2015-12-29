@@ -3,10 +3,10 @@
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="resources"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
-	<classpathentry kind="lib" path="C:/eclipse/grammarviz2_src-master/grammarviz2_src-master/lib/logger/logback-classic-1.1.2.jar"/>
-	<classpathentry kind="lib" path="C:/eclipse/grammarviz2_src-master/grammarviz2_src-master/lib/logger/logback-core-1.1.2.jar"/>
-	<classpathentry kind="lib" path="C:/eclipse/grammarviz2_src-master/grammarviz2_src-master/lib/logger/slf4j-api-1.7.7.jar"/>
-	<classpathentry kind="lib" path="C:/eclipse/grammarviz2_src-master/grammarviz2_src-master/lib/miglayout/miglayout-4.0.jar"/>
-	<classpathentry kind="lib" path="C:/grammarviz/grammarviz2_src-master/lib/SwingX/swingx-all-1.6.4.jar"/>
+	<classpathentry kind="lib" path="/Users/qz/Desktop/qz-hp/jars/lib/logger/logback-classic-1.1.2.jar"/>
+	<classpathentry kind="lib" path="/Users/qz/Desktop/qz-hp/jars/lib/logger/logback-core-1.1.2.jar"/>
+	<classpathentry kind="lib" path="/Users/qz/Desktop/qz-hp/jars/lib/logger/slf4j-api-1.7.7.jar"/>
+	<classpathentry kind="lib" path="/Users/qz/Desktop/qz-hp/jars/lib/SwingX/swingx-all-1.6.4.jar"/>
+	<classpathentry kind="lib" path="/Users/qz/Desktop/qz-hp/jars/lib/miglayout/miglayout-4.0.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
