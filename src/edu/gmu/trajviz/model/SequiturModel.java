@@ -69,7 +69,7 @@ public class SequiturModel extends Observable {
     private boolean[] ruleCovered;
 
 //	private static final int NOISYELIMINATIONTHRESHOLD = 5;
-	private int alphabetSize;
+	public static int alphabetSize;
 	private double minLink;
 	private int noiseThreshold;
 	private GrammarRules rules;
@@ -108,6 +108,8 @@ public class SequiturModel extends Observable {
 	private static ArrayList<Route> rawRoutes;  
 	private static ArrayList<Route> anomalyRoutes;
 	public ArrayList<Double> lat;
+	private ArrayList<Double> ncLat = new ArrayList<Double>();
+	private ArrayList<Double> ncLon = new ArrayList<Double>();
 	//public ArrayList<Double> paaLat;
 	//public ArrayList<Double> paaLon;
 	public ArrayList<Double> lon;
@@ -214,8 +216,12 @@ public class SequiturModel extends Observable {
 					  double value1 = new BigDecimal(lineSplit[1]).doubleValue();
 					  int value2 = Integer.parseInt(lineSplit[2]);
 					  int value3 = Integer.parseInt(lineSplit[3]);
+					 /*
 					  if(value2==1000)
 						  breakPoint = status.size();
+					  */
+					//  if (value>=37.7254&&value<=37.8212&&value1>=-122.5432&&value1<=-122.3561)
+					  {
 					  if((lineCounter<=1)||(Math.abs(value3-timeAsUnixEpoc.get(timeAsUnixEpoc.size()-1))<=DEFAULT_TIME_GAP &&(value3-timeAsUnixEpoc.get(timeAsUnixEpoc.size()-1))!=0))
 					  {
 						  
@@ -261,6 +267,7 @@ public class SequiturModel extends Observable {
 						  }
 					  }
 				lineCounter++;
+				  }
 				if((loadLimit>0&&(lineCounter>=loadLimit))){
 					break;
 				}
@@ -566,36 +573,18 @@ public class SequiturModel extends Observable {
 		  blocks = new Blocks(alphabetSize,latMin,latMax,lonMin,lonMax);
 		  double latCut = blocks.latCut;
 		  double lonCut = blocks.lonCut;
-		  
-		 // resample(latCut,lonCut);
-		  lat = latOri;
-		  lon = lonOri;
+		  ncLat = new ArrayList<Double>();
+		  ncLon = new ArrayList<Double>();
+		  resample(latCut,lonCut);
+		//  lat = latOri;
+		 // lon = lonOri;
 		  
 		  isCovered= new boolean[lat.size()];
 		  ruleCovered = new boolean[lat.size()];
 		  for(int i=0;i<lat.size();i++){
 			  isCovered[i] = true;
 			 // System.out.println(lat.get(i)+" , "+lon.get(i));
-			/*  if((i%paaSize)==0){
-			  
-			  }
-			  */
-			//  latBuffer.add(lat.get(i));
-			 // lonBuffer.add(lon.get(i));
-			 // if((i+1==lat.size())||((i+1)%1)==0){
-				  //compute the avg of the buffered arrayList into paaLat and paaLon
-				//  avgLat = avg(latBuffer);
-				//  avgLon = avg(lonBuffer);
-				  /*
-				  for(int j=0; j<latBuffer.size();j++){
-					  paaLat.add(avgLat);
-					  paaLon.add(avgLon);
-				  }
-				  */
-				  // refresh
-				 // latBuffer=new ArrayList<Double>();
-				 // lonBuffer=new ArrayList<Double>();
-			  //}
+			
 			  
 		  }
 		  words = new ArrayList<String>();
@@ -608,19 +597,19 @@ public class SequiturModel extends Observable {
 		  mapToOriginalTS = new ArrayList<Integer>();
 		  int startPoint = 0;
 		  int endPoint = 0;
-		  for (int i = 0; i<lat.size();i++){
-			  Location loc = new Location(lat.get(i),lon.get(i));
+		  for (int i = 0; i<ncLat.size();i++){
+			  Location loc = new Location(ncLat.get(i),ncLon.get(i));
 			//  blocks.addPoint2Block(loc); this should not work here because the point will change if it is a noisy point.
 			  Integer id = new Integer(blocks.findBlockIdForPoint(loc));
-			  /*
+			  
 			  if(isNoise(id,i,noiseThreshold)){
 				 // lat.set(i, lat.get(i-1));
-				  paaLat.set(i, paaLat.get(i-1));
+				  ncLat.set(i, ncLat.get(i-1));
 				 // lon.set(i, lon.get(i-1));
-				  paaLon.set(i, paaLon.get(i-1));
+				  ncLon.set(i, ncLon.get(i-1));
 				  id = previousId;
 			  }
-			  */
+			  
 			  if(id<-1000){
 				  endPoint = i-1;
 				  rawAllIntervals.add(new RuleInterval(startPoint, endPoint));
@@ -677,6 +666,8 @@ public class SequiturModel extends Observable {
 		double lonPre = lonOri.get(0);
 		lat.add(latPre);
 		lon.add(lonPre);
+		ncLat.add(latPre);
+		ncLon.add(lonPre);
 		boolean firstPoint = true;
 		while(i<latOri.size())
 		{
@@ -688,6 +679,8 @@ public class SequiturModel extends Observable {
 				{
 					lat.add(latOri.get(i));
 					lon.add(lonOri.get(i));
+					ncLat.add(latOri.get(i));
+					ncLon.add(lonOri.get(i));
 					i++;
 					firstPoint = true;
 				}
@@ -695,6 +688,8 @@ public class SequiturModel extends Observable {
 				if(firstPoint){
 					lat.add(latOri.get(i));
 					lon.add(lonOri.get(i));
+					ncLat.add(latOri.get(i));
+					ncLon.add(lonOri.get(i));
 					i++;
 					firstPoint = false;
 				}
@@ -709,17 +704,23 @@ public class SequiturModel extends Observable {
 					for (int j = 0; j<skip; j++){
 						lat.add((latOri.get(i-1)+latstep*(j+1)));
 						lon.add((lonOri.get(i-1)+lonstep*(j+1)));
+						ncLat.add((latOri.get(i-1)+latstep*(j+1)));
+						ncLon.add((lonOri.get(i-1)+lonstep*(j+1)));
 						//  System.out.println(lat.get(i+j)+" , "+lon.get(i+j));
 
 					}
 					lat.add(latOri.get(i));
 					lon.add(lonOri.get(i));
+					ncLat.add(latOri.get(i));
+					ncLon.add(lonOri.get(i));
 					i++;
 				}
 				else
 					{
 					lat.add(latOri.get(i));
 					lon.add(lonOri.get(i));
+					ncLat.add(latOri.get(i));
+					ncLon.add(lonOri.get(i));
 					i++;
 					}
 				}
@@ -1233,6 +1234,7 @@ public class SequiturModel extends Observable {
 	        //HashMap<Integer,ArrayList<Integer>> mergeRecord = new HashMap<Integer, ArrayList<Integer>>();
 	        long t1s = System.currentTimeMillis();
 	        RuleDistanceMatrix rdm;
+	        System.out.println("AlphabetSize="+this.alphabetSize);
 	        rdm = new RuleDistanceMatrix(blocks,rules, filter,minBlocks, minLink); 
 	        long t1e = System.currentTimeMillis();
 	        long buildMatrixTime = t1e-t1s;
@@ -1490,9 +1492,9 @@ public class SequiturModel extends Observable {
 		    	else{
 		    		int numStartPos = mapToOriginalTS.get(i);
 			    	  int numEndPos;
-			    //	  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=minBlocks){
+			    	  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=minBlocks){
 		    	     
-			    	  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=0){
+			    	//  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=0){
 		    		  int nextNonTerminal = getNextNonTerminal(i);
 		    		  
 		    		  
