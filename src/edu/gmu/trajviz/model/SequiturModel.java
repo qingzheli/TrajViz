@@ -46,7 +46,7 @@ import edu.gmu.trajviz.util.StackTrace;
 public class SequiturModel extends Observable {
 //	public static double MINLINK = 0.0;
 //	public final static double (minLink*2) = 0.0;
-	public final static int EVAL_RESOLUTION = 500;
+	public final static int EVAL_RESOLUTION = 100;
 	
 	final static Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 	public final static String EVALUATION_HEAD = "DataName,MinLink,AlphabetSize,MinBlocks,NCThreshold,RunningTime,AvgDistance,AvgeStdDev,MinInterDistance,SilhouetteCoefficient,TotalRules,TotalDataPoints, TotalSubTrajectories,CoveredPoints, ImmergableRuleCount\n";
@@ -476,7 +476,7 @@ public class SequiturModel extends Observable {
         	  runSequitur(iteration);
         	  iteration = iteration + 1;
         	 // this.minLink = this.minLink*2;
-        	  this.minLink = minLink*(iteration+1);
+        	  //this.minLink = minLink*(iteration+1);
 
         	   drawOnMap();
            	System.out.println("total anomalies: "+anomalyRoutes.size());
@@ -1214,7 +1214,7 @@ public class SequiturModel extends Observable {
 			 */
 	        filterMap = new HashMap<Integer,Integer>();
 	        for (int i = 0; i<rules.size();i++){
-					if ((rules.get(i).frequencyInR0()>=1&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=3))//||
+					if ((rules.get(i).frequencyInR0()>=1&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=2))//||
 						//	(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getR0Intervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
 						{
 						//HashSet<Integer> set = new HashSet<Integer>();
@@ -1445,7 +1445,9 @@ public class SequiturModel extends Observable {
 		    	if(!isNumeric(s)){
 		    	  nonTerminalCounter++;	
 		    	  amountR0RuleLength = amountR0RuleLength + countSpaces(RuleDistanceMatrix.parseRule(s));  	
-		    	  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
+		    	 // if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
+			    	  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=3){
+
 		    	 // if(true){
 		    	  //  	System.out.println("r0: "+i+" : "+r0[i]+" : "+RuleDistanceMatrix.parseRule(s));
 		
@@ -1494,7 +1496,7 @@ public class SequiturModel extends Observable {
 			    	  int numEndPos;
 			    	  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=minBlocks){
 		    	     
-			    	//  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=0){
+			    	//  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=alphabetSize/30){
 		    		  int nextNonTerminal = getNextNonTerminal(i);
 		    		  
 		    		  

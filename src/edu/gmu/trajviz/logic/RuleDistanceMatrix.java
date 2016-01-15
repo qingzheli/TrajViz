@@ -15,7 +15,7 @@ public double[][] matrix;
 private double minDistance;
 private int[] minPair = new int[2];
 private GrammarRules rules;
-private int minBlocks;
+//private int minBlocks;
 private double minLink;
 public RuleDistanceMatrix(){}
 public ArrayList<Integer> filter;
@@ -23,7 +23,7 @@ public PriorityQueue<PairDistance> pq;
 private PairDistanceComparator comparator;
 @SuppressWarnings("unchecked")
 public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> filter, int minBlocks,double minLink){
-	this.minBlocks = minBlocks;
+	//this.minBlocks = minBlocks;
 	this.filter = filter;
 	this.minLink = minLink;
 	/*
@@ -182,12 +182,18 @@ private double lcssDistance(Blocks blocks, ArrayList<Integer> x, ArrayList<Integ
 			//if(blocks.latBlockCount(x.get(i),y.get(j))<=Math.max(m,n)/minBlocks&&blocks.lonBlockCount(x.get(i), y.get(j))<=Math.max(m, n)/minBlocks)  //epsilon
 //			if(blocks.latBlockCount(x.get(i),y.get(j))<=minBlocks&&blocks.lonBlockCount(x.get(i), y.get(j))<=minBlocks)  //epsilon
 			
-			if(blocks.latBlockCount(x.get(i),y.get(j))<=(SequiturModel.alphabetSize/50)&&blocks.lonBlockCount(x.get(i), y.get(j))<=(SequiturModel.alphabetSize/50))  //epsilon
+			
+			
+			if(blocks.latBlockCount(x.get(i),y.get(j))<=Math.max(SequiturModel.alphabetSize/50.0,1)&&blocks.lonBlockCount(x.get(i), y.get(j))<=Math.max(SequiturModel.alphabetSize/50.0,1))  //epsilon
 
 				opt[i][j] = opt[i+1][j+1]+1;
 			else
-				
-				opt[i][j] = Math.max(opt[i+1][j], opt[i][j+1])-0.3*Math.max(blocks.latBlockCount(x.get(i),y.get(j)),blocks.lonBlockCount(x.get(i), y.get(j))); //penalty
+				opt[i][j] = Math.max(opt[i+1][j], opt[i][j+1])
+				-0.3*
+				Math.sqrt(blocks.latBlockCount(x.get(i),y.get(j))*blocks.latBlockCount(x.get(i),y.get(j))
+						+(blocks.lonBlockCount(x.get(i), y.get(j))*blocks.lonBlockCount(x.get(i), y.get(j)))); //penalty
+
+			//	opt[i][j] = Math.max(opt[i+1][j], opt[i][j+1])-0.3*Math.max(blocks.latBlockCount(x.get(i),y.get(j)),blocks.lonBlockCount(x.get(i), y.get(j))); //penalty
 
 				//	opt[i][j] = Math.max(opt[i+1][j], opt[i][j+1])-0.5*Math.max(blocks.latBlockCount(x.get(i),y.get(j))-minBlocks,blocks.lonBlockCount(x.get(i), y.get(j))-minBlocks); //penalty
 		//		opt[i][j] = Math.max(opt[i+1][j], opt[i][j+1])-(blocks.latBlockCount(x.get(i),y.get(j))+blocks.lonBlockCount(x.get(i), y.get(j)))/2; //penalty
@@ -198,7 +204,14 @@ private double lcssDistance(Blocks blocks, ArrayList<Integer> x, ArrayList<Integ
 	if(ans<=minLink){
 	System.out.println("x: "+x);
 	System.out.println("y: "+y);
+	System.out.println("minLink = "+minLink);
 	System.out.println("ans: "+ans+" opt00 = "+opt[0][0]);
+	if(y.get(0)==3040&&y.get(1)==3118&&x.get(0)==3040)
+		for(int f =0; f<x.size(); f++){
+			System.out.println();
+			for(int g = 0; g<y.size(); g++)
+				System.out.print(opt[f][g]+"\t\t");
+		}
 	}
 	*/
 	return ans;

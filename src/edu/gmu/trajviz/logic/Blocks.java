@@ -35,9 +35,9 @@ public class Blocks {
 		lonMax = loMax+0.000000001;
 		latRangeKm = distFrom(latMax,lonMax,latMin,lonMax);
 		lonRangeKm = distFrom((latMax+latMin)/2, lonMax,(latMax+latMin)/2, lonMin);
-		coef = lonRangeKm/latRangeKm;
-		nLat = n;
-		nLon = (int)(n*coef);
+		coef = latRangeKm/lonRangeKm;
+		nLat = (int)(n*coef);
+		nLon = n;
 		latCut = (latMax-latMin)/nLat;
 		lonCut = (lonMax-lonMin)/nLon;
 		latCutKm = latRangeKm/nLat;

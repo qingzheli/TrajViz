@@ -645,7 +645,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
               paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
               paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,msgEnd);
               */
-              paintRoute(g,route.getLats(),route.getLons(),i, Color.BLUE,2);
+              paintRoute(g,route.getLats(),route.getLons(),i, Color.BLUE,1);
               
               route = new Route();
             	 }
@@ -657,7 +657,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
            // 	  paintPoints(g,route.getLats().get(0),route.getLons().get(0),i,i+"S");
                  // paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
              //     paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,i+"E");
-            	  paintRoute(g,route.getLats(),route.getLons(),i,Color.RED,3);
+            	  paintRoute(g,route.getLats(),route.getLons(),i,Color.RED,2);
             	  route = new Route();
               }
               
