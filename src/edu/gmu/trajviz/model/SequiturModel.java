@@ -198,7 +198,7 @@ public class SequiturModel extends Observable {
 		  ArrayList<Double> data = new ArrayList<Double>();
 		  ArrayList<Double> data1 = new ArrayList<Double>();
 		  status = new ArrayList<Integer>();    // taxi loading status
-		  ArrayList<Integer> timeAsUnixEpoc = new ArrayList<Integer>();   //number of seconds since Jan. 1 1970 midnight GMT, if the time is in milliseconds, it will need to be converted to seconds,otherwise it may over Integer's limite. 
+		  ArrayList<Long> timeAsUnixEpoc = new ArrayList<Long>();   //number of seconds since Jan. 1 1970 midnight GMT, if the time is in milliseconds, it will need to be converted to seconds,otherwise it may over Integer's limite. 
 		  
 		  try{
 			  long loadLimit = 0l;
@@ -215,7 +215,7 @@ public class SequiturModel extends Observable {
 					  
 					  double value1 = new BigDecimal(lineSplit[1]).doubleValue();
 					  int value2 = Integer.parseInt(lineSplit[2]);
-					  int value3 = Integer.parseInt(lineSplit[3]);
+					  long value3 = Long.parseLong(lineSplit[3]);
 					 /*
 					  if(value2==1000)
 						  breakPoint = status.size();
@@ -482,6 +482,8 @@ public class SequiturModel extends Observable {
            	System.out.println("total anomalies: "+anomalyRoutes.size());
 
       }
+        //  drawOnMap();
+         //	System.out.println("total anomalies: "+anomalyRoutes.size());
 	  
 	  //end while
 		  
@@ -1442,18 +1444,35 @@ public class SequiturModel extends Observable {
 		    while (i<r0.length){
 		 //   	System.out.println("i:"+i);
 		  		String s = r0[i];
+	    	//	  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
+
 		    	if(!isNumeric(s)){
 		    	  nonTerminalCounter++;	
 		    	  amountR0RuleLength = amountR0RuleLength + countSpaces(RuleDistanceMatrix.parseRule(s));  	
 		    	 // if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
-			    	  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=3){
+			    	//  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=2){
 
-		    	 // if(true){
+		    	  if(true){
 		    	  //  	System.out.println("r0: "+i+" : "+r0[i]+" : "+RuleDistanceMatrix.parseRule(s));
 		
 		          int startPos = mapToOriginalTS.get(i);
-		    	  int endPos = mapToOriginalTS.get((i+1))-1;
-		    	  RuleInterval interval = new RuleInterval(startPos,endPos);
+		          int endPos;
+		          if(isNumeric(r0[i+1])&&Integer.valueOf(r0[i+1])<0)
+		    	     endPos = mapToOriginalTS.get((i+1))-1;
+		          else
+		        	 endPos = mapToOriginalTS.get((i+1));
+		    	  /*
+		          int endPos;
+		          
+		          if(i+2<mapToOriginalTS.size()&&isNumeric(r0[i+1])&&Integer.valueOf(r0[i+1])>0)
+		    	   {
+		        	  endPos = mapToOriginalTS.get((i+2))-1;
+		        	  i++;
+		    	   }
+		          else
+		        	  endPos = mapToOriginalTS.get((i+1))-1;
+		        	*/    
+		          RuleInterval interval = new RuleInterval(startPos,endPos);
 		    	  for (int a = startPos; a<=endPos; a++){
 		    		  ruleCovered[a] = true;
 		    	  }
@@ -1494,7 +1513,9 @@ public class SequiturModel extends Observable {
 		    	else{
 		    		int numStartPos = mapToOriginalTS.get(i);
 			    	  int numEndPos;
-			    	  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=minBlocks){
+			    	  if(Integer.valueOf(r0[i])>=0){
+			    		//  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
+			    			  if ((getNextNonTerminal(i)-i)>=minBlocks){
 		    	     
 			    	//  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=alphabetSize/30){
 		    		  int nextNonTerminal = getNextNonTerminal(i);
@@ -1504,7 +1525,11 @@ public class SequiturModel extends Observable {
 		    			  nextNonTerminal = r0.length-1;
 		    		  
 		    		//  System.out.println("ii:"+i);
-		    		  numEndPos = mapToOriginalTS.get(nextNonTerminal)-1;
+		    		//  System.out.println(nextNonTerminal + "MapToOriginalTS.get(nextNonTerminal) = "+mapToOriginalTS.get(nextNonTerminal));
+		    		  if(isNumeric(r0[nextNonTerminal])) // negative
+		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal)-1;
+		    		  else
+		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal);
 		    		/*
 		    		  System.out.print(cnt+": [");
 		    		  cnt++;
@@ -1517,7 +1542,8 @@ public class SequiturModel extends Observable {
 		    		  */
 		    		//  System.out.println("i_nextNon : "+i+":"+nextNonTerminal+"["+numStartPos+"-"+numEndPos);
 		    		//  numEndPos = mapToOriginalTS.get((i+minBlocks))-1;
-		    	 
+		    		  RuleInterval ri = new RuleInterval(numStartPos,numEndPos);
+			  	   	  anomalyIntervals.add(ri);
 		    	  for(int pos = numStartPos; pos<=numEndPos; pos++)
 		    		{
 		    		  
@@ -1528,8 +1554,11 @@ public class SequiturModel extends Observable {
 		    		
 		    	  i = nextNonTerminal;
 		    	}
-			    	  else
-			    		  i++;
+			    			  else
+			    				  i = getNextNonTerminal(i);
+			    	  }
+			    else
+			    i++; //Negative Number
 		    	}
 		    }
 		    System.out.println("r0.length="+r0.length);
@@ -1630,8 +1659,8 @@ public class SequiturModel extends Observable {
 		  					  			//System.out.println("inner loop :"+i);
 		  					  		}
 		  					  		
-		  					  		RuleInterval ri = new RuleInterval(startAnomalyPos,endAnomalyPos);
-	  					  			anomalyIntervals.add(ri);
+		  					  	//	RuleInterval ri = new RuleInterval(startAnomalyPos,endAnomalyPos);
+	  					  		//	anomalyIntervals.add(ri);
 	  					  	//	System.out.println("new intervals :"+anomalyIntervals.size()+" : " + ri);
 		  					  	
 		  					  	}
@@ -2317,14 +2346,14 @@ public class SequiturModel extends Observable {
   						
   					//	System.out.print("track#: "+counter+":       ");
   						
-  						Location loca = new Location(lat.get(startPos),lon.get(startPos));
+  						Location loca = new Location(ncLat.get(startPos),ncLon.get(startPos));
   						//Location endLoc = new Location(lat.get(startPos),lon.get(startPos));
   						
   						for (int j = startPos; j<=endPos; j++){
   							Location previousLoc =loca;
-  							loca = new Location(lat.get(j),lon.get(j));
+  							loca = new Location(ncLat.get(j),ncLon.get(j));
   							distance = distance + blocks.distance(blocks.findBlockIdForPoint(previousLoc), blocks.findBlockIdForPoint(loca)); 
-  							singleRoute.addLocation(lat.get(j), lon.get(j));
+  							singleRoute.addLocation(ncLat.get(j), ncLon.get(j));
   								
   						
   							
