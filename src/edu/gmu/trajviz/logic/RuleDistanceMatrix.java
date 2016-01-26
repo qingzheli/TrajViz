@@ -149,7 +149,7 @@ private void printMatrix(double[][] matrix) {
 //	System.out.println("minPair: "+pq.peek().getLine()+", "+filter.get(pq.peek().getLine())+";"+pq.peek().getCol()+","+filter.get(pq.peek().getCol()));
 	//System.out.println("rule1 :"+rules.getRuleRecord(filter.get(pq.peek().getLine()))+" Expand String: "+rules.get(filter.get(pq.peek().getLine())).getExpandedRuleString());
 	//System.out.println("rule2 :"+rules.getRuleRecord(filter.get(pq.peek().getCol()))+" Expand String: "+rules.get(filter.get(pq.peek().getCol())).getExpandedRuleString());
-	System.out.println("Matrix size: "+filter.size());
+//	System.out.println("Matrix size: "+filter.size());
 }
 public double[][] getMatrix(){
 	return matrix;
@@ -189,7 +189,7 @@ private double lcssDistance(Blocks blocks, ArrayList<Integer> x, ArrayList<Integ
 				opt[i][j] = opt[i+1][j+1]+1;
 			else
 				opt[i][j] = Math.max(opt[i+1][j], opt[i][j+1])
-				-0.3*
+				-0.2*
 				Math.sqrt(blocks.latBlockCount(x.get(i),y.get(j))*blocks.latBlockCount(x.get(i),y.get(j))
 						+(blocks.lonBlockCount(x.get(i), y.get(j))*blocks.lonBlockCount(x.get(i), y.get(j)))); //penalty
 

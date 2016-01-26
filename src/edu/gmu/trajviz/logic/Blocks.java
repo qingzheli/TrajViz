@@ -42,8 +42,8 @@ public class Blocks {
 		lonCut = (lonMax-lonMin)/nLon;
 		latCutKm = latRangeKm/nLat;
 		lonCutKm = lonRangeKm/nLon;
-		System.out.println("LatCut:latCutKm : nLat = "+ latCut+" : "+latCutKm+" : "+nLat);
-		System.out.println("LonCut:latCutKm : nLon = "+":"+lonCut +" : "+lonCutKm+" : "+nLon);
+		//???System.out.println("LatCut:latCutKm : nLat = "+ latCut+" : "+latCutKm+" : "+nLat);
+		//???System.out.println("LonCut:latCutKm : nLon = "+":"+lonCut +" : "+lonCutKm+" : "+nLon);
 
 		size = nLat*nLon;
 

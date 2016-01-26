@@ -80,8 +80,8 @@ public final class SequiturFactory {
    */
   public static SAXRule runSequitur(String inputString) throws TSException {
 
-    consoleLogger.trace("digesting the string " + inputString);
-    System.out.println("digesting the string " + inputString);
+    //???consoleLogger.trace("digesting the string " + inputString);
+    //???System.out.println("digesting the string " + inputString);
     // clear global collections
     //
     SAXRule.numRules = new AtomicInteger(0);
@@ -103,8 +103,8 @@ public final class SequiturFactory {
     while (st.hasMoreTokens()) {
     
       String token = st.nextToken();
-      // System.out.println("  processing the token " + token);
-    // System.out.println("line:"+line+":"+token);
+      // //???System.out.println("  processing the token " + token);
+    // //???System.out.println("line:"+line+":"+token);
       //line++;
       // extract next token
       SAXTerminal symbol = new SAXTerminal(token, currentPosition);
@@ -112,7 +112,7 @@ public final class SequiturFactory {
       // append to the end of the current sequitur string
       // ... As each new input symbol is observed, append it to rule S....
       resRule.last().insertAfter(symbol);
-   //   System.out.println(sym);
+   //   //???System.out.println(sym);
       // once appended, check if the resulting digram is new or recurrent
       //
       // ... Each time a link is made between two symbols if the new digram is repeated elsewhere
@@ -133,10 +133,10 @@ public static void updateRuleIntervals(GrammarRules rules,
 		SAXRecords saxFrequencyData, int originalLength ) {
 	ArrayList<Integer> saxWordsIndexes = new ArrayList<Integer>(saxFrequencyData.getAllIndices());
 	//ArrayList<Integer> indexesInR0 = new ArrayList<Integer>(saxFrequencyData.getAllIndices());
-//	System.out.println("saxwordsIndexes: "+saxWordsIndexes);
+//	//???System.out.println("saxwordsIndexes: "+saxWordsIndexes);
 	for (GrammarRuleRecord ruleContainer : rules) {
-	//	System.out.println("minmaxLenth: "+ruleContainer.minMaxLengthAsString());
-	//	System.out.println("ruleIntervals: "+ruleContainer.getRuleIntervals());
+	//	//???System.out.println("minmaxLenth: "+ruleContainer.minMaxLengthAsString());
+	//	//???System.out.println("ruleIntervals: "+ruleContainer.getRuleIntervals());
 	      // here we construct the array of rule intervals
 	      ArrayList<RuleInterval> resultIntervals = new ArrayList<RuleInterval>();
 	      ArrayList<RuleInterval> r0Intervals = new ArrayList<RuleInterval>();
@@ -144,7 +144,7 @@ public static void updateRuleIntervals(GrammarRules rules,
 	      // String[] expandedRuleSplit = ruleContainer.getExpandedRuleString().trim().split(" ");
 	     
 	      int expandedRuleLength = recursiveCountSpaces(ruleContainer.getExpandedRuleString());
-	//      System.out.println("getExStr: "+ruleContainer.getExpandedRuleString());
+	//      //???System.out.println("getExStr: "+ruleContainer.getExpandedRuleString());
      
 	      // the auxiliary array that keeps lengths of all rule occurrences
 	      int[] lengths = new int[ruleContainer.getOccurrences().size()];
@@ -156,7 +156,7 @@ public static void updateRuleIntervals(GrammarRules rules,
 	      //
 	      for (Integer currentIndex : ruleContainer.getOccurrences()) {
 
-	        // System.out.println("Index: " + currentIndex);
+	        // //???System.out.println("Index: " + currentIndex);
 	        // String extractedStr = "";
 
 	        // what we do here is to extract the positions of sax words in the real time-series
@@ -184,7 +184,7 @@ public static void updateRuleIntervals(GrammarRules rules,
 	        	
 	        
 	        
-	       // System.out.println("expandedRuleLength: "+expandedRuleLength);
+	       // //???System.out.println("expandedRuleLength: "+expandedRuleLength);
 	        /*
 	        if ((currentIndex + expandedRuleLength) >= saxWordsIndexes.size()) {
 	          endPos = originalLength - 1;
@@ -210,7 +210,7 @@ public static void updateRuleIntervals(GrammarRules rules,
 	       */
 	      for (Integer r0Index : ruleContainer.getR0Occurrences()) {
 
-		        // System.out.println("Index: " + currentIndex);
+		        // //???System.out.println("Index: " + currentIndex);
 		        // String extractedStr = "";
 
 		        // what we do here is to extract the positions of sax words in the real time-series
@@ -255,8 +255,8 @@ public static void updateRuleIntervals(GrammarRules rules,
 	      ruleContainer.setR0Intervals(r0Intervals);
 	      ruleContainer.setMeanLength(lengths);
 	      ruleContainer.setMinMaxLength(lengths);
-	  //    System.out.println("minmaxLenth: "+ruleContainer.minMaxLengthAsString());
-	  //    System.out.println("ruleIntervals: "+ruleContainer.getRuleIntervals());
+	  //    //???System.out.println("minmaxLenth: "+ruleContainer.minMaxLengthAsString());
+	  //    //???System.out.println("ruleIntervals: "+ruleContainer.getRuleIntervals());
          
           }
 
@@ -271,7 +271,7 @@ private static int recursiveCountSpaces(String expandedRuleString) {
 
 private String parseRule(String string) {
 	StringBuffer sb = new StringBuffer();
-	System.out.println("string: "+string);
+	//???System.out.println("string: "+string);
 	ArrayList<String> sa = new ArrayList<String>();
 	String[] stringArray = string.split(" ");
 	for (String s:stringArray){
@@ -281,21 +281,21 @@ private String parseRule(String string) {
 				int rIndex = s.indexOf("r");
 				Integer iteration = Integer.valueOf(s.substring(1, rIndex));
 				Integer rule = Integer.valueOf(s.substring(rIndex+1));
-				System.out.println("s: "+s+" iteration: "+iteration+" rule: "+rule);
+				//???System.out.println("s: "+s+" iteration: "+iteration+" rule: "+rule);
 				String subRule = parseRule(SequiturModel.allRules.get(iteration).get(rule).getExpandedRuleString());
 				sa.add(subRule);
-				System.out.println(s+" = "+subRule );
+				//???System.out.println(s+" = "+subRule );
 				
 			}
 			else if(s.contains("C")){
 				int cIndex = s.indexOf("C");
 				Integer iteration = Integer.valueOf(s.substring(1, cIndex));
 				Integer cluster = Integer.valueOf(s.substring(cIndex+1));
-				System.out.println("s: "+s+" iteration: "+iteration+" cluster: "+cluster);
+				//???System.out.println("s: "+s+" iteration: "+iteration+" cluster: "+cluster);
 				Integer ruleInCluster = (Integer)SequiturModel.allClusters.get(iteration).get(cluster).toArray()[0];
 				String subRule = parseRule(SequiturModel.allRules.get(iteration).get(ruleInCluster).getExpandedRuleString());
 				sa.add(subRule);
-				System.out.println(s+" = "+subRule );
+				//???System.out.println(s+" = "+subRule );
 
 			}
 		}
@@ -307,7 +307,7 @@ private String parseRule(String string) {
 		{
 			Integer test = Integer.valueOf(s);
 			sa.add(s);
-	//		System.out.println("s: "+ s);
+	//		//???System.out.println("s: "+ s);
 		}
 	}
 	for (int i = 0; i<sa.size()-1;i++){
@@ -316,7 +316,7 @@ private String parseRule(String string) {
 	}
 	if(sa.size()>0)
 	   sb.append(sa.get(sa.size()-1));
-	System.out.println("sb: "+sb.toString());
+	//???System.out.println("sb: "+sb.toString());
 	return sb.toString();
 }
 /**
