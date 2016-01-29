@@ -80,6 +80,7 @@ public class SequiturModel extends Observable {
 	private ArrayList<HashSet<Integer>> clusters;
 	private ArrayList<Integer> filter;
 	public static ArrayList<ArrayList<Integer>> allFilters;
+	HashMap<Integer, String> recoveryMap;
 	private HashMap<Integer,Integer> filterMap;
 	HashMap<Integer, Integer> clusterMap;
 	private ArrayList<Integer> mapTrimed2Original; 
@@ -101,6 +102,7 @@ public class SequiturModel extends Observable {
 	private int immergableRuleCount;
 	private int totalSubTrajectory;
 	private String[] r0;
+	private String[] r0Ori; 
 	public static ArrayList<String[]> allR0;
 	private static double lon_center;
 	//The outer arrayList includes all rules, the inner arrayList includes all route under the same rule
@@ -640,7 +642,7 @@ public class SequiturModel extends Observable {
 			  				  
 		  }
 		  System.out.print("mapTrimed2Original: ");
-	//	  printArrayList(mapTrimed2Original);		  
+		  printArrayList(mapTrimed2Original);		  
 		  /*
 		   * Following is put the cleaned location data into block again
 		   */
@@ -808,8 +810,13 @@ public class SequiturModel extends Observable {
 		          System.out.println("R0 = "+r0);
 		          int length4 = r0.length;
 		          if (length3!=length4)
-	        		  throw new IndexOutOfBoundsException(length3+":"+length4);;
-		          allR0.add(r0);
+	        		  throw new IndexOutOfBoundsException(length3+":"+length4);
+		          
+		          
+		          
+		          
+				  
+				  allR0.add(r0);
 		          for(int i = 0; i<rules.size();i++){
 		        	  String key = rules.get(i).getRuleName();
 		        	 // String expandedString = rules.get(i).getExpandedRuleString();
@@ -830,10 +837,23 @@ public class SequiturModel extends Observable {
 		       //   int[] indexes = new int[r0.length];
 		         
 		          for(int i=0;i<r0.length;i++){
-		        	  if(r0[i]==" ")
-		        		  throw new IndexOutOfBoundsException(i+" : |"+r0[i]+"|");
-  
-		        	  if(r0[i].charAt(0)=='R')
+		        	  if(r0[i]==null)
+		        		  {
+		        	//	  mapToPreviousR0.add(currentIdx);
+		        			
+		  		        //		  System.out.println(i+" : "+r0[i]+":"+currentIdx+" ");
+		  		        		  
+		  		        		 // 	currentIdx++;
+		  		        		  	if(currentIdx>mapToOriginalTS.size())
+		  		        		    	
+		  		        		    {
+		  				        		  System.out.println(i+" : "+r0[i]+":"+currentIdx);
+
+		  		        		    }
+		        		  	
+		        		  }
+		        	 
+		        	  else if(r0[i].charAt(0)=='R')
 		        		  {
 		        		  	Integer currentRule = Integer.valueOf(r0[i].substring(1));
 		        		  	hm.put(r0[i], hm.get(r0[i])+1);
@@ -842,8 +862,10 @@ public class SequiturModel extends Observable {
 		        		  //	System.out.println(i+" : "+r0[i]+":"+currentIdx+" ");
 		        		  	int length1 = rules.get(currentRule).getRuleYield();
 		        		  	int length2 = countSpaces(rules.get(currentRule).getExpandedRuleString());
-		        		    currentIdx = currentIdx + rules.get(currentRule).getRuleYield();
-		        		    if(currentIdx>mapToOriginalTS.size())
+		        		   // currentIdx = currentIdx + rules.get(currentRule).getRuleYield();
+		        		  	currentIdx = currentIdx + length2;
+		        		  	System.out.println("CurrentIdx = "+currentIdx +" i= "+i+" : "+r0[i]+":"+currentIdx+" expandRule:  "+rules.get(currentRule).getExpandedRuleString()+" length1:length2 = "+length1+":"+length2);
+		        		  	if(currentIdx>mapToOriginalTS.size())
 		        		    	
 		        		    {
 				        		  throw new IndexOutOfBoundsException(i+" : "+r0[i]+":"+currentIdx+" expandRule:  "+rules.get(currentRule).getExpandedRuleString()+" length1:length2 = "+length1+":"+length2);
@@ -869,7 +891,7 @@ public class SequiturModel extends Observable {
 		          }
 		          System.out.println();
 		          System.out.print("mapToPreviousR0: ");
-		  //        printArrayList(mapToPreviousR0);
+		          printArrayList(mapToPreviousR0);
 		          
 		          for(int i = 1; i<rules.size();i++){
 		        	  
@@ -878,7 +900,7 @@ public class SequiturModel extends Observable {
 		          }
 		          
 		          
-		          SequiturFactory.updateRuleIntervals(rules, saxFrequencyData, lat.size());   //Both update intervals and intervals in R0
+		       //   SequiturFactory.updateRuleIntervals(rules, saxFrequencyData, lat.size());   //Both update intervals and intervals in R0
 		          
 		          
 		        /* print all rule details
@@ -890,15 +912,16 @@ public class SequiturModel extends Observable {
 		        
 		       /*  */
 		         
-	
+		          recoveryMap = new HashMap<Integer, String>();
+				  mergeTerminals();
 		          
 		       //  if(this.alphabetSize<=100)
 		          clusterRules();
-		       
+		          allR0.add(r0);
 		          {
 		        	  System.out.print("mapToOriginalTS: ");
 		        	  ArrayList<Integer> previousMapToOriginalTS = mapToOriginalTS;
-		        	//  printArrayList(previousMapToOriginalTS);
+		        	  printArrayList(previousMapToOriginalTS);
 		        	  /*new ArrayList<Integer>();
 		        	  
 		        	  for (int i = 0; i<mapToOriginalTS.size();i++)
@@ -920,9 +943,20 @@ public class SequiturModel extends Observable {
 				   */
 					  System.out.println("r0.length: "+r0.length);
 		          for (int i = 0; i<r0.length;i++){
-		        	  
 		        	  NumerosityReductionMapEntry<Integer, String> entry;
-		        	//  System.out.println("r0_"+i+"="+r0[i] );
+		        	  if(r0[i]==null)
+		        		  {
+		        		  	
+		        		  	Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
+        		  		//	mapToOriginalTS.add(pos);
+        	  				System.out.println("BlockID: " +r0[i]+" : "+pos);//mapTrimed2Original.get(mapToPreviousR0.get(i)));
+
+        		  		//	entry = new NumerosityReductionMapEntry<Integer, String>(pos, null);
+        		  			//trimedTrack.add(entry);
+		        		//  	continue;
+		        		  }
+		        	  else{
+		        	  System.out.println("r0_"+i+"="+r0[i] );
 		        	  if (r0[i].charAt(0)=='R')
 		        		  {
 		        		  //	if(i==0)
@@ -940,7 +974,7 @@ public class SequiturModel extends Observable {
 		        		  			r0[i] = s;
 		        		  			Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
 		        		  			mapToOriginalTS.add(pos);
-		        //	  				System.out.println("BlockID: " +r0[i]+" : "+pos);//mapTrimed2Original.get(mapToPreviousR0.get(i)));
+		        	  				System.out.println("BlockID: " +r0[i]+" : "+pos);//mapTrimed2Original.get(mapToPreviousR0.get(i)));
 	
 		        		  			entry = new NumerosityReductionMapEntry<Integer, String>(pos, s);
 		        		  			trimedTrack.add(entry);
@@ -952,7 +986,7 @@ public class SequiturModel extends Observable {
 		        		  			Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
 		        		  			mapToOriginalTS.add(pos);
 	
-	//	        		  			System.out.println("RuleID: " +r0[i]+" : "+pos);
+		        		  			System.out.println("RuleID: " +r0[i]+" : "+pos);
 	
 		        		  			entry = new NumerosityReductionMapEntry<Integer, String>(pos, s);
 		        	  				trimedTrack.add(entry);
@@ -972,10 +1006,11 @@ public class SequiturModel extends Observable {
 				  			mapToOriginalTS.add(pos);
 	
 			  				entry = new NumerosityReductionMapEntry<Integer, String>(pos, r0[i]);
-			  	//			System.out.println("BlockID: " +r0[i]+" : "+pos);//mapTrimed2Original.get(mapToPreviousR0.get(i)));
+			  				System.out.println("BlockID: " +r0[i]+" : "+pos);//mapTrimed2Original.get(mapToPreviousR0.get(i)));
 			  				trimedTrack.add(entry);
 	
 		        	  }
+		          }
 		          }
 		          
 		          /*
@@ -1206,6 +1241,7 @@ public class SequiturModel extends Observable {
 	*/
 	
 		private void clusterRules() {
+			
 		      /*
 	         * Postprocessing merge, connect
 	         */
@@ -1214,7 +1250,7 @@ public class SequiturModel extends Observable {
 			 * Warning: rules in clusters are real rules, rules in clusterMap are filter rules. 
 			 * 
 			 */
-		//	mergeTerminals();
+		    
 		    
 	        /* print all rule details
 	         */
@@ -1384,8 +1420,10 @@ public class SequiturModel extends Observable {
 		}
 private void mergeTerminals() {
 	int c = 0;
+	ArrayList<String> r0New = new ArrayList<String>(); 
 	while(c<r0.length){
 		String s = r0[c];
+	
 		String ruleString;
 		String expandedRuleString;
 		Integer posR0 = 0;
@@ -1396,9 +1434,9 @@ private void mergeTerminals() {
 	    	
 	    		int numStartPos;
 	    		int numEndPos;
-	    		if(c<1||isNumeric(r0[c-1])){
+	    		if(c<1||isNumeric(r0[c-1])||r0[c-1]==null){
 	    			numStartPos= mapToOriginalTS.get(c);
-	    			length = Math.min(minBlocks, getNextNonTerminal(c)-c);
+	    			length = Math.min(4, getNextNonTerminal(c)-c);
 	    			StringBuffer sb = new StringBuffer();
 	    			for(int i = 0; i< length; i++){
 	    				sb.append(r0[c+i]+" ");
@@ -1407,11 +1445,16 @@ private void mergeTerminals() {
 	    			expandedRuleString = sb.toString();
 	    			numEndPos = mapToOriginalTS.get(c+length);
 	    		    posR0 = c;
+	    		    r0New.add("R"+rules.size());
+	    		    r0[c] = "R"+rules.size();
+		    		
+	    			for (int i = c+1; i<c+length ; i++)
+	    				r0[i] = null;
 	    		}
 	    		else{
 	    			String p = r0[c-1];
 	    			numStartPos = mapToOriginalTS.get(c-1);
-	    			length = Math.min(minBlocks, getNextNonTerminal(c)-c);
+	    			length = Math.min(4, getNextNonTerminal(c)-c);
 	    			StringBuffer sb = new StringBuffer();
 	    		
 	    			for(int i = 0; i< length; i++){
@@ -1419,22 +1462,61 @@ private void mergeTerminals() {
 	    			
 	    			}
 	    			ruleString = r0[c-1] + " "+ sb.toString();
+	    			System.out.println("p: "+p);
 	    			expandedRuleString = rules.get(Integer.valueOf(p.substring(1))).getExpandedRuleString()+sb.toString();
 	    			numEndPos = mapToOriginalTS.get(c+length);
+	    			r0[c-1] = "R"+rules.size();
+	    		
+	    			for (int i = c; i<c+length; i++)
+	    				r0[i] = null;
+	    			r0New.set(r0New.size()-1,"R"+rules.size());
+	    			
 	    		    posR0 = c-1;
 	    		    
 	    		}
 		    	System.out.println("Rule String: " + ruleString);
 		    	System.out.println("expe String: "+expandedRuleString);
-	    		c = c + length+1;
+	    		c = c + length;
 	    		GrammarRuleRecord newRule = new GrammarRuleRecord(rules.size(),ruleString, expandedRuleString, posR0, numStartPos, numEndPos);
 	    		rules.addRule(newRule,rules.size());
 	    	}
 	    	else
-	    		c++;
+	    		{
+	    			r0New.add(s);
+	    			c++;
+	    		}
 	}
-			
+	
+	r0Ori = r0;
+	//r0 = new String[r0New.size()];
+	
+	
+	
+//	r0 = new String[r0New.size()];
+	System.out.print("r0Ori = [");
+	for (int i = 0; i<r0Ori.length; i++)
+		{
+	
+		System.out.print(r0Ori[i]+", ");
 		}
+	
+	System.out.println("]");
+	
+	System.out.print("r0New = [");
+	for (int i = 0; i<r0New.size(); i++)
+		{
+	//	r0[i] = r0New.get(i);
+		System.out.print(r0New.get(i)+", ");
+		}
+	
+	System.out.println("]");
+	for (int i = 0; i<r0.length; i++)
+	{
+	System.out.print(r0[i]+", ");
+	}
+
+System.out.println("]");
+	}
 
 	/*
 	private void AnomalyDetection() {
@@ -1507,8 +1589,17 @@ private void mergeTerminals() {
 		  	int amountR0RuleLength = 0;
 		  	int nonTerminalCounter = 0;
 		  //	int totalNonTerminal = 0;
+		  	int nullCounter =0;
 		    while (i<r0.length){
 		 //   	System.out.println("i:"+i);
+		    	
+		    	if(r0[i]==null)
+		    		{
+		    			i++;
+		    			nullCounter++;
+		    			continue;
+		    		}
+		    		
 		  		String s = r0[i];
 	    	//	  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
 
@@ -1521,12 +1612,12 @@ private void mergeTerminals() {
 		    	  if(true){
 		    	  //  	System.out.println("r0: "+i+" : "+r0[i]+" : "+RuleDistanceMatrix.parseRule(s));
 		
-		          int startPos = mapToOriginalTS.get(i);
+		          int startPos = mapToOriginalTS.get(i-nullCounter);
 		          int endPos;
 		          if(isNumeric(r0[i+1])&&Integer.valueOf(r0[i+1])<0)
-		    	     endPos = mapToOriginalTS.get((i+1))-1;
+		    	     endPos = mapToOriginalTS.get((i-nullCounter+1))-1;
 		          else
-		        	 endPos = mapToOriginalTS.get((i+1));
+		        	 endPos = mapToOriginalTS.get((i-nullCounter+1));
 		    	  /*
 		          int endPos;
 		          
@@ -1577,7 +1668,7 @@ private void mergeTerminals() {
 		    	  */
 		    	}
 		    	else{
-		    		int numStartPos = mapToOriginalTS.get(i);
+		    		int numStartPos = mapToOriginalTS.get(i-nullCounter);
 			    	  int numEndPos;
 			    	  if(Integer.valueOf(r0[i])>=0){
 			    		//  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
@@ -1593,9 +1684,9 @@ private void mergeTerminals() {
 		    		//  System.out.println("ii:"+i);
 		    		//  System.out.println(nextNonTerminal + "MapToOriginalTS.get(nextNonTerminal) = "+mapToOriginalTS.get(nextNonTerminal));
 		    		  if(isNumeric(r0[nextNonTerminal])) // negative
-		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal)-1;
+		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal-nullCounter)-1;
 		    		  else
-		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal);
+		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal-nullCounter);
 		    		/*
 		    		  System.out.print(cnt+": [");
 		    		  cnt++;
@@ -1801,10 +1892,12 @@ private void mergeTerminals() {
 	}
 
 	private Integer getPositionsInTS(ArrayList<Integer> mapToPreviousR0,ArrayList<Integer> previousMapToOriginalTS, int index) {
-		/*
-		if(mapToPreviousR0.get(index)>76576)
-				System.out.println("index = "+index +" mapToPreviousR0.get(index) ="+mapToPreviousR0.get(index)+"  previousMapToOriginalTS.get(mapToPreviousR0.get(index))  ="+previousMapToOriginalTS.get(mapToPreviousR0.get(index)));
-	   */
+		
+	//	if(previousMapToOriginalTS.get(mapToPreviousR0.get(index))==108)
+				System.out.println("index = "+index+"    r0"+r0[index]);
+				System.out.println(" mapToPreviousR0.get(index) ="+mapToPreviousR0.get(index));
+				System.out.println("  previousMapToOriginalTS.get(mapToPreviousR0.get(index))  ="+previousMapToOriginalTS.get(mapToPreviousR0.get(index)));
+	   
 		return previousMapToOriginalTS.get(mapToPreviousR0.get(index));
 	}
 
@@ -2494,6 +2587,8 @@ private void mergeTerminals() {
 	  }
 	  public static boolean isNumeric(String str)  
 	  {  
+		  if(str == null)
+			  return false;
 	    try  
 	    {  
 	      double d = Double.parseDouble(str);  
