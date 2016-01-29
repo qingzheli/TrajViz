@@ -74,13 +74,34 @@ public class GrammarRuleRecord {
   
   
   /*
-   * cursor
+   * cursor -qz
    */
   private int cursor;
   public GrammarRuleRecord(){
 	  cursor = 0;
 	  tsR0OccurenceIndexes = new ArrayList<Integer>();
   }
+  /*
+   * -qz
+   * artificial constructor
+   */
+  public GrammarRuleRecord(int ruleNumber, String ruleString, String expandedRuleString, Integer posR0, Integer startPos, Integer endPos){
+	  this.ruleNumber = ruleNumber;
+	  this.ruleString = ruleString;
+	  this.expandedRuleString = expandedRuleString;
+	  this.actualRuleString = expandedRuleString;
+	  this.tsR0OccurenceIndexes = new ArrayList<Integer>();
+	  this.tsR0OccurenceIndexes.add(posR0);
+	  this.ruleIntervals = new ArrayList<RuleInterval>();
+	  RuleInterval ri = new RuleInterval(startPos, endPos);
+	  this.ruleIntervals.add(ri);
+	  this.r0Intervals = new ArrayList<RuleInterval>();
+	  this.r0Intervals.add(ri);
+	  this.fR0 = 1;
+	  this.ruleYield = SequiturModel.countSpaces(expandedRuleString);
+	  cursor = 0;
+  }
+  
   public void setCursor(int i){
 	  if(i>r0Intervals.size())
 		 // cursor = ruleIntervals.size()-1;

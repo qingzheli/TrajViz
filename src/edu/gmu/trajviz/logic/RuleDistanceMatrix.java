@@ -41,7 +41,8 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 	//int col = 0;
 	for(int i = 0; i<filter.size();i++ )
 		for(int j = i+1; j<filter.size();j++){
-			if(rules.get(filter.get(i)).frequencyInR0()>2&&rules.get(filter.get(j)).frequencyInR0()>2)
+			//if(rules.get(filter.get(i)).frequencyInR0()>2&&rules.get(filter.get(j)).frequencyInR0()>2)
+			if(true)
 			{
 				String rule1 = parseRule(rules.getRuleRecord(filter.get(i)).getExpandedRuleString());
 	
@@ -60,12 +61,13 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 			
 			matrix[i][j] = lcssDistance(blocks,toArrayList(rule1),toArrayList(rule2));
 			matrix[j][i] = matrix[i][j];
-			if(matrix[i][j]>0&&matrix[i][j]<minLink){//&&matrix[i][j]<minDistance){
+			if(matrix[i][j]>=0&&matrix[i][j]<minLink){//&&matrix[i][j]<minDistance){
 				pq.add(new PairDistance(i,j,matrix[i][j]));
-		//		System.out.println("distance = "+matrix[i][j]);
-		//		System.out.println("Rule 1: "+rule1);
-			//	System.out.println("Rule 2: "+rule2);
-				
+			/*
+				System.out.println("distance = "+matrix[i][j]);
+				System.out.println("Rule 1: "+rule1);
+			    System.out.println("Rule 2: "+rule2);
+				*/
 			/*
 				minDistance = matrix[i][j];
 				minPair[0] = i;
@@ -184,7 +186,7 @@ private double lcssDistance(Blocks blocks, ArrayList<Integer> x, ArrayList<Integ
 			
 			
 			
-			if(blocks.latBlockCount(x.get(i),y.get(j))<=Math.max(SequiturModel.alphabetSize/50.0,1)&&blocks.lonBlockCount(x.get(i), y.get(j))<=Math.max(SequiturModel.alphabetSize/50.0,1))  //epsilon
+			if(blocks.latBlockCount(x.get(i),y.get(j))<=Math.max(SequiturModel.alphabetSize/10.0,1)&&blocks.lonBlockCount(x.get(i), y.get(j))<=Math.max(SequiturModel.alphabetSize/10.0,1))  //epsilon
 
 				opt[i][j] = opt[i+1][j+1]+1;
 			else
@@ -200,20 +202,23 @@ private double lcssDistance(Blocks blocks, ArrayList<Integer> x, ArrayList<Integ
 
 		}
 	ans = 1- Math.max(0.0,(double)opt[0][0])/(Math.max(m, n));
-	/*
-	if(ans<=minLink){
+	
+	if(true){//(ans<=minLink){
+		
 	System.out.println("x: "+x);
 	System.out.println("y: "+y);
 	System.out.println("minLink = "+minLink);
 	System.out.println("ans: "+ans+" opt00 = "+opt[0][0]);
+	/*
 	if(y.get(0)==3040&&y.get(1)==3118&&x.get(0)==3040)
 		for(int f =0; f<x.size(); f++){
 			System.out.println();
 			for(int g = 0; g<y.size(); g++)
 				System.out.print(opt[f][g]+"\t\t");
 		}
+		*/
 	}
-	*/
+	
 	return ans;
 }
 

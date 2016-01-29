@@ -883,11 +883,11 @@ public class SequiturModel extends Observable {
 		          
 		        /* print all rule details
 		         */
-		        /* 
+		         
 		          for(int i=0;i<rules.size();i++){
 		        	  System.out.println("Rule number: "+rules.getRuleRecord(i).getRuleNumber()+" Fre in R0: "+rules.get(i).frequencyInR0()+" LEVEL: "+rules.get(i).getRuleLevel()+" "+rules.get(i)+" StringOccurence: "+rules.getRuleRecord(i).occurrencesToString()+"OccurenceInR0: "+rules.get(i).r0OccurrencesToString()+" Rule String: "+rules.getRuleRecord(i).getExpandedRuleString()+" Rule Positions: "+rules.getRuleRecord(i).getRuleIntervals());
 		          }
-		         */
+		        
 		       /*  */
 		         
 	
@@ -1214,13 +1214,25 @@ public class SequiturModel extends Observable {
 			 * Warning: rules in clusters are real rules, rules in clusterMap are filter rules. 
 			 * 
 			 */
+		//	mergeTerminals();
+		    
+	        /* print all rule details
+	         */
+	         
+	          for(int i=0;i<rules.size();i++){
+	        	  System.out.println("Rule number: "+rules.getRuleRecord(i).getRuleNumber()+" Fre in R0: "+rules.get(i).frequencyInR0()+" LEVEL: "+rules.get(i).getRuleLevel()+" "+rules.get(i)+" StringOccurence: "+rules.getRuleRecord(i).occurrencesToString()+"OccurenceInR0: "+rules.get(i).r0OccurrencesToString()+" Rule String: "+rules.getRuleRecord(i).getExpandedRuleString()+" Rule Positions: "+rules.getRuleRecord(i).getR0Intervals());
+	          }
+	        
+	       /*  */
+	         
 	        filterMap = new HashMap<Integer,Integer>();
-	        for (int i = 0; i<rules.size();i++){
-					if ((rules.get(i).frequencyInR0()>=1&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=2))//||
+	        for (int i = 1; i<rules.size();i++){
+	        	System.out.println("Before filter: Frequency in R0: "+ rules.get(i).frequencyInR0()+"  Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
+					if ((rules.get(i).frequencyInR0()>=1&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=1))//||
 						//	(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getR0Intervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
 						{
 						//HashSet<Integer> set = new HashSet<Integer>();
-		//				System.out.println("Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
+						System.out.println("Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
 						filterMap.put(i, filter.size());
 						filter.add(i);
 					/*	
@@ -1370,7 +1382,61 @@ public class SequiturModel extends Observable {
 	        }
 	        
 		}
-/*
+private void mergeTerminals() {
+	int c = 0;
+	while(c<r0.length){
+		String s = r0[c];
+		String ruleString;
+		String expandedRuleString;
+		Integer posR0 = 0;
+		int length = 0;
+    	//	  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
+			
+	    	if(isNumeric(s)&&Integer.valueOf(s)>=0){
+	    	
+	    		int numStartPos;
+	    		int numEndPos;
+	    		if(c<1||isNumeric(r0[c-1])){
+	    			numStartPos= mapToOriginalTS.get(c);
+	    			length = Math.min(minBlocks, getNextNonTerminal(c)-c);
+	    			StringBuffer sb = new StringBuffer();
+	    			for(int i = 0; i< length; i++){
+	    				sb.append(r0[c+i]+" ");
+	    			}
+	    			ruleString = sb.toString();
+	    			expandedRuleString = sb.toString();
+	    			numEndPos = mapToOriginalTS.get(c+length);
+	    		    posR0 = c;
+	    		}
+	    		else{
+	    			String p = r0[c-1];
+	    			numStartPos = mapToOriginalTS.get(c-1);
+	    			length = Math.min(minBlocks, getNextNonTerminal(c)-c);
+	    			StringBuffer sb = new StringBuffer();
+	    		
+	    			for(int i = 0; i< length; i++){
+	    				sb.append(r0[c+i]+" ");
+	    			
+	    			}
+	    			ruleString = r0[c-1] + " "+ sb.toString();
+	    			expandedRuleString = rules.get(Integer.valueOf(p.substring(1))).getExpandedRuleString()+sb.toString();
+	    			numEndPos = mapToOriginalTS.get(c+length);
+	    		    posR0 = c-1;
+	    		    
+	    		}
+		    	System.out.println("Rule String: " + ruleString);
+		    	System.out.println("expe String: "+expandedRuleString);
+	    		c = c + length+1;
+	    		GrammarRuleRecord newRule = new GrammarRuleRecord(rules.size(),ruleString, expandedRuleString, posR0, numStartPos, numEndPos);
+	    		rules.addRule(newRule,rules.size());
+	    	}
+	    	else
+	    		c++;
+	}
+			
+		}
+
+	/*
 	private void AnomalyDetection() {
 		ArrayList<RuleInterval> anomalyCandidate = new ArrayList<RuleInterval>();
 		int start = 0;
@@ -1684,10 +1750,12 @@ public class SequiturModel extends Observable {
 		  					ruleCoverCount++;
 		  			}
 		  			  drawAnomaly();
+		  			  
 		  			  System.out.println("Cover Count: "+ coverCount);
 		  			  System.out.println("Anomaly Count/count1: "+ anomalyCount+","+ anomalyCount1 );
 		  			  
 		  			  System.out.println("isCover rate: " +(double)coverCount/(isCovered.length-trajCounter));
+		  			  /*
 		  			  System.out.println("satisfied rules: "+finalIntervals.size()+ " longRuleRate: ");
 		  			  System.out.println("RuleCoverCount: "+ruleCoverCount+" RuleCoverRate: "+(double)ruleCoverCount/(ruleCovered.length-trajCounter));
 		  			  System.out.println("total number of rules in R0: "+finalIntervals.size()+ "avg rule length: "+ (double)totalRuleLength/finalIntervals.size());
@@ -1696,6 +1764,7 @@ public class SequiturModel extends Observable {
 		  			  System.out.println("Confusion Matrix:");
 		  			  System.out.println("True Anomaly:\t"+ trueAnomalyCount+"\t"+ falseNegativeCount);
 		  			  System.out.println("False Anomaly:\t"+ falsePositiveCount+"\t"+ trueNegativeCount);
+		  */
 		  		//	evaluateResult();
 				
 		  }
@@ -1993,25 +2062,34 @@ public class SequiturModel extends Observable {
 
 	private boolean isMergable(double[][] distance, ArrayList<HashSet<Integer>> families, int x, int y, HashMap<Integer, Integer> map, double minLink) {
 		//boolean mergable = true;
+		double dist = 0;
+		int counter = 0;
 		if(map.containsKey(x)||map.containsKey(y)){
 			if(!map.containsKey(x)){
+				
 				for(int j: families.get(map.get(y)))
 				{
 					int i = filterMap.get(j);
-					if(distance[x][i]>(minLink*2))
-						return false;
+					dist = dist + distance[x][i]; 
+					counter++;
+					//if(distance[x][i]>(minLink*2))
+						//return false;
 			
 				}
+				dist = dist/counter;
 			}
 			else if(!map.containsKey(y)){
 				for(int j: families.get( map.get(x)))
 					{
 					int i = filterMap.get(j);
-					if(distance[i][y]>(minLink*2))
+					dist = dist + distance[i][y];
+					counter++;
+					//if(distance[i][y]>(minLink*2))
 					
-						return false;
+						//return false;
 			
 					}
+				dist = dist/counter;
 			}
 			else
 			{	
@@ -2019,16 +2097,22 @@ public class SequiturModel extends Observable {
 				for(int n : families.get(map.get(y)))
 
 				{
+					
 				int i =filterMap.get(m);
 				int j =filterMap.get(n);
 		//		int xSibling = families.get(x).get(i);
 		//		int ySibling = families.get(y).get(j);
-				if(distance[i][j]>(minLink*2))
-					return false;
+			//	if(distance[i][j]>(minLink*2))
+				//	return false;
+				dist = dist+distance[i][j];
+				counter++;
 				}
+			dist = dist/counter;
 			}
+			if (dist>minLink)
+				return false;
 		}
-		else if(distance[x][y]>(minLink*2))
+		else if(distance[x][y]>(minLink))
 			return false;
 		
 		return true;

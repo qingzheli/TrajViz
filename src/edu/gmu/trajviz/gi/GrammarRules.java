@@ -17,7 +17,14 @@ public class GrammarRules implements Iterable<GrammarRuleRecord> {
     int key = arrRule.getRuleNumber();
     this.rules.put(key, arrRule);
   }
-
+/*
+ * -qz override
+ */
+  public void addRule(GrammarRuleRecord arrRule, int ruleNumber) {
+	    int key = ruleNumber;
+	    this.rules.put(key, arrRule);
+	  }
+  
   public GrammarRuleRecord getRuleRecord(Integer ruleIdx) {
     return this.rules.get(ruleIdx);
   }
