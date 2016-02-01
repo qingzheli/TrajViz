@@ -204,11 +204,12 @@ private double lcssDistance(Blocks blocks, ArrayList<Integer> x, ArrayList<Integ
 	ans = 1- Math.max(0.0,(double)opt[0][0])/(Math.max(m, n));
 	
 	if(true){//(ans<=minLink){
-		
+	/*	
 	System.out.println("x: "+x);
 	System.out.println("y: "+y);
 	System.out.println("minLink = "+minLink);
 	System.out.println("ans: "+ans+" opt00 = "+opt[0][0]);
+	*/
 	/*
 	if(y.get(0)==3040&&y.get(1)==3118&&x.get(0)==3040)
 		for(int f =0; f<x.size(); f++){
