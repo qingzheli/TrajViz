@@ -122,6 +122,7 @@ public class SequiturModel extends Observable {
 	private ArrayList<RuleInterval> rawAllIntervals;
 	private ArrayList<RuleInterval> anomalyIntervals;
 	private ArrayList<RuleInterval> anomalRuleIntervals;
+	private boolean isLastIteration;
 	private int realRuleSize;
 //	private ArrayList<HashSet<Integer>> mapToOriginRules;
 	private double runTime = -1;
@@ -349,6 +350,7 @@ public class SequiturModel extends Observable {
 	  
 	  public synchronized void processData(double minLink, int alphabetSize, int minBlocks, int noiseThreshold)throws IOException{
 		  sortedCounter = 0;
+		  this.isLastIteration = false;
 		  this.minLink = minLink;
 		  this.minBlocks = minBlocks;
 		  this.noiseThreshold = noiseThreshold;
@@ -485,6 +487,11 @@ public class SequiturModel extends Observable {
            	System.out.println("total anomalies: "+anomalyRoutes.size());
 
       }
+          /*
+          this.isLastIteration = true;
+          runSequitur(iteration);
+          drawOnMap();
+          */
         //  drawOnMap();
          //	System.out.println("total anomalies: "+anomalyRoutes.size());
 	  
@@ -532,6 +539,7 @@ public class SequiturModel extends Observable {
 		
 
 		  System.out.println("running time: "+runTime);
+		  System.out.println("finalInteravals: "+finalIntervals.size());
 		  ArrayList<Integer> frequency = new ArrayList<Integer>();
 		  	
 
@@ -822,15 +830,23 @@ public class SequiturModel extends Observable {
 		          }
 		        
 		       /*  */
-		         
-				  mergeTerminals();
-		          
+		         if(this.isLastIteration)
+				  {
+		        	 mergeTerminals();
+				     finalCluster();
+		             replaceBack();
+				  }
 		       //  if(this.alphabetSize<=100)
-		          clusterRules();
+		         else
+		          {
+		        	 mergeTerminals();
+		        	 clusterRules();
+		        	 replaceBack();
+		          }
 		          
 		          
-		          
-		          replaceBack();
+		        
+		        	  
 		          
 		          mapToPreviousR0();
 		          allR0.add(r0);
@@ -872,7 +888,7 @@ public class SequiturModel extends Observable {
 		        		//  	continue;
 		        		  }
 		        	  else{
-		        	  System.out.println("r0_"+i+"="+r0[i] );
+		        	//  System.out.println("r0_"+i+"="+r0[i] );
 		        	  if (r0[i].charAt(0)=='R')
 		        		  {
 		        		  //	if(i==0)
@@ -935,10 +951,7 @@ public class SequiturModel extends Observable {
 		        	  System.out.print(words.get(d)+ " ");
 		          System.out.println();
 		          */
-		          System.out.print("AfterR0: ");
-		          
-		          for(int i = 0; i<r0.length;i++){ 
-		          }          
+		                
 		          
 		          System.out.println();
 		          allMapToPreviousR0.add(mapToPreviousR0);
@@ -1156,6 +1169,10 @@ public class SequiturModel extends Observable {
 		}
 	*/
 	
+		private void finalCluster() {
+		
+	}
+
 		private void mapToPreviousR0() {
 			int currentIdx = 0;
 		   
@@ -1176,12 +1193,12 @@ public class SequiturModel extends Observable {
 		        		  
 		        		  
 		        		  	mapToPreviousR0.add(currentIdx);
-		        		  	System.out.println(i+" : "+r0[i]+":"+currentIdx+" ");
+		        	//	  	System.out.println(i+" : "+r0[i]+":"+currentIdx+" ");
 		        		  	int length1 = rules.get(currentRule).getRuleYield();
 		        		  	int length2 = countSpaces(rules.get(currentRule).getExpandedRuleString());
 		        		   // currentIdx = currentIdx + rules.get(currentRule).getRuleYield();
 		        		  	currentIdx = currentIdx + length2;
-		        		  	System.out.println("CurrentIdx = "+currentIdx +" i= "+i+" : "+r0[i]+":"+currentIdx+" expandRule:  "+rules.get(currentRule).getExpandedRuleString()+" length1:length2 = "+length1+":"+length2);
+		        	//	  	System.out.println("CurrentIdx = "+currentIdx +" i= "+i+" : "+r0[i]+":"+currentIdx+" expandRule:  "+rules.get(currentRule).getExpandedRuleString()+" length1:length2 = "+length1+":"+length2);
 		        		  	
 		        		  	if(currentIdx>mapToOriginalTS.size()||length1!=length2)
 		        		    	
@@ -1197,13 +1214,13 @@ public class SequiturModel extends Observable {
 		        			  
 		        		  mapToPreviousR0.add(currentIdx);
 
-		        		  System.out.println(i+" : "+r0[i]+":"+currentIdx+" ");
+		        	//	  System.out.println(i+" : "+r0[i]+":"+currentIdx+" ");
 		        		  
 		        		  	currentIdx++;
 		        		  	if(currentIdx>mapToOriginalTS.size())
 		        		    	
 		        		    {
-				        		  System.out.println(i+" : "+r0[i]+":"+currentIdx);
+				        //		  System.out.println(i+" : "+r0[i]+":"+currentIdx);
 
 		        		    }
 		        		  }
@@ -1220,8 +1237,13 @@ public class SequiturModel extends Observable {
 	}
 
 		private void replaceBack() {
+			System.out.println("filter");
+			printArrayList(filter);
+			System.out.println("filterMap: ");
+			System.out.println(filterMap);
 			for(int i = realRuleSize; i<rules.size(); i++){
 				String[] ruleString = rules.get(i).getRuleString().split(" ");
+				System.out.println("Rule "+i+" : "+rules.get(i).getRuleString()+"   filterMap: "+filterMap.get(rules.get(i).getRuleNumber()) );
 	        	  if(!clusterMap.containsKey(filterMap.get(rules.get(i).getRuleNumber()))){
 	        		
 	        		System.out.print("replace Back Rule String: [ ");
@@ -1389,7 +1411,7 @@ public class SequiturModel extends Observable {
 	        filterMap = new HashMap<Integer,Integer>();
 	        for (int i = 1; i<rules.size();i++){
 	        	System.out.println("Before filter: Frequency in R0: "+ rules.get(i).frequencyInR0()+"  Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
-					if ((rules.get(i).frequencyInR0()>=1&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=2))//||
+					if ((rules.get(i).frequencyInR0()>=1&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=1))//||
 						//	(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getR0Intervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
 						{
 						//HashSet<Integer> set = new HashSet<Integer>();
@@ -1561,7 +1583,8 @@ private void mergeTerminals() {
 	    		int numEndPos;
 	    		if(c<1||isNumeric(r0[c-1])||r0[c-1]==null){
 	    			numStartPos= mapToOriginalTS.get(c);
-	    			length = Math.min(4, getNextNonTerminal(c)-c);
+	    			length = Math.min(10, getNextNonTerminal(c)-c);
+	    		
 	    			StringBuffer sb = new StringBuffer();
 	    			for(int i = 0; i< length; i++){
 	    				sb.append(r0[c+i]+" ");
@@ -1572,14 +1595,15 @@ private void mergeTerminals() {
 	    		    posR0 = c;
 	    		    r0New.add("R"+rules.size());
 	    		    r0[c] = "R"+rules.size();
-		    		
+	    			
 	    			for (int i = c+1; i<c+length ; i++)
 	    				r0[i] = null;
+	    			
 	    		}
 	    		else{
 	    			String p = r0[c-1];
 	    			numStartPos = mapToOriginalTS.get(c-1);
-	    			length = Math.min(4, getNextNonTerminal(c)-c);
+	    			length = Math.min(10, getNextNonTerminal(c)-c);
 	    			StringBuffer sb = new StringBuffer();
 	    		
 	    			for(int i = 0; i< length; i++){
@@ -1602,11 +1626,13 @@ private void mergeTerminals() {
 	    		    posR0 = c-1;
 	    		    
 	    		}
-		    	System.out.println("Rule String: " + ruleString);
-		    	System.out.println("expe String: "+expandedRuleString);
+	//	    	System.out.println("Rule String: " + ruleString);
+		//    	System.out.println("expe String: "+expandedRuleString);
+	    		
 	    		c = c + length;
 	    		GrammarRuleRecord newRule = new GrammarRuleRecord(rules.size(),ruleString, expandedRuleString, posR0);//, numStartPos, numEndPos);
 	    		rules.addRule(newRule,rules.size());
+	    		
 	    	}
 	    	else
 	    		{
@@ -2022,10 +2048,11 @@ System.out.println("]");
 	private Integer getPositionsInTS(ArrayList<Integer> mapToPreviousR0,ArrayList<Integer> previousMapToOriginalTS, int index) {
 		
 	//	if(previousMapToOriginalTS.get(mapToPreviousR0.get(index))==108)
+		/*
 				System.out.println("index = "+index+"    r0"+r0[index]);
 				System.out.println(" mapToPreviousR0.get(index) ="+mapToPreviousR0.get(index));
 				System.out.println("  previousMapToOriginalTS.get(mapToPreviousR0.get(index))  ="+previousMapToOriginalTS.get(mapToPreviousR0.get(index)));
-	   
+	   */
 		return previousMapToOriginalTS.get(mapToPreviousR0.get(index));
 	}
 
