@@ -67,7 +67,7 @@ public class SequiturModel extends Observable {
     private int trueNegativeCount;
     private int falseNegativeCount;
     private boolean[] ruleCovered;
-
+    
 //	private static final int NOISYELIMINATIONTHRESHOLD = 5;
 	public static int alphabetSize;
 	private double minLink;
@@ -78,6 +78,8 @@ public class SequiturModel extends Observable {
 	public static TreeMap<String, GrammarRuleRecord> sortedRuleMap;
 	public static ArrayList< ArrayList<HashSet<Integer>>> allClusters;
 	private ArrayList<HashSet<Integer>> clusters;
+	private Cluster cluster;
+	private HashMap<String, Cluster> currentClusters;
 	private ArrayList<Integer> filter;
 	public static ArrayList<ArrayList<Integer>> allFilters;
 	private HashMap<Integer,Integer> filterMap;
@@ -122,6 +124,7 @@ public class SequiturModel extends Observable {
 	private ArrayList<RuleInterval> rawAllIntervals;
 	private ArrayList<RuleInterval> anomalyIntervals;
 	private ArrayList<RuleInterval> anomalRuleIntervals;
+	private Integer iteration;
 	private boolean isLastIteration;
 	private int realRuleSize;
 //	private ArrayList<HashSet<Integer>> mapToOriginRules;
@@ -363,6 +366,7 @@ public class SequiturModel extends Observable {
 		  this.allMapToOriginalTS = new ArrayList<ArrayList<Integer>>();
 		  this.rawRoutes = new ArrayList<Route>();
 		  this.anomalyRoutes = new ArrayList<Route>();
+		  this.currentClusters = new HashMap<String,Cluster>();
 		  this.lat = new ArrayList<Double>();
 		  this.lon = new ArrayList<Double>();
 		  Comparator<String> expandedRuleComparator = new Comparator<String>(){
@@ -458,7 +462,7 @@ public class SequiturModel extends Observable {
            */
 		  
 		  
-          Integer iteration = 0;
+          iteration = 0;
           
         /*  System.out.println("before:");
           for (int d = 0; d<words.size(); d++)
@@ -828,20 +832,21 @@ public class SequiturModel extends Observable {
 		          for(int i=0;i<rules.size();i++){
 		        	  System.out.println("Rule number: "+rules.getRuleRecord(i).getRuleNumber()+" Fre in R0: "+rules.get(i).frequencyInR0()+" LEVEL: "+rules.get(i).getRuleLevel()+" "+rules.get(i)+" StringOccurence: "+rules.getRuleRecord(i).occurrencesToString()+"OccurenceInR0: "+rules.get(i).r0OccurrencesToString()+" Rule String: "+rules.getRuleRecord(i).getExpandedRuleString()+" Rule Positions: "+rules.getRuleRecord(i).getRuleIntervals());
 		          }
-		        
+		        allRules.add(rules);
 		       /*  */
 		         if(this.isLastIteration)
 				  {
-		        	 mergeTerminals();
+		        	// mergeTerminals();
 				     finalCluster();
-		             replaceBack();
+		           //  replaceBack();
 				  }
 		       //  if(this.alphabetSize<=100)
 		         else
 		          {
-		        	 mergeTerminals();
-		        	 clusterRules();
-		        	 replaceBack();
+		        //	 mergeTerminals();
+		        	// clusterRules();
+		        	 finalCluster();
+		        	 //replaceBack();
 		          }
 		          
 		          
@@ -850,7 +855,7 @@ public class SequiturModel extends Observable {
 		          
 		          mapToPreviousR0();
 		          allR0.add(r0);
-		          allRules.add(rules);
+		          
 		        	  System.out.print("mapToOriginalTS: ");
 		        	  ArrayList<Integer> previousMapToOriginalTS = mapToOriginalTS;
 		        	 // printArrayList(previousMapToOriginalTS);
@@ -1170,6 +1175,24 @@ public class SequiturModel extends Observable {
 	*/
 	
 		private void finalCluster() {
+			//currentClusters = new HashMap<String, Cluster>();
+			for(int i = 0; i<r0.length; i++	){
+				String s = r0[i];
+				if(!isNumeric(s) && s!=null){
+					if(r0[i].charAt(0)=='R'){
+						s = "I"+iteration+"r"+r0[i].substring(1);
+						
+						cluster = new Cluster(s);
+						//cluster.addRule(rules.get(Integer.valueOf(r0[i].substring(1))));
+						cluster.addRule(rules.get(Integer.valueOf(r0[i].substring(1))));
+						//r0[i]=s;
+					    currentClusters.put(s, cluster);	
+					}
+
+				}
+			}
+			RuleDistanceMatrix rdm = new RuleDistanceMatrix(blocks,currentClusters,minBlocks,minLink);
+			
 		
 	}
 
