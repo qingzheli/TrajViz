@@ -47,21 +47,22 @@ public class SequiturModel extends Observable {
 //	public static double MINLINK = 0.0;
 //	public final static double (minLink*2) = 0.0;
 	public final static int EVAL_RESOLUTION = 100;
-	public final static double EVAL_ANOMALY_THRESHOLD = 0.7;
+	public final static double EVAL_ANOMALY_THRESHOLD = 0.2;
 	final static Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 	public final static String EVALUATION_HEAD = "DataName,MinLink,AlphabetSize,MinBlocks,NCThreshold,RunningTime,AvgDistance,AvgeStdDev,MinInterDistance,SilhouetteCoefficient,TotalRules,TotalDataPoints, TotalSubTrajectories,CoveredPoints, ImmergableRuleCount\n";
 //	public static final int ALPHABETSIZE = 50;
 //	public static final int CONTINUALBLOCKTHRESHOLD = 10;
 	//public static final int paaSize = 10;
-	private ArrayList<Integer> status;
+	private static ArrayList<Integer> status;
+	private static ArrayList<Integer> groundTruth; //0 is normal, 1 is anomaly
 	private static final String SPACE = " ";
 	private static final String CR = "\n";
 	private static final int STEP = 2;
 	private static final int DEFAULT_TIME_GAP = 6;//180;
 //	private static final int DEFAULT_TIME_GAP = 180;
     private boolean[] isCovered;
-    private boolean[] groundTruth;
-    private int breakPoint; // the positions<breakPoint are normal, otherwise are abnormal.
+   // private boolean[] groundTruth;
+    //private int breakPoint; // the positions<breakPoint are normal, otherwise are abnormal.
     private int trueAnomalyCount;
     private int falsePositiveCount;
     private int trueNegativeCount;
@@ -359,14 +360,19 @@ public class SequiturModel extends Observable {
 		  this.minBlocks = minBlocks;
 		  this.noiseThreshold = noiseThreshold;
 		  this.alphabetSize = alphabetSize;
-		  for(int ith = 0;ith<1000;ith++){
+		  
+		  for(int ith = 0;ith<1000;ith++)
+		  {
 			  latOri = new ArrayList<Double>();
 			  lonOri = new ArrayList<Double>();
-			  for(int jth = ith*260*17; jth<(ith+1)*260*17; jth++){
+			  for(int jth = ith*250*17; jth<(ith+1)*250*17; jth++)
+			  {
 				  latOri.add(allLatOri.get(jth));
 				  lonOri.add(allLonOri.get(jth));
 			  }
 		 
+		 // latOri = allLatOri;
+		 // lonOri = allLonOri;
 		  this.allRules = new ArrayList<GrammarRules>();
 		  this.allFilters = new ArrayList<ArrayList<Integer>>();
 		  this.allClusters = new ArrayList<ArrayList<HashSet<Integer>>>();
@@ -377,6 +383,12 @@ public class SequiturModel extends Observable {
 		  this.anomalyRoutes = new ArrayList<Route>();
 		  this.lat = new ArrayList<Double>();
 		  this.lon = new ArrayList<Double>();
+		  this.groundTruth = new ArrayList<Integer>();
+		  
+		  
+		  
+		  
+		  
 		  Comparator<String> expandedRuleComparator = new Comparator<String>(){
 			  @Override public int compare(String r1, String r2)
 			  {
@@ -562,6 +574,7 @@ public class SequiturModel extends Observable {
 		 // System.out.println(ith+" is done!");
 	  //evaluateResult();
 		  }
+	  
 		  System.out.println("FINAL Confusion Matrix:");
 			System.out.println("Total True Anomaly:\t"+ totalTP+"\t"+ totalFN);
 			System.out.println("Total False Anomaly:\t"+ totalFP+"\t"+ totalTN);
@@ -569,6 +582,7 @@ public class SequiturModel extends Observable {
 		 double accuracy  = (double)(totalTP+totalTN)/(totalTP+totalFP+totalFN+totalTN);
 		 System.out.println("errorRate = "+errorRate);
 		 System.out.println("accuracy = "+accuracy);
+		 
 	  }
 	  
 	  private void buildModel() {
@@ -669,6 +683,12 @@ public class SequiturModel extends Observable {
 			  
 			  				  
 		  }
+		  /*
+		  System.out.println("a \t lat \t lon \t ncLat \t ncLon \t groundtruth:");
+			for(int a=0; a<ncLat.size();a++){
+			System.out.println(a+"\t"+lat.get(a)+"\t"+lon.get(a)+"\t"+ncLat.get(a)+"\t"+ncLon.get(a)+"\t"+groundTruth.get(a));	
+			}
+			/*
 	//	  //???System.out.print("mapTrimed2Original: ");
 	//	  printArrayList(mapTrimed2Original);		  
 		  /*
@@ -700,11 +720,11 @@ public class SequiturModel extends Observable {
 		lon.add(lonPre);
 		ncLat.add(latPre);
 		ncLon.add(lonPre);
+		groundTruth.add(status.get(0));
 		boolean firstPoint = true;
 		while(i<latOri.size())
 		{
-			if(status.get(i)==1000)
-				breakPoint = lat.size();
+		
 			
 			
 			if(latOri.get(i)<-180)
@@ -713,6 +733,7 @@ public class SequiturModel extends Observable {
 					lon.add(lonOri.get(i));
 					ncLat.add(latOri.get(i));
 					ncLon.add(lonOri.get(i));
+					groundTruth.add(status.get(i));
 					i++;
 					firstPoint = true;
 				}
@@ -722,6 +743,7 @@ public class SequiturModel extends Observable {
 					lon.add(lonOri.get(i));
 					ncLat.add(latOri.get(i));
 					ncLon.add(lonOri.get(i));
+					groundTruth.add(status.get(i));
 					i++;
 					firstPoint = false;
 				}
@@ -738,6 +760,7 @@ public class SequiturModel extends Observable {
 						lon.add((lonOri.get(i-1)+lonstep*(j+1)));
 						ncLat.add((latOri.get(i-1)+latstep*(j+1)));
 						ncLon.add((lonOri.get(i-1)+lonstep*(j+1)));
+						groundTruth.add(status.get(i-1));
 						//  //???System.out.println(lat.get(i+j)+" , "+lon.get(i+j));
 
 					}
@@ -745,6 +768,7 @@ public class SequiturModel extends Observable {
 					lon.add(lonOri.get(i));
 					ncLat.add(latOri.get(i));
 					ncLon.add(lonOri.get(i));
+					groundTruth.add(status.get(i));
 					i++;
 				}
 				else
@@ -753,12 +777,14 @@ public class SequiturModel extends Observable {
 					lon.add(lonOri.get(i));
 					ncLat.add(latOri.get(i));
 					ncLon.add(lonOri.get(i));
+					groundTruth.add(status.get(i));
 					i++;
 					}
 				}
 			}
 			
 		}
+		
 		
 	}
 
@@ -1471,8 +1497,8 @@ public class SequiturModel extends Observable {
 		  	int amountR0RuleLength = 0;
 		  	int nonTerminalCounter = 0;
 		  	int trajCursor = 1;
-		    int[] anomalyPerTraj = new int[261];
-		  	int[] pointsPerTraj = new int[261]; 
+		    int[] anomalyPerTraj = new int[251];
+		  	int[] pointsPerTraj = new int[251]; 
 		  	
 		  	anomalyPerTraj[0] = 0;
 		  	pointsPerTraj[0] = 0;
@@ -1678,6 +1704,7 @@ public class SequiturModel extends Observable {
 		  					anomalyCount1++;
 		  					////???System.out.println("i: "+a+"\t block: "+blocks.findBlockIdForPoint(new Location(lat.get(a),lon.get(a))));
 		  				}
+		  				/*
 		  				if(isCovered[a] && a<breakPoint)
 		  					trueNegativeCount++;
 		  				if(isCovered[a] && a>=breakPoint)
@@ -1686,6 +1713,7 @@ public class SequiturModel extends Observable {
 		  					falsePositiveCount++;
 		  				if(!isCovered[a]&& a>=breakPoint)
 		  					trueAnomalyCount++;
+		  					*/
 		  			}
 		  			int i1 = 0;
 		  			
@@ -1749,28 +1777,37 @@ public class SequiturModel extends Observable {
 		  			  //???System.out.println("True Anomaly:\t"+ trueAnomalyCount+"\t"+ falseNegativeCount);
 		  			  //???System.out.println("False Anomaly:\t"+ falsePositiveCount+"\t"+ trueNegativeCount);
 		  			  */
+		  			  
+		  			  
+		  			  
 		  			  for(int k = 1; k<251; k++){
-		  				  if (((double)anomalyPerTraj[k])/(double)pointsPerTraj[k]>EVAL_ANOMALY_THRESHOLD)
-		  					  falseAnomalyTraj++;
-		  				  else
-		  					  trueNegativeTraj++;
+		  				  if (((double)anomalyPerTraj[k])/(double)pointsPerTraj[k]>EVAL_ANOMALY_THRESHOLD)             //classified as anomaly
+		  					  {
+		  					  if(k%50==1)
+		  					  
+		  						  trueAnomalyTraj++;
+		  					  else
+		  						  falseAnomalyTraj++;
+		  					  }
+		  				  else   //classified as normal
+		  					  {
+		  					  if(k%50==1)
+		  						  falseNegativeTraj++;
+		  					  else
+		  						  trueNegativeTraj++;
+		  					  }
 		  			  }
-		  			  for(int k = 251; k<=260; k++){
-		  				  if(((double)anomalyPerTraj[k])/(double)pointsPerTraj[k]>EVAL_ANOMALY_THRESHOLD)
-		  					  trueAnomalyTraj++;
-		  				  else
-		  					  falseNegativeTraj++;
-		  			  }
+		  			  
 		  			totalTP = totalTP+trueAnomalyTraj;
 		  			totalFN = totalFN+falseNegativeTraj;
 		  			totalFP = totalFP+falseAnomalyTraj;
 		  			totalTN = totalTN+trueNegativeTraj;
 		  			
-		  		/*
+		  		
 		  			System.out.println("Confusion Matrix:");
 		  			System.out.println("True Anomaly:\t"+ trueAnomalyTraj+"\t"+ falseNegativeTraj);
 		  			System.out.println("False Anomaly:\t"+ falseAnomalyTraj+"\t"+ trueNegativeTraj);
-		  			*/  
+		  			  
 		  			  
 		  		//	evaluateResult();
 				
