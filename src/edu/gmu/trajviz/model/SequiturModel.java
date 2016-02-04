@@ -477,7 +477,7 @@ public class SequiturModel extends Observable {
           while(hasNewCluster){
 	  		  int lastIteration = iteration;
 	  		  hasNewCluster = false;
-        	  
+	  		
         	  System.out.println("Iteration: "+iteration);
         	  
         //  if(hasNewCluster)
@@ -486,7 +486,7 @@ public class SequiturModel extends Observable {
         	  iteration = iteration + 1;
         	 // this.minLink = this.minLink*2;
         	  //this.minLink = minLink*(iteration+1);
-
+        	  this.isLastIteration = true;
         	   drawOnMap();
            	System.out.println("total anomalies: "+anomalyRoutes.size());
 
@@ -836,16 +836,16 @@ public class SequiturModel extends Observable {
 		       /*  */
 		         if(this.isLastIteration)
 				  {
-		        	// mergeTerminals();
-				     finalCluster();
-		           //  replaceBack();
+		        	 mergeTerminals();
+				     clusterRules();
+		             replaceBack();
 				  }
 		       //  if(this.alphabetSize<=100)
 		         else
 		          {
 		        //	 mergeTerminals();
-		        	// clusterRules();
-		        	 finalCluster();
+		        	 clusterRules();
+		        	 //finalCluster();
 		        	 //replaceBack();
 		          }
 		          

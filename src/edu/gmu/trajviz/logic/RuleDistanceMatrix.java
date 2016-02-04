@@ -81,7 +81,7 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 		}
 	this.rules = rules;
 	System.out.println("Matrix size: "+filter.size());
-	printMatrix(matrix);
+//	printMatrix(matrix);
 }
 
 
