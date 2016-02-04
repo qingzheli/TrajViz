@@ -1741,301 +1741,347 @@ System.out.println("]");
 	}
 
 */
-	private void drawOnMap(){
-			  // Generate All Motifs and record them on files respectively.
-		    trueAnomalyCount = 0;
-		    falsePositiveCount = 0;
-		    trueNegativeCount = 0;
-		    falseNegativeCount = 0;
-			for(int i = 0; i<isCovered.length;i++)
-				{
-					isCovered[i] = true;
-					ruleCovered[i] = false;
-				}
-		  	finalIntervals = new HashMap<String, ArrayList<RuleInterval>>();
-			ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
-			anomalyIntervals = new ArrayList<RuleInterval>();
-			routes = new ArrayList<ArrayList<Route>>();
-			int anomalyCount = 0;
-			int totalRuleCount = 0;
-		  	immergableRuleCount = 0;
-		    //for (int i = 0 ; i<r0.length; i++){
-		  	int i = 0;
-		  	int cnt = 0;
-		  	int totalRuleLength = 0;
-		  	int amountR0RuleLength = 0;
-		  	int nonTerminalCounter = 0;
-		  //	int totalNonTerminal = 0;
-		  	int nullCounter =0;
-		    while (i<r0.length){
-		 //   	System.out.println("i:"+i);
-		    	
-		    	if(r0[i]==null)
-		    		{
-		    			i++;
-		    			nullCounter++;
-		    			continue;
-		    		}
-		    		
-		  		String s = r0[i];
-	    	//	  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
+private void drawOnMap(){
+	  // Generate All Motifs and record them on files respectively.
+  trueAnomalyCount = 0;
+  falsePositiveCount = 0;
+  trueNegativeCount = 0;
+  falseNegativeCount = 0;
+	for(int i = 0; i<isCovered.length;i++)
+		{
+			isCovered[i] = true;
+			ruleCovered[i] = false;
+		}
+	finalIntervals = new HashMap<String, ArrayList<RuleInterval>>();
+	ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
+	anomalyIntervals = new ArrayList<RuleInterval>();
+	routes = new ArrayList<ArrayList<Route>>();
+	int anomalyCount = 0;
+	int totalRuleCount = 0;
+	immergableRuleCount = 0;
+  //for (int i = 0 ; i<r0.length; i++){
+	int i = 0;
+	int cnt = 0;
+	int totalRuleLength = 0;
+	int amountR0RuleLength = 0;
+	int nonTerminalCounter = 0;
+	int trajCursor = 1;
+  int[] anomalyPerTraj = new int[251];
+	int[] pointsPerTraj = new int[251]; 
+	
+	anomalyPerTraj[0] = 0;
+	pointsPerTraj[0] = 0;
+	int trueAnomalyTraj = 0;
+	int falseAnomalyTraj = 0;
+	int falseNegativeTraj = 0;
+	int trueNegativeTraj = 0;
+	int startTraj = 0;
+//	int totalNonTerminal = 0;
+  while (i<r0.length){
+//   	//???System.out.println("i:"+i);
+		String s = r0[i];
+	//	  //???System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
 
-		    	if(!isNumeric(s)){
-		    	  nonTerminalCounter++;	
-		    	  amountR0RuleLength = amountR0RuleLength + countSpaces(RuleDistanceMatrix.parseRule(s));  	
-		    	 // if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
-			    	//  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=2){
+  	if(!isNumeric(s)){
+  	  nonTerminalCounter++;	
+  	  amountR0RuleLength = amountR0RuleLength + countSpaces(RuleDistanceMatrix.parseRule(s));  	
+  	 // if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
+	    	//  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=2){
 
-		    	  if(true){
-		    	  //  	System.out.println("r0: "+i+" : "+r0[i]+" : "+RuleDistanceMatrix.parseRule(s));
-		
-		          int startPos = mapToOriginalTS.get(i-nullCounter);
-		          int endPos;
-		          if(isNumeric(r0[i+1])&&Integer.valueOf(r0[i+1])<0)
-		    	     endPos = mapToOriginalTS.get((i-nullCounter+1))-1;
-		          else
-		        	 endPos = mapToOriginalTS.get((i-nullCounter+1));
-		    	  /*
-		          int endPos;
-		          
-		          if(i+2<mapToOriginalTS.size()&&isNumeric(r0[i+1])&&Integer.valueOf(r0[i+1])>0)
-		    	   {
-		        	  endPos = mapToOriginalTS.get((i+2))-1;
-		        	  i++;
-		    	   }
-		          else
-		        	  endPos = mapToOriginalTS.get((i+1))-1;
-		        	*/    
-		          RuleInterval interval = new RuleInterval(startPos,endPos);
-		    	  for (int a = startPos; a<=endPos; a++){
-		    		  ruleCovered[a] = true;
-		    	  }
-		    	  	if (!finalIntervals.containsKey(s)){
-		    		finalIntervals.put(s, new ArrayList<RuleInterval>());
-		    		finalIntervals.get(s).add(interval);
-		    	  	}
-		    	    else{
-		    		finalIntervals.get(s).add(interval);
-		    	  	}
-		    	  }
-		    	  i++;
-		    	  /*
-		    	   * 
-		    	   *   Don't consider subtrajectories < minBlocks as anomalies.
-		    	   * 
-		    	   */
-		    	  /*
-		    	  else{
-		    		  int unsatisfiedStartPos = mapToOriginalTS.get(i);
-			    	  int unsatisfiedEndPos;
-			    	  if(i==(r0.length-1))
-			    		  unsatisfiedEndPos = mapToOriginalTS.get(i);
-			    	  else
-			    	  {
-			    		  unsatisfiedEndPos = mapToOriginalTS.get((i+1))-1;
-			    	  }
-			    	  for(int pos = unsatisfiedStartPos; pos<=unsatisfiedEndPos; pos++)
-			    		{
-			    		  
-			    		  isCovered[pos] = false;
-				    	  anomalyCount++;
+  	  if(true){
+  	  //  	//???System.out.println("r0: "+i+" : "+r0[i]+" : "+RuleDistanceMatrix.parseRule(s));
+
+        int startPos = mapToOriginalTS.get(i);
+        int endPos;
+     //   //???System.out.println("r0.length = "+r0.length);
+     //   //???System.out.println("r0[i] = "+r0[i]);
+        		
+        if(isNumeric(r0[i+1])&&Integer.valueOf(r0[i+1])<0)
+  	     endPos = mapToOriginalTS.get((i+1))-1;
+        else
+      	 endPos = mapToOriginalTS.get((i+1));
+  	  /*
+        int endPos;
+        
+        if(i+2<mapToOriginalTS.size()&&isNumeric(r0[i+1])&&Integer.valueOf(r0[i+1])>0)
+  	   {
+      	  endPos = mapToOriginalTS.get((i+2))-1;
+      	  i++;
+  	   }
+        else
+      	  endPos = mapToOriginalTS.get((i+1))-1;
+      	*/    
+        RuleInterval interval = new RuleInterval(startPos,endPos);
+  	  for (int a = startPos; a<=endPos; a++){
+  		  ruleCovered[a] = true;
+  	  }
+  	  	if (!finalIntervals.containsKey(s)){
+  		finalIntervals.put(s, new ArrayList<RuleInterval>());
+  		finalIntervals.get(s).add(interval);
+  	  	}
+  	    else{
+  		finalIntervals.get(s).add(interval);
+  	  	}
+  	  }
+  	  i++;
+  	  /*
+  	   * 
+  	   *   Don't consider subtrajectories < minBlocks as anomalies.
+  	   * 
+  	   */
+  	  /*
+  	  else{
+  		  int unsatisfiedStartPos = mapToOriginalTS.get(i);
+	    	  int unsatisfiedEndPos;
+	    	  if(i==(r0.length-1))
+	    		  unsatisfiedEndPos = mapToOriginalTS.get(i);
+	    	  else
+	    	  {
+	    		  unsatisfiedEndPos = mapToOriginalTS.get((i+1))-1;
+	    	  }
+	    	  for(int pos = unsatisfiedStartPos; pos<=unsatisfiedEndPos; pos++)
+	    		{
+	    		  
+	    		  isCovered[pos] = false;
+		    	  anomalyCount++;
+	
+	    		}
+  	  }
+  	  */
+  	}
+  	else{
+  		int numStartPos = mapToOriginalTS.get(i);
+	    	  int numEndPos;
+	    	  if(Integer.valueOf(r0[i])>=0){
+	    		//  //???System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
+	    			  if ((getNextNonTerminal(i)-i)>=minBlocks){
+  	     
+	    	//  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=alphabetSize/30){
+  		  int nextNonTerminal = getNextNonTerminal(i);
+  		  
+  		  
+  		  if(nextNonTerminal>=r0.length)
+  			  nextNonTerminal = r0.length-1;
+  		  
+  		//  //???System.out.println("ii:"+i);
+  		//  //???System.out.println(nextNonTerminal + "MapToOriginalTS.get(nextNonTerminal) = "+mapToOriginalTS.get(nextNonTerminal));
+  		  if(isNumeric(r0[nextNonTerminal])) // negative
+  			  numEndPos = mapToOriginalTS.get(nextNonTerminal)-1;
+  		  else
+  			  numEndPos = mapToOriginalTS.get(nextNonTerminal);
+  		/*
+  		  //???System.out.print(cnt+": [");
+  		  cnt++;
+  		  for (int a = i; a<=nextNonTerminal; a++)
+  			  {
+  			  	//???System.out.print(" "+parseRule(r0[a]));
+  			  
+  			  }
+  		  //???System.out.println("]");
+  		  */
+  		//  //???System.out.println("i_nextNon : "+i+":"+nextNonTerminal+"["+numStartPos+"-"+numEndPos);
+  		//  numEndPos = mapToOriginalTS.get((i+minBlocks))-1;
+  		  RuleInterval ri = new RuleInterval(numStartPos,numEndPos);
+	  	   	  anomalyIntervals.add(ri);
+	  	   	  anomalyPerTraj[trajCursor] = anomalyPerTraj[trajCursor] + (numEndPos-numStartPos+1);
+  	  for(int pos = numStartPos; pos<=numEndPos; pos++)
+  		{
+  		  
+  		  isCovered[pos] = false;
+	    	  anomalyCount++;
+
+  		}
+  		
+  	  i = nextNonTerminal;
+	    			}
+	    			  else
+	    				  i = getNextNonTerminal(i);
+	    }
+	    else //Negative Number
+	    {
+	    	pointsPerTraj[trajCursor] = numStartPos-startTraj;
+	    	trajCursor++;
+	    	i++;
+	    	startTraj = numStartPos + 1;
+	    }
+	    	  
+  	}
+  }
+  //???System.out.println("r0.length="+r0.length);
+  
+  	    coverCount = 0;
+	Iterator it = finalIntervals.entrySet().iterator();
+	while (it.hasNext()){
+		@SuppressWarnings("unchecked")
+		Map.Entry<String,ArrayList<RuleInterval>> pair = (Map.Entry<String,ArrayList<RuleInterval>>)it.next();
+  	  totalRuleLength = totalRuleLength + countSpaces(RuleDistanceMatrix.parseRule(pair.getKey()));
+
+		ruleIntervals.add(pair.getValue());
+	}
+	
+	totalSubTrajectory = 0;
+	for (int i1 = 0; i1<ruleIntervals.size();i1++){
+		totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i1).size();
+		ArrayList<RuleInterval> positions = ruleIntervals.get(i1);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
+		int counter = 0;
+		ArrayList<Route> route = new ArrayList<Route>();
 			
-			    		}
-		    	  }
-		    	  */
-		    	}
-		    	else{
-		    		int numStartPos = mapToOriginalTS.get(i-nullCounter);
-			    	  int numEndPos;
-			    	  if(Integer.valueOf(r0[i])>=0){
-			    		//  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
-			    			  if ((getNextNonTerminal(i)-i)>=minBlocks){
-		    	     
-			    	//  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=alphabetSize/30){
-		    		  int nextNonTerminal = getNextNonTerminal(i);
-		    		  
-		    		  
-		    		  if(nextNonTerminal>=r0.length)
-		    			  nextNonTerminal = r0.length-1;
-		    		  
-		    		//  System.out.println("ii:"+i);
-		    		//  System.out.println(nextNonTerminal + "MapToOriginalTS.get(nextNonTerminal) = "+mapToOriginalTS.get(nextNonTerminal));
-		    		  if(isNumeric(r0[nextNonTerminal])) // negative
-		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal-nullCounter)-1;
-		    		  else
-		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal-nullCounter);
-		    		/*
-		    		  System.out.print(cnt+": [");
-		    		  cnt++;
-		    		  for (int a = i; a<=nextNonTerminal; a++)
-		    			  {
-		    			  	System.out.print(" "+parseRule(r0[a]));
-		    			  
-		    			  }
-		    		  System.out.println("]");
-		    		  */
-		    		//  System.out.println("i_nextNon : "+i+":"+nextNonTerminal+"["+numStartPos+"-"+numEndPos);
-		    		//  numEndPos = mapToOriginalTS.get((i+minBlocks))-1;
-		    		  RuleInterval ri = new RuleInterval(numStartPos,numEndPos);
-			  	   	  anomalyIntervals.add(ri);
-		    	  for(int pos = numStartPos; pos<=numEndPos; pos++)
-		    		{
-		    		  
-		    		  isCovered[pos] = false;
-			    	  anomalyCount++;
-		
-		    		}
-		    		
-		    	  i = nextNonTerminal;
-		    	}
-			    			  else
-			    				  i = getNextNonTerminal(i);
-			    	  }
-			    else
-			    i++; //Negative Number
-		    	}
-		    }
-		    System.out.println("r0.length="+r0.length);
-		    
-		    	    coverCount = 0;
-		  	Iterator it = finalIntervals.entrySet().iterator();
-		  	while (it.hasNext()){
-		  		@SuppressWarnings("unchecked")
-				Map.Entry<String,ArrayList<RuleInterval>> pair = (Map.Entry<String,ArrayList<RuleInterval>>)it.next();
-		    	  totalRuleLength = totalRuleLength + countSpaces(RuleDistanceMatrix.parseRule(pair.getKey()));
-
-		  		ruleIntervals.add(pair.getValue());
-		  	}
-		  	
-		  	totalSubTrajectory = 0;
-		  	for (int i1 = 0; i1<ruleIntervals.size();i1++){
-		  		totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i1).size();
-		  		ArrayList<RuleInterval> positions = ruleIntervals.get(i1);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
-				int counter = 0;
-		  		ArrayList<Route> route = new ArrayList<Route>();
-		  			
-		  		for (int k=0;k<positions.size();k++)
-		  				  {
-		  					  Route singleRoute = new Route();
-		  					  int startPos = positions.get(k).getStartPos();
-		  						int endPos = positions.get(k).getEndPos();
-		  						/*
-		  						for(int index=startPos; index<=endPos;index++)
-		  							isCovered[index]=true;
-		  							*/
-		  		//				System.out.println("startPos: "+startPos);
-		  		//				System.out.println("endPos: " +endPos);
-		  						
-		  					//	System.out.print("track#: "+counter+":       ");
-		  						for (int j = startPos; j<=endPos; j++){
-		  							
-		  							Location loca = new Location(lat.get(j),lon.get(j));
-		  				
-		  							singleRoute.addLocation(lat.get(j), lon.get(j));
-		  								
-		  						
-		  							
-		  						}
-		  						route.add(singleRoute);
-		  						
-		  						counter++;
-		  				  }
-		  		//		  System.out.println("position size: "+positions.size());
-		  			//	  System.out.println("route size: "+route.size());
-		  				
-		  				  //  if(route.size()>2)
-		  				     routes.add(route);
-		
-		  		  }	
-		  	
-		  			
-		  			int startAnomalyPos = 0;
-		  			int endAnomalyPos = 0;
-		  			int anomalyCount1 = 0;
-		  			
-		  			
-		  			
-		  			
-		  			for (int a = 0; a<isCovered.length;a++){
-		  				if(!isCovered[a]){
-		  					anomalyCount1++;
-		  					//System.out.println("i: "+a+"\t block: "+blocks.findBlockIdForPoint(new Location(lat.get(a),lon.get(a))));
-		  				}
-		  				if(isCovered[a] && a<breakPoint)
-		  					trueNegativeCount++;
-		  				if(isCovered[a] && a>=breakPoint)
-		  					falseNegativeCount++;
-		  				if(!isCovered[a]&& a<breakPoint)
-		  					falsePositiveCount++;
-		  				if(!isCovered[a]&& a>=breakPoint)
-		  					trueAnomalyCount++;
-		  			}
-		  			int i1 = 0;
-		  			
-		  			
-		  			
-		  			
-		  			while  (i1<isCovered.length){
-		  			//	System.out.println(i + " isCovered :"+isCovered[i]);
-		  				  if(isCovered[i1])
-		  					  {
-		  					  	
-		  					  	coverCount++;
-		  					  	i1++;
-		  					  	if(i1<isCovered.length && lat.get(i1)>-999 && !isCovered[i1]){
-		  					  		startAnomalyPos = i1;
-		  					  		endAnomalyPos = i1;
-		  					  		
-		  					  		while(i1<isCovered.length && lat.get(i1)>-999&&!isCovered[i1]){
-		  					  			endAnomalyPos = i1;
-		  					  			
-		  					  			i1++;
-		  					  			//System.out.println("inner loop :"+i);
-		  					  		}
-		  					  		
-		  					  	//	RuleInterval ri = new RuleInterval(startAnomalyPos,endAnomalyPos);
-	  					  		//	anomalyIntervals.add(ri);
-	  					  	//	System.out.println("new intervals :"+anomalyIntervals.size()+" : " + ri);
-		  					  	
-		  					  	}
-		  					  	
-		  					  }
-		  				  /*
-		  				  if(ruleCovered[i1]){
-		  					  
-		  				  }
-		  				  */
-		  				  else
-		  					  i1++;
-		  				
-		  			  }
-		  			int ruleCoverCount = 0;
-		  			
-		  			
-		  			
-		  			for (int a = 0;a<ruleCovered.length;a++){
-		  				if(ruleCovered[a])
-		  					ruleCoverCount++;
-		  			}
-		  			  drawAnomaly();
-		  			  
-		  			  System.out.println("Cover Count: "+ coverCount);
-		  			  System.out.println("Anomaly Count/count1: "+ anomalyCount+","+ anomalyCount1 );
-		  			  
-		  			  System.out.println("isCover rate: " +(double)coverCount/(isCovered.length-trajCounter));
-		  			  /*
-		  			  System.out.println("satisfied rules: "+finalIntervals.size()+ " longRuleRate: ");
-		  			  System.out.println("RuleCoverCount: "+ruleCoverCount+" RuleCoverRate: "+(double)ruleCoverCount/(ruleCovered.length-trajCounter));
-		  			  System.out.println("total number of rules in R0: "+finalIntervals.size()+ "avg rule length: "+ (double)totalRuleLength/finalIntervals.size());
-		  			  System.out.println("total number of nonterminals in R0: "+nonTerminalCounter+ " avg rule length in R0: "+ (double)amountR0RuleLength/nonTerminalCounter);
-		  			  System.out.println("latSize = "+lat.size()+"  normalcount = "+breakPoint+"   anomalyCount = "+(lat.size()-breakPoint));
-		  			  System.out.println("Confusion Matrix:");
-		  			  System.out.println("True Anomaly:\t"+ trueAnomalyCount+"\t"+ falseNegativeCount);
-		  			  System.out.println("False Anomaly:\t"+ falsePositiveCount+"\t"+ trueNegativeCount);
-		  */
-		  		//	evaluateResult();
+		for (int k=0;k<positions.size();k++)
+				  {
+					  Route singleRoute = new Route();
+					  int startPos = positions.get(k).getStartPos();
+						int endPos = positions.get(k).getEndPos();
+						/*
+						for(int index=startPos; index<=endPos;index++)
+							isCovered[index]=true;
+							*/
+		//				//???System.out.println("startPos: "+startPos);
+		//				//???System.out.println("endPos: " +endPos);
+						
+					//	//???System.out.print("track#: "+counter+":       ");
+						for (int j = startPos; j<=endPos; j++){
+							
+							Location loca = new Location(lat.get(j),lon.get(j));
 				
-		  }
+							singleRoute.addLocation(lat.get(j), lon.get(j));
+								
+						
+							
+						}
+						route.add(singleRoute);
+						
+						counter++;
+				  }
+		//		  //???System.out.println("position size: "+positions.size());
+			//	  //???System.out.println("route size: "+route.size());
+				
+				  //  if(route.size()>2)
+				     routes.add(route);
+
+		  }	
+	
+			
+			int startAnomalyPos = 0;
+			int endAnomalyPos = 0;
+			int anomalyCount1 = 0;
+			
+			
+			
+			
+			for (int a = 0; a<isCovered.length;a++){
+				if(!isCovered[a]){
+					anomalyCount1++;
+					////???System.out.println("i: "+a+"\t block: "+blocks.findBlockIdForPoint(new Location(lat.get(a),lon.get(a))));
+				}
+				/*
+				if(isCovered[a] && a<breakPoint)
+					trueNegativeCount++;
+				if(isCovered[a] && a>=breakPoint)
+					falseNegativeCount++;
+				if(!isCovered[a]&& a<breakPoint)
+					falsePositiveCount++;
+				if(!isCovered[a]&& a>=breakPoint)
+					trueAnomalyCount++;
+					*/
+			}
+			int i1 = 0;
+			
+			
+			
+			
+			while  (i1<isCovered.length){
+			//	//???System.out.println(i + " isCovered :"+isCovered[i]);
+				  if(isCovered[i1])
+					  {
+					  	
+					  	coverCount++;
+					  	i1++;
+					  	if(i1<isCovered.length && lat.get(i1)>-999 && !isCovered[i1]){
+					  		startAnomalyPos = i1;
+					  		endAnomalyPos = i1;
+					  		
+					  		while(i1<isCovered.length && lat.get(i1)>-999&&!isCovered[i1]){
+					  			endAnomalyPos = i1;
+					  			
+					  			i1++;
+					  			////???System.out.println("inner loop :"+i);
+					  		}
+					  		
+					  	//	RuleInterval ri = new RuleInterval(startAnomalyPos,endAnomalyPos);
+				  		//	anomalyIntervals.add(ri);
+				  	//	//???System.out.println("new intervals :"+anomalyIntervals.size()+" : " + ri);
+					  	
+					  	}
+					  	
+					  }
+				  /*
+				  if(ruleCovered[i1]){
+					  
+				  }
+				  */
+				  else
+					  i1++;
+				
+			  }
+			int ruleCoverCount = 0;
+			
+			
+			
+			for (int a = 0;a<ruleCovered.length;a++){
+				if(ruleCovered[a])
+					ruleCoverCount++;
+			}
+			  drawAnomaly();
+		/*	  //???System.out.println("Cover Count: "+ coverCount);
+			  //???System.out.println("Anomaly Count/count1: "+ anomalyCount+","+ anomalyCount1 );
+			  
+			  //???System.out.println("isCover rate: " +(double)coverCount/(isCovered.length-trajCounter));
+			  //???System.out.println("satisfied rules: "+finalIntervals.size()+ " longRuleRate: ");
+			  //???System.out.println("RuleCoverCount: "+ruleCoverCount+" RuleCoverRate: "+(double)ruleCoverCount/(ruleCovered.length-trajCounter));
+			  //???System.out.println("total number of rules in R0: "+finalIntervals.size()+ "avg rule length: "+ (double)totalRuleLength/finalIntervals.size());
+			  //???System.out.println("total number of nonterminals in R0: "+nonTerminalCounter+ " avg rule length in R0: "+ (double)amountR0RuleLength/nonTerminalCounter);
+			  //???System.out.println("latSize = "+lat.size()+"  normalcount = "+breakPoint+"   anomalyCount = "+(lat.size()-breakPoint));
+			*/
+			 /* //???System.out.println("Confusion Matrix:");
+			  //???System.out.println("True Anomaly:\t"+ trueAnomalyCount+"\t"+ falseNegativeCount);
+			  //???System.out.println("False Anomaly:\t"+ falsePositiveCount+"\t"+ trueNegativeCount);
+			  */
+			  
+			  
+			  
+			  for(int k = 1; k<251; k++){
+				  if (((double)anomalyPerTraj[k])/(double)pointsPerTraj[k]>EVAL_ANOMALY_THRESHOLD)             //classified as anomaly
+					  {
+					  if(k%50==1)
+					  
+						  trueAnomalyTraj++;
+					  else
+						  falseAnomalyTraj++;
+					  }
+				  else   //classified as normal
+					  {
+					  if(k%50==1)
+						  falseNegativeTraj++;
+					  else
+						  trueNegativeTraj++;
+					  }
+			  }
+			  
+			totalTP = totalTP+trueAnomalyTraj;
+			totalFN = totalFN+falseNegativeTraj;
+			totalFP = totalFP+falseAnomalyTraj;
+			totalTN = totalTN+trueNegativeTraj;
+			
+		
+			System.out.println("Confusion Matrix:");
+			System.out.println("True Anomaly:\t"+ trueAnomalyTraj+"\t"+ falseNegativeTraj);
+			System.out.println("False Anomaly:\t"+ falseAnomalyTraj+"\t"+ trueNegativeTraj);
+			  
+			  
+		//	evaluateResult();
+		
+}
+
 
 	private int getNextNonTerminal(int i) {
 		int j = i+1;
