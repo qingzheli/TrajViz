@@ -254,12 +254,12 @@ private double lcssDistance(Blocks blocks, ArrayList<Integer> x, ArrayList<Integ
 			
 			
 			
-			if(blocks.latBlockCount(x.get(i),y.get(j))<=Math.max(SequiturModel.alphabetSize/10.0,0)&&blocks.lonBlockCount(x.get(i), y.get(j))<=Math.max(SequiturModel.alphabetSize/10.0,0))  //epsilon
+			if(blocks.latBlockCount(x.get(i),y.get(j))<=Math.max(SequiturModel.alphabetSize/50.0,1)&&blocks.lonBlockCount(x.get(i), y.get(j))<=Math.max(SequiturModel.alphabetSize/50.0,1))  //epsilon
 
 				opt[i][j] = opt[i+1][j+1]+1;
 			else
 				opt[i][j] = Math.max(opt[i+1][j], opt[i][j+1])
-				-0.3*
+				-0.2*
 				Math.sqrt(blocks.latBlockCount(x.get(i),y.get(j))*blocks.latBlockCount(x.get(i),y.get(j))
 						+(blocks.lonBlockCount(x.get(i), y.get(j))*blocks.lonBlockCount(x.get(i), y.get(j)))); //penalty
 
