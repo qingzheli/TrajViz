@@ -112,8 +112,8 @@ public class SequiturModel extends Observable {
 	private static ArrayList<Route> rawRoutes;  
 	private static ArrayList<Route> anomalyRoutes;
 	public ArrayList<Double> lat;
-	private ArrayList<Double> ncLat = new ArrayList<Double>();
-	private ArrayList<Double> ncLon = new ArrayList<Double>();
+	public static ArrayList<Double> ncLat = new ArrayList<Double>();
+	public static ArrayList<Double> ncLon = new ArrayList<Double>();
 	//public ArrayList<Double> paaLat;
 	//public ArrayList<Double> paaLon;
 	public ArrayList<Double> lon;
