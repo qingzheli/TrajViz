@@ -112,8 +112,8 @@ public class SequiturModel extends Observable {
 	private static ArrayList<Route> rawRoutes;  
 	private static ArrayList<Route> anomalyRoutes;
 	public ArrayList<Double> lat;
-	private ArrayList<Double> ncLat = new ArrayList<Double>();
-	private ArrayList<Double> ncLon = new ArrayList<Double>();
+	public static ArrayList<Double> ncLat = new ArrayList<Double>();
+	public static ArrayList<Double> ncLon = new ArrayList<Double>();
 	//public ArrayList<Double> paaLat;
 	//public ArrayList<Double> paaLon;
 	public ArrayList<Double> lon;
@@ -447,11 +447,11 @@ public class SequiturModel extends Observable {
 			  System.out.println("Trajectory "+i+":" + rawAllIntervals.get(i));
 			  */
 		  drawRawTrajectories();
-
+		  TrajDiscords.getAllDiscords();
 		  
 		  
           allMapToPreviousR0.add(mapToPreviousR0);
-
+          
 		//  runSequitur();
 		
 		  
@@ -713,8 +713,8 @@ public class SequiturModel extends Observable {
 				else{
 				double latStep = Math.abs(latOri.get(i)-latOri.get(i-1));
 				double lonStep = Math.abs(lonOri.get(i)-lonOri.get(i-1));
-				
-				if(latStep>latCut||lonStep>lonCut){
+				//if(false){
+			   if(latStep>latCut||lonStep>lonCut){
 					int skip = Math.max((int)Math.round(latStep/latCut),(int)Math.round(lonStep/lonCut));
 					double latstep = (latOri.get(i)-latOri.get(i-1))/skip;
 					double lonstep = (lonOri.get(i)-lonOri.get(i-1))/skip;
@@ -836,9 +836,9 @@ public class SequiturModel extends Observable {
 		       /*  */
 		         if(this.isLastIteration)
 				  {
-		        	 mergeTerminals();
+		        	// mergeTerminals();
 				     clusterRules();
-		             replaceBack();
+		            // replaceBack();
 				  }
 		       //  if(this.alphabetSize<=100)
 		         else
@@ -2696,8 +2696,8 @@ System.out.println("]");
   						for(int index=startPos; index<=endPos;index++)
   							isCovered[index]=true;
   							*/
-  		//				System.out.println("startPos: "+startPos);
-  		//				System.out.println("endPos: " +endPos);
+  						System.out.println("["+startPos+"," +endPos+"]"+"Trajectory: "+getTrajectory(endPos)+"length = "+(endPos-startPos+1));
+  						System.out.println();
   						
   					//	System.out.print("track#: "+counter+":       ");
   						
@@ -2713,7 +2713,7 @@ System.out.println("]");
   						
   							
   						}
-  						if (distance>0.1) // remove the false anomalies in the same block.
+  					//	if (distance>0.1) // remove the false anomalies in the same block.
   						{
   						anomalyRoutes.add(singleRoute);
   						}
@@ -2830,6 +2830,14 @@ System.out.println("]");
 		//System.out.println("sb: "+sb.toString());
 		String ans = sb.toString();
 		return ans;
+	}
+	public static int getTrajectory(int endPos) {
+		int i = endPos;
+		Double traj;
+		while(ncLat.get(i)>-999)
+			i++;
+		traj = -1000-ncLat.get(i);
+		return traj.intValue();
 	}
 
 }

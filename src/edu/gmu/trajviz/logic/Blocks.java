@@ -35,6 +35,7 @@ public class Blocks {
 		lonMax = loMax+0.000000001;
 		latRangeKm = distFrom(latMax,lonMax,latMin,lonMax);
 		lonRangeKm = distFrom((latMax+latMin)/2, lonMax,(latMax+latMin)/2, lonMin);
+		
 		coef = latRangeKm/lonRangeKm;
 		nLat = (int)(n*coef);
 		nLon = n;
@@ -98,6 +99,7 @@ public class Blocks {
 		int lonBlock2 = block2%nLon;
 		double lon2 = lonMin+lonCut*lonBlock2+0.5*lonCut;
 		double distance = distFrom(lat1,lon1,lat2,lon2);
+	//	double distance = Math.sqrt((lat2-lat1)*(lat2-lat1)+(lon2-lon1)*(lon2-lon1));
 		double distance1 = Math.sqrt((latBlock1-latBlock2)*(latBlock1-latBlock2)*latCutKm*latCutKm+(lonBlock1-lonBlock2)*(lonBlock1-lonBlock2)*lonCutKm*lonCutKm);
 	//	System.out.println("block1:block2:dis1:dis2"+"   "+block1+"("+latBlock1+","+lonBlock2+")"+": "+block2+"   "+distance+" : "+distance1);
 		return distance;
