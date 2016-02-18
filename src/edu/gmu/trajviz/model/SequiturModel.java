@@ -57,8 +57,8 @@ public class SequiturModel extends Observable {
 	private static final String SPACE = " ";
 	private static final String CR = "\n";
 	private static final int STEP = 2;
-	private static final int DEFAULT_TIME_GAP = 6;//180;
-//	private static final int DEFAULT_TIME_GAP = 180;
+	//private static final int DEFAULT_TIME_GAP = 6;//180;
+	private static final int DEFAULT_TIME_GAP = 180;
     private boolean[] isCovered;
     private boolean[] groundTruth;
     private int breakPoint; // the positions<breakPoint are normal, otherwise are abnormal.
@@ -78,8 +78,8 @@ public class SequiturModel extends Observable {
 	public static TreeMap<String, GrammarRuleRecord> sortedRuleMap;
 	public static ArrayList< ArrayList<HashSet<Integer>>> allClusters;
 	private ArrayList<HashSet<Integer>> clusters;
-	private Cluster cluster;
-	private HashMap<String, Cluster> currentClusters;
+	//private Cluster cluster;
+//	private HashMap<String, Cluster> currentClusters;
 	private ArrayList<Integer> filter;
 	public static ArrayList<ArrayList<Integer>> allFilters;
 	private HashMap<Integer,Integer> filterMap;
@@ -227,7 +227,7 @@ public class SequiturModel extends Observable {
 					  if(value2==1000)
 						  breakPoint = status.size();
 					  */
-					//  if (value>=37.7254&&value<=37.8212&&value1>=-122.5432&&value1<=-122.3561)
+			//		  if (value>=37.7254&&value<=37.8212&&value1>=-122.5432&&value1<=-122.3561)
 					  {
 					  if((lineCounter<=1)||(Math.abs(value3-timeAsUnixEpoc.get(timeAsUnixEpoc.size()-1))<=DEFAULT_TIME_GAP &&(value3-timeAsUnixEpoc.get(timeAsUnixEpoc.size()-1))!=0))
 					  {
@@ -366,7 +366,7 @@ public class SequiturModel extends Observable {
 		  this.allMapToOriginalTS = new ArrayList<ArrayList<Integer>>();
 		  this.rawRoutes = new ArrayList<Route>();
 		  this.anomalyRoutes = new ArrayList<Route>();
-		  this.currentClusters = new HashMap<String,Cluster>();
+	//	  this.currentClusters = new HashMap<String,Cluster>();
 		  this.lat = new ArrayList<Double>();
 		  this.lon = new ArrayList<Double>();
 		  Comparator<String> expandedRuleComparator = new Comparator<String>(){
@@ -718,6 +718,8 @@ public class SequiturModel extends Observable {
 					int skip = Math.max((int)Math.round(latStep/latCut),(int)Math.round(lonStep/lonCut));
 					double latstep = (latOri.get(i)-latOri.get(i-1))/skip;
 					double lonstep = (lonOri.get(i)-lonOri.get(i-1))/skip;
+					
+					/* disable resample
 					for (int j = 0; j<skip; j++){
 						lat.add((latOri.get(i-1)+latstep*(j+1)));
 						lon.add((lonOri.get(i-1)+lonstep*(j+1)));
@@ -726,6 +728,7 @@ public class SequiturModel extends Observable {
 						//  System.out.println(lat.get(i+j)+" , "+lon.get(i+j));
 
 					}
+					*/
 					lat.add(latOri.get(i));
 					lon.add(lonOri.get(i));
 					ncLat.add(latOri.get(i));
@@ -836,9 +839,9 @@ public class SequiturModel extends Observable {
 		       /*  */
 		         if(this.isLastIteration)
 				  {
-		        	 mergeTerminals();
+		       // 	 mergeTerminals();
 				     clusterRules();
-		             replaceBack();
+		         //    replaceBack();
 				  }
 		       //  if(this.alphabetSize<=100)
 		         else
@@ -1173,7 +1176,7 @@ public class SequiturModel extends Observable {
 			 
 		}
 	*/
-	
+	/*
 		private void finalCluster() {
 			//currentClusters = new HashMap<String, Cluster>();
 			for(int i = 0; i<r0.length; i++	){
@@ -1195,6 +1198,7 @@ public class SequiturModel extends Observable {
 			
 		
 	}
+	*/
 
 		private void mapToPreviousR0() {
 			int currentIdx = 0;
@@ -1434,7 +1438,7 @@ public class SequiturModel extends Observable {
 	        filterMap = new HashMap<Integer,Integer>();
 	        for (int i = 1; i<rules.size();i++){
 	        	System.out.println("Before filter: Frequency in R0: "+ rules.get(i).frequencyInR0()+"  Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
-					if ((rules.get(i).frequencyInR0()>=1&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=1))//||
+					if ((rules.get(i).frequencyInR0()>=3&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=5))//||
 						//	(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getR0Intervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
 						{
 						//HashSet<Integer> set = new HashSet<Integer>();
@@ -1783,10 +1787,10 @@ System.out.println("]");
 		    	if(!isNumeric(s)){
 		    	  nonTerminalCounter++;	
 		    	  amountR0RuleLength = amountR0RuleLength + countSpaces(RuleDistanceMatrix.parseRule(s));  	
-		    	 // if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
+		    	  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
 			    	//  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=2){
 
-		    	  if(true){
+		    	//  if(true){
 		    	  //  	System.out.println("r0: "+i+" : "+r0[i]+" : "+RuleDistanceMatrix.parseRule(s));
 		
 		          int startPos = mapToOriginalTS.get(i-nullCounter);
@@ -1849,8 +1853,8 @@ System.out.println("]");
 			    	  int numEndPos;
 			    	  if(Integer.valueOf(r0[i])>=0){
 			    		//  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
-			    			  if ((getNextNonTerminal(i)-i)>=minBlocks){
-		    	     
+			    			  if ((getNextNonTerminal(i)-i)>=minBlocks*2){
+			    		//		  if ((getNextNonTerminal(i)-i)>=20){
 			    	//  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=alphabetSize/30){
 		    		  int nextNonTerminal = getNextNonTerminal(i);
 		    		  

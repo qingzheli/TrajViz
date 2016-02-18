@@ -86,7 +86,7 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 
 
 
-
+/*
 public RuleDistanceMatrix(Blocks blocks, HashMap<String, Cluster> currentClusters, int minBlocks, double minLink) {
 	//this.filter = filter;
 	this.minLink = minLink;
@@ -94,6 +94,7 @@ public RuleDistanceMatrix(Blocks blocks, HashMap<String, Cluster> currentCluster
 	for (int i=0; i<filter.size();i++)
 	System.out.println(i+" : "+filter.get(i)+" ");
 	*///System.out.println();
+/*
 	matrix = new double[currentClusters.size()][currentClusters.size()];
 	//matrix[0][0] =100;// Double.MAX_VALUE;
 	comparator = new PairDistanceComparator();
@@ -121,9 +122,7 @@ public RuleDistanceMatrix(Blocks blocks, HashMap<String, Cluster> currentCluster
 		//	matrix[0][j] = 100;//Double.MAX_VALUE;
 		//	matrix[i][0] = 100;//Double.MAX_VALUE;
 			
-			/*
-			 * DTW Distance	
-			*/ 
+			//DTW Distance 
 		//	matrix[i][j] = avgDTWDistance(blocks, toArrayList(rule1), toArrayList(rule2));
 			
 			matrix[i][j] = lcssDistance(blocks,toArrayList(rule1),toArrayList(rule2));
@@ -140,7 +139,7 @@ public RuleDistanceMatrix(Blocks blocks, HashMap<String, Cluster> currentCluster
 				minPair[0] = i;
 				minPair[1] = j;
 				*/
-			
+/*			
 			}
 			//if(rules.get(i).)
 		}
@@ -150,7 +149,7 @@ public RuleDistanceMatrix(Blocks blocks, HashMap<String, Cluster> currentCluster
 }
 
 
-
+*/
 
 public static String parseRule(String string) {
 	StringBuffer sb = new StringBuffer();
