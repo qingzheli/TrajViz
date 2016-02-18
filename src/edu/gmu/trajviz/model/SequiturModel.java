@@ -57,8 +57,8 @@ public class SequiturModel extends Observable {
 	private static final String SPACE = " ";
 	private static final String CR = "\n";
 	private static final int STEP = 2;
-	//private static final int DEFAULT_TIME_GAP = 6;//180;
-	private static final int DEFAULT_TIME_GAP = 180;
+	private static final int DEFAULT_TIME_GAP = 6;//180;
+	//private static final int DEFAULT_TIME_GAP = 180;
     private boolean[] isCovered;
     private boolean[] groundTruth;
     private int breakPoint; // the positions<breakPoint are normal, otherwise are abnormal.
