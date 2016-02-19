@@ -32,6 +32,17 @@ public class SortedDiscodRecordArray{
 		}
 		
 	}
+public int findDiscordByTrajId(int id){
+		
+		for(int i = 0; i<sortedArray.length; i++){
+			if(TrajDiscords.getTrajectory(sortedArray[i].getEndPosition())==id){
+				return i+1;
+			}
+			
+		}
+		return -1;
+		
+	}
 	@Override
 	public String toString(){
 		StringBuffer sb = new StringBuffer();

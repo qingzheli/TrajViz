@@ -19,10 +19,14 @@ import java.text.DecimalFormat;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Observable;
@@ -138,6 +142,8 @@ public class SequiturModel extends Observable {
 	public Blocks blocks, eBlocks;
 	private int minBlocks; 
 	private static Logger consoleLogger;
+	private Map<Integer, Double> accumulatDistance;
+	public static HashMap<String,Double> allDiscordDistances;
 	  private static Level LOGGING_LEVEL = Level.DEBUG;
 	
 	  static {
@@ -369,6 +375,7 @@ public class SequiturModel extends Observable {
 		  this.currentClusters = new HashMap<String,Cluster>();
 		  this.lat = new ArrayList<Double>();
 		  this.lon = new ArrayList<Double>();
+		  
 		  Comparator<String> expandedRuleComparator = new Comparator<String>(){
 			  @Override public int compare(String r1, String r2)
 			  {
@@ -447,6 +454,8 @@ public class SequiturModel extends Observable {
 			  System.out.println("Trajectory "+i+":" + rawAllIntervals.get(i));
 			  */
 		  drawRawTrajectories();
+		  
+		  allDiscordDistances = new HashMap<String,Double>();
 		  TrajDiscords.getAllDiscords();
 		  
 		  
@@ -475,6 +484,7 @@ public class SequiturModel extends Observable {
            */
          
           while(hasNewCluster){
+        	  
 	  		  int lastIteration = iteration;
 	  		  hasNewCluster = false;
 	  		
@@ -540,7 +550,16 @@ public class SequiturModel extends Observable {
 		  System.out.println("Postions:\t"+getTrimedPositions(trimedTrack).toString()+"\t");
 		  System.out.println("TrimedStrs:\t"+getTrimedIds(trimedTrack));
 		  */
-		
+		  this.accumulatDistance = sortByValue(this.accumulatDistance);
+		  int rank =1;
+		  
+		  for(Map.Entry<Integer, Double> entry: this.accumulatDistance.entrySet()){
+			  int trajId = 0-entry.getKey()-1000;
+			  int rankInDiscord = TrajDiscords.allDiscords.get(16).findDiscordByTrajId(trajId);
+			  System.out.println("Rank in anomaly: " + rank+" Rank in discords: "+ rankInDiscord + " Trajctory: "+trajId +" Accumulated anomaly distance = "+entry.getValue());
+			  rank++;
+		  }
+		  
 
 		  System.out.println("running time: "+runTime);
 		  System.out.println("finalInteravals: "+finalIntervals.size());
@@ -713,11 +732,12 @@ public class SequiturModel extends Observable {
 				else{
 				double latStep = Math.abs(latOri.get(i)-latOri.get(i-1));
 				double lonStep = Math.abs(lonOri.get(i)-lonOri.get(i-1));
-				//if(false){
-			   if(latStep>latCut||lonStep>lonCut){
+				if(false){
+			   //if(latStep>latCut||lonStep>lonCut){
 					int skip = Math.max((int)Math.round(latStep/latCut),(int)Math.round(lonStep/lonCut));
 					double latstep = (latOri.get(i)-latOri.get(i-1))/skip;
 					double lonstep = (lonOri.get(i)-lonOri.get(i-1))/skip;
+					
 					for (int j = 0; j<skip; j++){
 						lat.add((latOri.get(i-1)+latstep*(j+1)));
 						lon.add((lonOri.get(i-1)+lonstep*(j+1)));
@@ -726,6 +746,7 @@ public class SequiturModel extends Observable {
 						//  System.out.println(lat.get(i+j)+" , "+lon.get(i+j));
 
 					}
+					
 					lat.add(latOri.get(i));
 					lon.add(lonOri.get(i));
 					ncLat.add(latOri.get(i));
@@ -1742,6 +1763,13 @@ System.out.println("]");
 
 */
 	private void drawOnMap(){
+		Comparator<Double> doubleComparator = new Comparator<Double>() {
+	        @Override public int compare(Double s1, Double s2) {
+	            return s1.compareTo(s2);
+	        }           
+	    };
+		    this.accumulatDistance = new TreeMap<Integer,Double>();
+		    double currentAmountDistance = 0.0;
 			  // Generate All Motifs and record them on files respectively.
 		    trueAnomalyCount = 0;
 		    falsePositiveCount = 0;
@@ -1795,6 +1823,12 @@ System.out.println("]");
 		    	     endPos = mapToOriginalTS.get((i-nullCounter+1))-1;
 		          else
 		        	 endPos = mapToOriginalTS.get((i-nullCounter+1));
+		          
+		          
+		        //  currentAmountDistance = currentAmountDistance+allDiscordDistances.get(startPos+","+endPos);
+		          
+		          
+		          
 		    	  /*
 		          int endPos;
 		          
@@ -1849,8 +1883,8 @@ System.out.println("]");
 			    	  int numEndPos;
 			    	  if(Integer.valueOf(r0[i])>=0){
 			    		//  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
-			    			  if ((getNextNonTerminal(i)-i)>=minBlocks){
-		    	     
+			    	  if ((getNextNonTerminal(i)-i)>=minBlocks){
+		    	   
 			    	//  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=alphabetSize/30){
 		    		  int nextNonTerminal = getNextNonTerminal(i);
 		    		  
@@ -1864,6 +1898,9 @@ System.out.println("]");
 		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal-nullCounter)-1;
 		    		  else
 		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal-nullCounter);
+		    		  
+		    		  
+		    		  currentAmountDistance = currentAmountDistance+allDiscordDistances.get(numStartPos+","+numEndPos);
 		    		/*
 		    		  System.out.print(cnt+": [");
 		    		  cnt++;
@@ -1892,7 +1929,11 @@ System.out.println("]");
 			    				  i = getNextNonTerminal(i);
 			    	  }
 			    else
-			    i++; //Negative Number
+			    {
+			    	this.accumulatDistance.put(Integer.valueOf(r0[i]), Double.valueOf(currentAmountDistance));
+			    	currentAmountDistance = 0;
+			    	i++; //Negative Number
+			    }
 		    	}
 		    }
 		    System.out.println("r0.length="+r0.length);
@@ -2839,5 +2880,26 @@ System.out.println("]");
 		traj = -1000-ncLat.get(i);
 		return traj.intValue();
 	}
+	public static <K, V extends Comparable<? super V>> Map<K, V> 
+    sortByValue( Map<K, V> map )
+{
+    List<Map.Entry<K, V>> list =
+        new LinkedList<>( map.entrySet() );
+    Collections.sort( list, new Comparator<Map.Entry<K, V>>()
+    {
+        @Override
+        public int compare( Map.Entry<K, V> o1, Map.Entry<K, V> o2 )
+        {
+            return (o2.getValue()).compareTo( o1.getValue() );
+        }
+    } );
+
+    Map<K, V> result = new LinkedHashMap<>();
+    for (Map.Entry<K, V> entry : list)
+    {
+        result.put( entry.getKey(), entry.getValue() );
+    }
+    return result;
+}
 
 }

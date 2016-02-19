@@ -35,7 +35,7 @@ public class TrajDiscords{
 	//	 	pq = new PriorityQueue<DiscordRecord>();
 		    
 		// 	topDiscords = new SortedArray(TOP_K);
-		 	allDiscords.put(i, findDiscords(i,2));
+		 	allDiscords.put(i, findDiscords(i,1));
 		 	
 		 }
 	
@@ -101,6 +101,7 @@ public class TrajDiscords{
 		DiscordRecord discord;
 		
 			discord = new DiscordRecord(start,end,minDistances[rank-1]);
+			SequiturModel.allDiscordDistances.put(start+","+end, minDistances[0]);
 		//else
 			//discord = new DiscordRecord(start,end,secondMinDist);
 	//	System.out.println("current Discord: "+discord);
