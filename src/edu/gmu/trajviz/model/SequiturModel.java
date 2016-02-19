@@ -97,6 +97,7 @@ public class SequiturModel extends Observable {
 	private boolean hasNewCluster = true;
 	private int sortedCounter;
 	private String dataFileName, fileNameOnly;
+	private String discordFileName;
 	private static double lat_center;
 	private double latMax;
 	private double latMin;
@@ -206,6 +207,8 @@ public class SequiturModel extends Observable {
 			  this.log("file"+ this.dataFileName + "doesn't exist.");
 			  return;
 		  }
+	//	  System.out.println("this.dataFileName: "+this.dataFileName);
+	//	  System.out.println("this.fileNameOnly : "+this.fileNameOnly);
 		  // read the input
 		  // init the data array
 		  ArrayList<Double> data = new ArrayList<Double>();
