@@ -860,9 +860,9 @@ public class SequiturModel extends Observable {
 		       /*  */
 		         if(this.isLastIteration)
 				  {
-		        	// mergeTerminals();
+		        	 mergeTerminals();
 				     clusterRules();
-		            // replaceBack();
+		             replaceBack();
 				  }
 		       //  if(this.alphabetSize<=100)
 		         else

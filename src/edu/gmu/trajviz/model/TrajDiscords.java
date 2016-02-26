@@ -35,7 +35,7 @@ public class TrajDiscords{
 	//	 	pq = new PriorityQueue<DiscordRecord>();
 		    
 		// 	topDiscords = new SortedArray(TOP_K);
-		 	allDiscords.put(i, findDiscords(i,1));
+		 	allDiscords.put(i, findDiscords(i,10));
 		 	
 		 }
 	
