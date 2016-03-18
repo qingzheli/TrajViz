@@ -78,8 +78,8 @@ public class SequiturModel extends Observable {
 	public static TreeMap<String, GrammarRuleRecord> sortedRuleMap;
 	public static ArrayList< ArrayList<HashSet<Integer>>> allClusters;
 	private ArrayList<HashSet<Integer>> clusters;
-	private Cluster cluster;
-	private HashMap<String, Cluster> currentClusters;
+//	private Cluster cluster;
+//	private HashMap<String, Cluster> currentClusters;
 	private ArrayList<Integer> filter;
 	public static ArrayList<ArrayList<Integer>> allFilters;
 	private HashMap<Integer,Integer> filterMap;
@@ -112,13 +112,15 @@ public class SequiturModel extends Observable {
 	private static ArrayList<Route> rawRoutes;  
 	private static ArrayList<Route> anomalyRoutes;
 	public ArrayList<Double> lat;
-	public static ArrayList<Double> ncLat = new ArrayList<Double>();
-	public static ArrayList<Double> ncLon = new ArrayList<Double>();
+	public ArrayList<Double> reTime;
+	//public static ArrayList<Double> ncLat = new ArrayList<Double>();
+	//public static ArrayList<Double> ncLon = new ArrayList<Double>();
 	//public ArrayList<Double> paaLat;
 	//public ArrayList<Double> paaLon;
 	public ArrayList<Double> lon;
 	public ArrayList<Double> latOri;
 	public ArrayList<Double> lonOri;
+	public ArrayList<Double> timeLine;
 	private MotifChartData chartData;
 	private ArrayList<ArrayList<RuleInterval>> ruleIntervals;
 	private ArrayList<RuleInterval> rawAllIntervals;
@@ -295,6 +297,8 @@ public class SequiturModel extends Observable {
 		
 			  this.latOri = new ArrayList<Double>();
 			  this.lonOri = new ArrayList<Double>();
+			  this.lat = new ArrayList<Double>();
+			  this.lon = new ArrayList<Double>();
 			  
 		latMax = Double.valueOf(data.get(0));
 		lonMax = Double.valueOf(data1.get(0));
@@ -306,6 +310,8 @@ public class SequiturModel extends Observable {
 			//  System.out.println("i = "+i+": "+temp_latitude+","+temp_longitude);
 			  this.latOri.add(temp_latitude);
 			  this.lonOri.add(temp_longitude);
+			//  this.lat.add(temp_latitude);
+			//  this.lon.add(temp_longitude);
 			  if((temp_latitude>=-90)&&temp_latitude>latMax)
 				  
 				  {
@@ -353,6 +359,7 @@ public class SequiturModel extends Observable {
 	  
 	  public synchronized void processData(double minLink, int alphabetSize, int minBlocks, int noiseThreshold)throws IOException{
 		  sortedCounter = 0;
+		  this.reTime = new ArrayList<Double>();
 		  this.isLastIteration = false;
 		  this.minLink = minLink;
 		  this.minBlocks = minBlocks;
@@ -366,7 +373,7 @@ public class SequiturModel extends Observable {
 		  this.allMapToOriginalTS = new ArrayList<ArrayList<Integer>>();
 		  this.rawRoutes = new ArrayList<Route>();
 		  this.anomalyRoutes = new ArrayList<Route>();
-		  this.currentClusters = new HashMap<String,Cluster>();
+		//  this.currentClusters = new HashMap<String,Cluster>();
 		  this.lat = new ArrayList<Double>();
 		  this.lon = new ArrayList<Double>();
 		  Comparator<String> expandedRuleComparator = new Comparator<String>(){
@@ -473,7 +480,7 @@ public class SequiturModel extends Observable {
           /*
            * run the algorithm
            */
-         
+         /*
           while(hasNewCluster){
 	  		  int lastIteration = iteration;
 	  		  hasNewCluster = false;
@@ -491,11 +498,12 @@ public class SequiturModel extends Observable {
            	System.out.println("total anomalies: "+anomalyRoutes.size());
 
       }
-          /*
+      */
+          
           this.isLastIteration = true;
-          runSequitur(iteration);
+         
           drawOnMap();
-          */
+          
         //  drawOnMap();
          //	System.out.println("total anomalies: "+anomalyRoutes.size());
 	  
@@ -590,9 +598,9 @@ public class SequiturModel extends Observable {
 		  blocks = new Blocks(alphabetSize,latMin,latMax,lonMin,lonMax);
 		  double latCut = blocks.latCut;
 		  double lonCut = blocks.lonCut;
-		  ncLat = new ArrayList<Double>();
-		  ncLon = new ArrayList<Double>();
-		  resample(latCut,lonCut);
+		 // ncLat = new ArrayList<Double>();
+		 // ncLon = new ArrayList<Double>();
+		  resample();
 		//  lat = latOri;
 		 // lon = lonOri;
 		  
@@ -614,6 +622,7 @@ public class SequiturModel extends Observable {
 		  mapToOriginalTS = new ArrayList<Integer>();
 		  int startPoint = 0;
 		  int endPoint = 0;
+		  /*
 		  for (int i = 0; i<ncLat.size();i++){
 			  Location loc = new Location(ncLat.get(i),ncLon.get(i));
 			//  blocks.addPoint2Block(loc); this should not work here because the point will change if it is a noisy point.
@@ -654,6 +663,7 @@ public class SequiturModel extends Observable {
 			  
 			  				  
 		  }
+		  */
 		  System.out.print("mapTrimed2Original: ");
 	//	  printArrayList(mapTrimed2Original);		  
 		  /*
@@ -675,78 +685,141 @@ public class SequiturModel extends Observable {
 	}
 
 	/*
-	 * resample latitude and longitude when two points skip blocks.
+	 * resample original ts with the same speed.
 	 */
-	private void resample(double latCut, double lonCut) {
-		int i = 1;
-		double latPre = latOri.get(0);
-		double lonPre = lonOri.get(0);
-		lat.add(latPre);
-		lon.add(lonPre);
-		ncLat.add(latPre);
-		ncLon.add(lonPre);
-		boolean firstPoint = true;
-		while(i<latOri.size())
-		{
-			if(status.get(i)==1000)
-				breakPoint = lat.size();
-			
-			
-			if(latOri.get(i)<-180)
+	  private  void resample() {
+		  timeLine = new ArrayList<Double>();
+			double amountDist = 0;  
+			reTime.add(0.0);
+			int i = 1;
+			while(i<latOri.size())
+		//	for(int i = 1; i< latOri.size(); i++)
+			{	if((latOri.get(i)<=-1000)||(lonOri.get(i)<=-1000))
 				{
-					lat.add(latOri.get(i));
-					lon.add(lonOri.get(i));
-					ncLat.add(latOri.get(i));
-					ncLon.add(lonOri.get(i));
-					i++;
-					firstPoint = true;
-				}
-			else{
-				if(firstPoint){
-					lat.add(latOri.get(i));
-					lon.add(lonOri.get(i));
-					ncLat.add(latOri.get(i));
-					ncLon.add(lonOri.get(i));
-					i++;
-					firstPoint = false;
-				}
-				else{
-				double latStep = Math.abs(latOri.get(i)-latOri.get(i-1));
-				double lonStep = Math.abs(lonOri.get(i)-lonOri.get(i-1));
-				
-				if(latStep>latCut||lonStep>lonCut){
-					int skip = Math.max((int)Math.round(latStep/latCut),(int)Math.round(lonStep/lonCut));
-					double latstep = (latOri.get(i)-latOri.get(i-1))/skip;
-					double lonstep = (lonOri.get(i)-lonOri.get(i-1))/skip;
-					for (int j = 0; j<skip; j++){
-						lat.add((latOri.get(i-1)+latstep*(j+1)));
-						lon.add((lonOri.get(i-1)+lonstep*(j+1)));
-						ncLat.add((latOri.get(i-1)+latstep*(j+1)));
-						ncLon.add((lonOri.get(i-1)+lonstep*(j+1)));
-						//  System.out.println(lat.get(i+j)+" , "+lon.get(i+j));
-
-					}
-					lat.add(latOri.get(i));
-					lon.add(lonOri.get(i));
-					ncLat.add(latOri.get(i));
-					ncLon.add(lonOri.get(i));
-					i++;
+					reTime.add(latOri.get(i));
+					if(i<latOri.size()-1)
+						reTime.add(reTime.get(reTime.size()-2)+0.000001);
+					
+					i=i+2;
 				}
 				else
-					{
-					lat.add(latOri.get(i));
-					lon.add(lonOri.get(i));
-					ncLat.add(latOri.get(i));
-					ncLon.add(lonOri.get(i));
-					i++;
-					}
+				{
+					amountDist = amountDist+Math.sqrt(squareDist(latOri.get(i-1),lonOri.get(i-1),latOri.get(i),latOri.get(i)));
+				 	reTime.add(amountDist);
+				 	i++;
+				}
+			}
+			System.out.println(reTime);
+			double distCut=amountDist/(alphabetSize*1000);
+			System.out.println("distCut = "+distCut);
+			double currentPos = reTime.get(0);
+			double time = 0;
+			int index = 1;
+			lat.add(latOri.get(0));
+			lon.add(lonOri.get(0));
+			timeLine.add(0.0);
+			double reTimeS = 0;
+			double reTimeE = 0;
+			while(time<=reTime.get(reTime.size()-2)){
+				
+				if(reTime.get(index)>-1000){
+					time = time+distCut;
+				
+				while(time<=reTime.get(index))
+				{
+					
+					double ratio = (time-reTime.get(index-1))/(reTime.get(index)-reTime.get(index-1));
+					double latitude = latOri.get(index-1)+(latOri.get(index)-latOri.get(index-1))*ratio;
+					double longitude = lonOri.get(index-1)+(lonOri.get(index)-lonOri.get(index-1))*ratio;
+					lat.add(latitude);
+					lon.add(longitude);
+					timeLine.add(time);
+					
+					time = time +distCut;
+					
+				}
+				index++;
+				}
+				else{
+					lat.add(reTime.get(index));
+					lon.add(reTime.get(index));
+					timeLine.add(reTime.get(index));
+					index++;
+				}
+				
+			}
+			lat.add(reTime.get(reTime.size()-1));
+			lon.add(reTime.get(reTime.size()-1));
+			timeLine.add(reTime.get(reTime.size()-1));
+			ArrayList<Double> actLat = new ArrayList<Double>();
+			ArrayList<Double> actLon = new ArrayList<Double>();
+			for(int j =0; j<latOri.size(); j++){
+				if(latOri.get(j)>-1000)
+				{
+					actLat.add(latOri.get(j));
+					actLon.add(lonOri.get(j));
+					System.out.println(reTime.get(j)+","+latOri.get(j)+","+lonOri.get(j));
+				}
+			}
+			ArrayList<Double> lat1 = new ArrayList<Double>();
+			ArrayList<Double> lon1 = new ArrayList<Double>();
+			for(int j =0; j<lat.size(); j++){
+				if(lat.get(j)>-1000)
+				{
+					lat1.add(lat.get(j));
+					lon1.add(lon.get(j));
+					System.out.println(lat1.size()-1+","+timeLine.get(j)+","+lat.get(j)+","+lon.get(j));
+					
 				}
 			}
 			
 		}
+	  
+	  
+	  
+	/*  
+	private void resample(double latCut, double lonCut) {
+		double amountDist = 0;  
+		reTime.add(0.0);
+		for(int i = 1; i< latOri.size(); i++)
+		{	if((latOri.get(i)<=-1000)||(lonOri.get(i)<=-1000))
+				reTime.add(latOri.get(i));
+			else
+			{
+				amountDist = amountDist+Math.sqrt(squareDist(latOri.get(i-1),lonOri.get(i-1),latOri.get(i),latOri.get(i)));
+			 	reTime.add(amountDist);
+			}
+		}
+		double distCut=amountDist/(this.alphabetSize*1000);
+		double currentPos = reTime.get(0);
+		double time = 0;
+		int index = 1;
+		this.lat.add(latOri.get(0));
+		this.lon.add(lonOri.get(0));
+		double reTimeS = 0;
+		double reTimeE = 0;
+		while(time<=reTime.get(reTime.size()-2)){
+			time = time+distCut;
+			while(time<=reTime.get(index))
+			{
+				double ratio = (time-reTimeS)/(reTime.get(index)-reTime.get(index-1));
+				double latitude = latOri.get(index-1)+(latOri.get(index)-latOri.get(index-1))*ratio;
+				double longitude = lonOri.get(index-1)+(lonOri.get(index)-lonOri.get(index-1))*ratio;
+				
+			}
+			index++;
+		}
+		
+		
 		
 	}
+	*/
 
+	public static double squareDist(double lat1, double lon1, double lat2, double lon2) {
+		return ((lat1-lat2)*(lat1 -lat2)+(lon1-lon2)*(lon1-lon2));
+	}
+	
+	
 	private void drawRawTrajectories() {
 		
 		
@@ -1173,7 +1246,7 @@ public class SequiturModel extends Observable {
 			 
 		}
 	*/
-	
+	/*
 		private void finalCluster() {
 			//currentClusters = new HashMap<String, Cluster>();
 			for(int i = 0; i<r0.length; i++	){
@@ -1195,6 +1268,7 @@ public class SequiturModel extends Observable {
 			
 		
 	}
+	*/
 
 		private void mapToPreviousR0() {
 			int currentIdx = 0;
@@ -1742,298 +1816,10 @@ System.out.println("]");
 
 */
 	private void drawOnMap(){
-			  // Generate All Motifs and record them on files respectively.
-		    trueAnomalyCount = 0;
-		    falsePositiveCount = 0;
-		    trueNegativeCount = 0;
-		    falseNegativeCount = 0;
-			for(int i = 0; i<isCovered.length;i++)
-				{
-					isCovered[i] = true;
-					ruleCovered[i] = false;
-				}
-		  	finalIntervals = new HashMap<String, ArrayList<RuleInterval>>();
-			ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
-			anomalyIntervals = new ArrayList<RuleInterval>();
-			routes = new ArrayList<ArrayList<Route>>();
-			int anomalyCount = 0;
-			int totalRuleCount = 0;
-		  	immergableRuleCount = 0;
-		    //for (int i = 0 ; i<r0.length; i++){
-		  	int i = 0;
-		  	int cnt = 0;
-		  	int totalRuleLength = 0;
-		  	int amountR0RuleLength = 0;
-		  	int nonTerminalCounter = 0;
-		  //	int totalNonTerminal = 0;
-		  	int nullCounter =0;
-		    while (i<r0.length){
-		 //   	System.out.println("i:"+i);
-		    	
-		    	if(r0[i]==null)
-		    		{
-		    			i++;
-		    			nullCounter++;
-		    			continue;
-		    		}
-		    		
-		  		String s = r0[i];
-	    	//	  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
-
-		    	if(!isNumeric(s)){
-		    	  nonTerminalCounter++;	
-		    	  amountR0RuleLength = amountR0RuleLength + countSpaces(RuleDistanceMatrix.parseRule(s));  	
-		    	 // if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
-			    	//  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=2){
-
-		    	  if(true){
-		    	  //  	System.out.println("r0: "+i+" : "+r0[i]+" : "+RuleDistanceMatrix.parseRule(s));
-		
-		          int startPos = mapToOriginalTS.get(i-nullCounter);
-		          int endPos;
-		          if(isNumeric(r0[i+1])&&Integer.valueOf(r0[i+1])<0)
-		    	     endPos = mapToOriginalTS.get((i-nullCounter+1))-1;
-		          else
-		        	 endPos = mapToOriginalTS.get((i-nullCounter+1));
-		    	  /*
-		          int endPos;
-		          
-		          if(i+2<mapToOriginalTS.size()&&isNumeric(r0[i+1])&&Integer.valueOf(r0[i+1])>0)
-		    	   {
-		        	  endPos = mapToOriginalTS.get((i+2))-1;
-		        	  i++;
-		    	   }
-		          else
-		        	  endPos = mapToOriginalTS.get((i+1))-1;
-		        	*/    
-		          RuleInterval interval = new RuleInterval(startPos,endPos);
-		    	  for (int a = startPos; a<=endPos; a++){
-		    		  ruleCovered[a] = true;
-		    	  }
-		    	  	if (!finalIntervals.containsKey(s)){
-		    		finalIntervals.put(s, new ArrayList<RuleInterval>());
-		    		finalIntervals.get(s).add(interval);
-		    	  	}
-		    	    else{
-		    		finalIntervals.get(s).add(interval);
-		    	  	}
-		    	  }
-		    	  i++;
-		    	  /*
-		    	   * 
-		    	   *   Don't consider subtrajectories < minBlocks as anomalies.
-		    	   * 
-		    	   */
-		    	  /*
-		    	  else{
-		    		  int unsatisfiedStartPos = mapToOriginalTS.get(i);
-			    	  int unsatisfiedEndPos;
-			    	  if(i==(r0.length-1))
-			    		  unsatisfiedEndPos = mapToOriginalTS.get(i);
-			    	  else
-			    	  {
-			    		  unsatisfiedEndPos = mapToOriginalTS.get((i+1))-1;
-			    	  }
-			    	  for(int pos = unsatisfiedStartPos; pos<=unsatisfiedEndPos; pos++)
-			    		{
-			    		  
-			    		  isCovered[pos] = false;
-				    	  anomalyCount++;
 			
-			    		}
-		    	  }
-		    	  */
-		    	}
-		    	else{
-		    		int numStartPos = mapToOriginalTS.get(i-nullCounter);
-			    	  int numEndPos;
-			    	  if(Integer.valueOf(r0[i])>=0){
-			    		//  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
-			    			  if ((getNextNonTerminal(i)-i)>=minBlocks){
-		    	     
-			    	//  if((Integer.valueOf(r0[i])>=0)&&(getNextNonTerminal(i)-i)>=alphabetSize/30){
-		    		  int nextNonTerminal = getNextNonTerminal(i);
-		    		  
-		    		  
-		    		  if(nextNonTerminal>=r0.length)
-		    			  nextNonTerminal = r0.length-1;
-		    		  
-		    		//  System.out.println("ii:"+i);
-		    		//  System.out.println(nextNonTerminal + "MapToOriginalTS.get(nextNonTerminal) = "+mapToOriginalTS.get(nextNonTerminal));
-		    		  if(isNumeric(r0[nextNonTerminal])) // negative
-		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal-nullCounter)-1;
-		    		  else
-		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal-nullCounter);
-		    		/*
-		    		  System.out.print(cnt+": [");
-		    		  cnt++;
-		    		  for (int a = i; a<=nextNonTerminal; a++)
-		    			  {
-		    			  	System.out.print(" "+parseRule(r0[a]));
-		    			  
-		    			  }
-		    		  System.out.println("]");
-		    		  */
-		    		//  System.out.println("i_nextNon : "+i+":"+nextNonTerminal+"["+numStartPos+"-"+numEndPos);
-		    		//  numEndPos = mapToOriginalTS.get((i+minBlocks))-1;
-		    		  RuleInterval ri = new RuleInterval(numStartPos,numEndPos);
-			  	   	  anomalyIntervals.add(ri);
-		    	  for(int pos = numStartPos; pos<=numEndPos; pos++)
-		    		{
-		    		  
-		    		  isCovered[pos] = false;
-			    	  anomalyCount++;
-		
-		    		}
-		    		
-		    	  i = nextNonTerminal;
-		    	}
-			    			  else
-			    				  i = getNextNonTerminal(i);
-			    	  }
-			    else
-			    i++; //Negative Number
-		    	}
-		    }
-		    System.out.println("r0.length="+r0.length);
-		    
-		    	    coverCount = 0;
-		  	Iterator it = finalIntervals.entrySet().iterator();
-		  	while (it.hasNext()){
-		  		@SuppressWarnings("unchecked")
-				Map.Entry<String,ArrayList<RuleInterval>> pair = (Map.Entry<String,ArrayList<RuleInterval>>)it.next();
-		    	  totalRuleLength = totalRuleLength + countSpaces(RuleDistanceMatrix.parseRule(pair.getKey()));
-
-		  		ruleIntervals.add(pair.getValue());
-		  	}
-		  	
-		  	totalSubTrajectory = 0;
-		  	for (int i1 = 0; i1<ruleIntervals.size();i1++){
-		  		totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i1).size();
-		  		ArrayList<RuleInterval> positions = ruleIntervals.get(i1);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
-				int counter = 0;
-		  		ArrayList<Route> route = new ArrayList<Route>();
-		  			
-		  		for (int k=0;k<positions.size();k++)
-		  				  {
-		  					  Route singleRoute = new Route();
-		  					  int startPos = positions.get(k).getStartPos();
-		  						int endPos = positions.get(k).getEndPos();
-		  						/*
-		  						for(int index=startPos; index<=endPos;index++)
-		  							isCovered[index]=true;
-		  							*/
-		  		//				System.out.println("startPos: "+startPos);
-		  		//				System.out.println("endPos: " +endPos);
-		  						
-		  					//	System.out.print("track#: "+counter+":       ");
-		  						for (int j = startPos; j<=endPos; j++){
-		  							
-		  							Location loca = new Location(lat.get(j),lon.get(j));
-		  				
-		  							singleRoute.addLocation(lat.get(j), lon.get(j));
-		  								
-		  						
-		  							
-		  						}
-		  						route.add(singleRoute);
-		  						
-		  						counter++;
-		  				  }
-		  		//		  System.out.println("position size: "+positions.size());
-		  			//	  System.out.println("route size: "+route.size());
-		  				
-		  				  //  if(route.size()>2)
-		  				     routes.add(route);
-		
-		  		  }	
-		  	
-		  			
-		  			int startAnomalyPos = 0;
-		  			int endAnomalyPos = 0;
-		  			int anomalyCount1 = 0;
-		  			
-		  			
-		  			
-		  			
-		  			for (int a = 0; a<isCovered.length;a++){
-		  				if(!isCovered[a]){
-		  					anomalyCount1++;
-		  					//System.out.println("i: "+a+"\t block: "+blocks.findBlockIdForPoint(new Location(lat.get(a),lon.get(a))));
-		  				}
-		  				if(isCovered[a] && a<breakPoint)
-		  					trueNegativeCount++;
-		  				if(isCovered[a] && a>=breakPoint)
-		  					falseNegativeCount++;
-		  				if(!isCovered[a]&& a<breakPoint)
-		  					falsePositiveCount++;
-		  				if(!isCovered[a]&& a>=breakPoint)
-		  					trueAnomalyCount++;
-		  			}
-		  			int i1 = 0;
-		  			
-		  			
-		  			
-		  			
-		  			while  (i1<isCovered.length){
-		  			//	System.out.println(i + " isCovered :"+isCovered[i]);
-		  				  if(isCovered[i1])
-		  					  {
-		  					  	
-		  					  	coverCount++;
-		  					  	i1++;
-		  					  	if(i1<isCovered.length && lat.get(i1)>-999 && !isCovered[i1]){
-		  					  		startAnomalyPos = i1;
-		  					  		endAnomalyPos = i1;
-		  					  		
-		  					  		while(i1<isCovered.length && lat.get(i1)>-999&&!isCovered[i1]){
-		  					  			endAnomalyPos = i1;
-		  					  			
-		  					  			i1++;
-		  					  			//System.out.println("inner loop :"+i);
-		  					  		}
-		  					  		
-		  					  	//	RuleInterval ri = new RuleInterval(startAnomalyPos,endAnomalyPos);
-	  					  		//	anomalyIntervals.add(ri);
-	  					  	//	System.out.println("new intervals :"+anomalyIntervals.size()+" : " + ri);
-		  					  	
-		  					  	}
-		  					  	
-		  					  }
-		  				  /*
-		  				  if(ruleCovered[i1]){
-		  					  
-		  				  }
-		  				  */
-		  				  else
-		  					  i1++;
-		  				
-		  			  }
-		  			int ruleCoverCount = 0;
-		  			
-		  			
-		  			
-		  			for (int a = 0;a<ruleCovered.length;a++){
-		  				if(ruleCovered[a])
-		  					ruleCoverCount++;
-		  			}
 		  			  drawAnomaly();
 		  			  
-		  			  System.out.println("Cover Count: "+ coverCount);
-		  			  System.out.println("Anomaly Count/count1: "+ anomalyCount+","+ anomalyCount1 );
 		  			  
-		  			  System.out.println("isCover rate: " +(double)coverCount/(isCovered.length-trajCounter));
-		  			  /*
-		  			  System.out.println("satisfied rules: "+finalIntervals.size()+ " longRuleRate: ");
-		  			  System.out.println("RuleCoverCount: "+ruleCoverCount+" RuleCoverRate: "+(double)ruleCoverCount/(ruleCovered.length-trajCounter));
-		  			  System.out.println("total number of rules in R0: "+finalIntervals.size()+ "avg rule length: "+ (double)totalRuleLength/finalIntervals.size());
-		  			  System.out.println("total number of nonterminals in R0: "+nonTerminalCounter+ " avg rule length in R0: "+ (double)amountR0RuleLength/nonTerminalCounter);
-		  			  System.out.println("latSize = "+lat.size()+"  normalcount = "+breakPoint+"   anomalyCount = "+(lat.size()-breakPoint));
-		  			  System.out.println("Confusion Matrix:");
-		  			  System.out.println("True Anomaly:\t"+ trueAnomalyCount+"\t"+ falseNegativeCount);
-		  			  System.out.println("False Anomaly:\t"+ falsePositiveCount+"\t"+ trueNegativeCount);
-		  */
-		  		//	evaluateResult();
 				
 		  }
 
@@ -2701,14 +2487,14 @@ System.out.println("]");
   						
   					//	System.out.print("track#: "+counter+":       ");
   						
-  						Location loca = new Location(ncLat.get(startPos),ncLon.get(startPos));
+  						Location loca = new Location(lat.get(startPos),lon.get(startPos));
   						//Location endLoc = new Location(lat.get(startPos),lon.get(startPos));
   						
   						for (int j = startPos; j<=endPos; j++){
   							Location previousLoc =loca;
-  							loca = new Location(ncLat.get(j),ncLon.get(j));
+  							loca = new Location(lat.get(j),lon.get(j));
   							distance = distance + blocks.distance(blocks.findBlockIdForPoint(previousLoc), blocks.findBlockIdForPoint(loca)); 
-  							singleRoute.addLocation(ncLat.get(j), ncLon.get(j));
+  							singleRoute.addLocation(lat.get(j), lon.get(j));
   								
   						
   							

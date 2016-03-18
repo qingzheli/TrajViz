@@ -87,69 +87,6 @@ public RuleDistanceMatrix(Blocks blocks, GrammarRules rules, ArrayList<Integer> 
 
 
 
-public RuleDistanceMatrix(Blocks blocks, HashMap<String, Cluster> currentClusters, int minBlocks, double minLink) {
-	//this.filter = filter;
-	this.minLink = minLink;
-	/*
-	for (int i=0; i<filter.size();i++)
-	System.out.println(i+" : "+filter.get(i)+" ");
-	*///System.out.println();
-	matrix = new double[currentClusters.size()][currentClusters.size()];
-	//matrix[0][0] =100;// Double.MAX_VALUE;
-	comparator = new PairDistanceComparator();
-	pq= new PriorityQueue<PairDistance>(currentClusters.size()*currentClusters.size(), comparator);
-	names = new ArrayList<String>();
-	for(String key: currentClusters.keySet())
-		names.add(key);
-	minDistance = 100;//Double.MAX_VALUE;
-	minPair[0] = 0;
-	minPair[1] = 0;
-	//int line = 0;
-	//int col = 0;
-	for(int i = 0; i<names.size();i++ )
-		for(int j = i+1; j<names.size();j++){
-			//if(rules.get(filter.get(i)).frequencyInR0()>2&&rules.get(filter.get(j)).frequencyInR0()>2)
-		
-			
-				String rule1 = parseRule(names.get(i));
-	
-				String rule2 = parseRule(names.get(j));
-				
-			//	String rule1 = rules.getRuleRecord(filter.get(i)).getExpandedRuleString();
-			//	String rule2 = rules.getRuleRecord(filter.get(j)).getExpandedRuleString();
-
-		//	matrix[0][j] = 100;//Double.MAX_VALUE;
-		//	matrix[i][0] = 100;//Double.MAX_VALUE;
-			
-			/*
-			 * DTW Distance	
-			*/ 
-		//	matrix[i][j] = avgDTWDistance(blocks, toArrayList(rule1), toArrayList(rule2));
-			
-			matrix[i][j] = lcssDistance(blocks,toArrayList(rule1),toArrayList(rule2));
-			matrix[j][i] = matrix[i][j];
-			if(matrix[i][j]>=0&&matrix[i][j]<minLink){//&&matrix[i][j]<minDistance){
-				pq.add(new PairDistance(i,j,matrix[i][j]));
-			/*
-				System.out.println("distance = "+matrix[i][j]);
-				System.out.println("Rule 1: "+rule1);
-			    System.out.println("Rule 2: "+rule2);
-				*/
-			/*
-				minDistance = matrix[i][j];
-				minPair[0] = i;
-				minPair[1] = j;
-				*/
-			
-			}
-			//if(rules.get(i).)
-		}
-	//this.rules = rules;
-	//System.out.println("Matrix size: "+filter.size());
-	printMatrix(matrix);
-}
-
-
 
 
 public static String parseRule(String string) {
