@@ -29,6 +29,7 @@ import ch.qos.logback.classic.Logger;
 
 import com.roots.map.MapPanel;
 
+import edu.gmu.trajviz.logic.Cluster;
 import edu.gmu.trajviz.logic.MotifChartData;
 import edu.gmu.trajviz.logic.RuleInterval;
 import edu.gmu.trajviz.model.SequiturMessage;
@@ -87,6 +88,8 @@ public int compare(String s1, String s2) {
   return s1.length() - s2.length();
 }
 };
+
+private HashMap<String, ArrayList<Cluster>> allMotifs;
 
 
 
@@ -218,18 +221,19 @@ if (prop.equalsIgnoreCase(SequiturMessage.MAIN_CHART_CLICKED_MESSAGE)) {
 public void valueChanged(ListSelectionEvent arg) {
 
   if (!arg.getValueIsAdjusting() && this.acceptListEvents) {
-    int col = sequiturTable.getSelectedColumn();
-    int row = sequiturTable.getSelectedRow();
+    Integer col = sequiturTable.getSelectedColumn();
+    Integer row = sequiturTable.getSelectedRow();
     consoleLogger.debug("Selected ROW: " + row + " - COL: " + col);
     String rule = String.valueOf(sequiturTable.getValueAt(row,
         SequiturTableColumns.RULE_NUMBER.ordinal()));
-    //String actualRules = clusters.get(Integer.valueOf(rule)).toString();
-    System.out.println("rule:::::"+rule);
     this.firePropertyChange(FIRING_PROPERTY, this.selectedSequiturRule, rule);
+    //String actualRules = clusters.get(Integer.valueOf(rule)).toString();
+//    System.out.println("rule:::::"+rule);
+//    this.firePropertyChange(FIRING_PROPERTY, this.selectedSequiturRule, rule);
  //   System.out.println("Original rules:::::"+map.get(Integer.valueOf(rule)));
-    System.out.println("Rule Intervals:::::"+ruleIntervals.get(Integer.valueOf(rule)));
+ //   System.out.println("Rule Intervals:::::"+ruleIntervals.get(Integer.valueOf(rule)));
 
- //   this.selectedSequiturRule = actualRule;
+    this.selectedSequiturRule = rule;
   }
 }
 /**
@@ -245,7 +249,7 @@ this.validate();
 this.repaint();
 this.acceptListEvents = true;
 }
-
+/*
 public void setRulesData(MotifChartData chartData) {
 	this.acceptListEvents = false;
 	
@@ -254,6 +258,17 @@ public void setRulesData(MotifChartData chartData) {
 	resetPanel();
 	this.acceptListEvents = true;
 }
+*/
+public void setMotifData(HashMap<String, ArrayList<Cluster>> allMotifs) {
+	this.acceptListEvents = false;
+    this.allMotifs = allMotifs;
+    sequiturTableModel.update(allMotifs);
+    resetPanel();
+    this.acceptListEvents = true;
+	
+	
+}
+/*
 public void setRulesData(MotifChartData chartData, ArrayList<ArrayList<RuleInterval>> ruleIntervals, ArrayList<HashSet<Integer>> mapToOriginRules) {
 	this.acceptListEvents = false;
 	
@@ -265,5 +280,13 @@ public void setRulesData(MotifChartData chartData, ArrayList<ArrayList<RuleInter
 	resetPanel();
 	this.acceptListEvents = true;
 }
+*/
+
+
+
+
+
+
+
 
 }

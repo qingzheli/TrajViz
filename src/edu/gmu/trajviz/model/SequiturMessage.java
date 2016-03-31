@@ -21,6 +21,7 @@ public class SequiturMessage {
 	  public SequiturMessage(String messageType, Object payload) {
 	    this.type = messageType;
 	    this.payload = payload;
+	    System.out.println(this.type+"      SequiturMessagePayload::::::::::::::::"+this.payload);
 	  }
 	  /**
 	   * Constructor.

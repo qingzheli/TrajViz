@@ -8,12 +8,12 @@ package edu.gmu.trajviz.view.table;
 public enum SequiturTableColumns {
 	
 	 
-	  RULE_NUMBER("R#"),
+	  RULE_NUMBER("Length"),
 	 // RULE_LEVEL("Level"), 
 	  //RULE_FREQUENCY("Frequency in R0"), 
 	  //SEQUITUR_RULE("Rule"), 
 	  //EXPANDED_SEQUITUR_RULE("Expanded Rule"),
-	  RULE_USE_FREQUENCY("Used");
+	  RULE_USE_FREQUENCY("Cluster Count");
 	 // RULE_MEAN_LENGTH("Mean length"),
 	 // LENGTH("Min-max length");
 	  // RULE_INDEXES("String positions");

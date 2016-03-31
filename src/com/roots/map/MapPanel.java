@@ -54,6 +54,8 @@ import java.net.URLEncoder;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Random;
 import java.util.logging.Level;
@@ -94,6 +96,7 @@ import org.xml.sax.Attributes;
 import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
+import edu.gmu.trajviz.logic.Cluster;
 import edu.gmu.trajviz.logic.Route;
 import edu.gmu.trajviz.view.SequiturRulesPanel;
 
@@ -239,6 +242,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
     private SearchPanel searchPanel;
     private Rectangle magnifyRegion;
     private ArrayList<ArrayList<Route>> motifs;
+    private HashMap<Integer, ArrayList<Cluster>> allMotifs;
     private ArrayList<Route> allTrajectory;
     private ArrayList<Route> allAnomaly;
     private ArrayList<Double> routeLat;// = new ArrayList<Double>();
@@ -604,7 +608,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
         super.paintComponent(gOrig);
         Graphics2D g = (Graphics2D) gOrig.create();
         Route route = new Route();
-        //qz
+        //qz test
    /*      
         double[] latitudes = {40.001443, 40.00168,40.001924,40.002228,40.002378,40.002562,40.002783,40.002934,40.003236,40.003507};
         double[] longitudes = {116.326734, 116.326744, 116.326777, 116.326322, 116.325608, 116.325179, 116.325147, 116.325185,116.32515,116.324729};
@@ -618,7 +622,8 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
         */
         try {
             paintInternal(g);
-            if(ruleDetails<0||ruleDetails>motifs.size())    // Display all motifs on left side map
+            if(ruleDetails<0)    // Display all motifs on left side map
+           
             {
             	
               // draw all Trajectories in grey
@@ -628,11 +633,11 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
             	 // paintPoints(g,route.getLats().get(0),route.getLons().get(0),i,i+"S");
                  // paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
                  // paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,i+"E");
-            	  paintRoute(g,route.getLats(),route.getLons(),i,Color.GRAY,1);
+            	  paintRoute(g,route.getLats(),route.getLons(),i,Color.GRAY,2);
             	  route = new Route();
               }
             
-              
+              /* paint motifs on left panel
               for (int i = 0; i< motifs.size(); i++){
             	 for(int j = 0; j<motifs.get(i).size();j++){ 
             	  route = motifs.get(i).get(j);
@@ -645,12 +650,13 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
               paintPoints(g,route.getLats().get(1),route.getLons().get(1),i,"");
               paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,msgEnd);
               */
+              /*
               paintRoute(g,route.getLats(),route.getLons(),i, Color.BLUE,1);
               
               route = new Route();
             	 }
               }
-              
+              */
               for (int i = 0; i<allAnomaly.size(); i++){
             	  route = allAnomaly.get(i);
             	  int size = route.getLats().size();
@@ -662,7 +668,29 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
               }
               
             }
-            else if(motifs.size()>0&&ruleDetails<motifs.size()){    // Display all routes under the same rule on right side.
+            
+            
+            else{ // if(motifs.size()>0&&ruleDetails<motifs.size()){    // Display all routes under the same rule on right side.
+            //  Iterator it = allMotifs.keySet().iterator();
+              
+             // while(it.hasNext()){
+            //	  ArrayList<Cluster> clusters = allMotifs.get(it.next());
+            	ArrayList<Cluster> clusters = allMotifs.get(ruleDetails);
+            	  for(int i = 0; clusters!=null && i< clusters.size(); i++){
+            		  for (int j = 0; j<clusters.get(i).getRoutes().size(); j++){
+            			  route = clusters.get(i).getRoutes().get(j);
+            			  paintRoute(g,route.getLats(),route.getLons(),i);
+            			  
+            		  }
+            	  }
+            	  
+            	  
+            	  
+              
+            }
+              
+              /////////////////////////////////////////////////
+              /*
               for(int i=0; i<motifs.get(ruleDetails).size();i++){
             
               route = motifs.get(ruleDetails).get(i);
@@ -671,13 +699,13 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
               String msgEnd = "M"+ruleDetails+"_T"+i+"E";
         //      paintPoints(g,route.getLats().get(0),route.getLons().get(0),i,msgStart);
          //     paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,msgEnd);
-              paintRoute(g,route.getLats(),route.getLons(),i);
+              paintRoute(g,route.getLats(),route.getLons(),ruleDetails);
               route = new Route();
               }
-              
+              */
         //    System.out.println("size:  ::::::::::::::::::::::::::::"+motifs.get(ruleDetails).size());	
             	
-            }
+            
            // paintPoints(g,116.326734,40.001443 );
             /*
             if((routeLat==null)||(routeLon==null))
@@ -696,11 +724,19 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
         } finally {
             g.dispose();
         }
+        
     }
-    public void setMotifs(ArrayList<ArrayList<Route>> motifs) {
+   
+
+	public void setMotifs(ArrayList<ArrayList<Route>> motifs) {
     	this.motifs = motifs;
 		
 	}
+	
+	public void setAllMotifs(HashMap<Integer, ArrayList<Cluster>> allmotif){
+		allMotifs = allmotif;
+	}
+	
     public void setAllTrajectories(ArrayList<Route> allTrajectory){
     	this.allTrajectory = allTrajectory;
     }

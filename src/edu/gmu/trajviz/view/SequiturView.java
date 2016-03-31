@@ -58,6 +58,7 @@ import ch.qos.logback.classic.Level;
 
 import com.roots.map.MapPanel;
 
+import edu.gmu.trajviz.logic.Cluster;
 import edu.gmu.trajviz.logic.MotifChartData;
 import edu.gmu.trajviz.logic.RuleInterval;
 import edu.gmu.trajviz.model.SequiturMessage;
@@ -235,13 +236,13 @@ public class SequiturView implements Observer, ActionListener{
 		MigLayout sequiturPaneLayout = new MigLayout(",insets 0 0 0 0", "[fill,grow]", "[fill,grow]");
 		sequiturRulesPane.setLayout(sequiturPaneLayout);
 
-	    tabbedRulesPane.addTab("Grammar rules", null, sequiturRulesPane,"Shows grammar rules");
+	    tabbedRulesPane.addTab("Motif Length", null, sequiturRulesPane,"Shows grammar rules");
 	    
 	    // now format the tabbed pane
 	    //
 	    tabbedRulesPane.setBorder(BorderFactory.createTitledBorder(
 	        BorderFactory.createEtchedBorder(BevelBorder.LOWERED),
-	        "Grammar Rule Details",
+	        "Motif Details",
 	        TitledBorder.LEFT, TitledBorder.CENTER, new Font(TITLE_FONT, Font.PLAIN, 10)));
 	}
 
@@ -532,8 +533,8 @@ public class SequiturView implements Observer, ActionListener{
 	        String loadLimit = this.dataRowsLimitTextField.getText();
 	       
 	        this.controller.getLoadFileListener().actionPerformed(new ActionEvent(this, 1, loadLimit));
-	        mapPanel.setZoom(12);  // set some zoom level (1-18 are valid)
-	        mapPanel1.setZoom(12);
+	        mapPanel.setZoom(10);  // set some zoom level (1-18 are valid)
+	        mapPanel1.setZoom(10);
 	     //   mapPanel1.setRuleDetails(-1);
 			  double lat = SequiturModel.getLatitudeCenter();
 			  
@@ -560,10 +561,11 @@ public class SequiturView implements Observer, ActionListener{
 	    	  this.controller.getSession().setNoisePointThreshold(Integer.valueOf(this.noiseThresholdField.getText()));
 	    	  this.controller.getProcessDataListener().actionPerformed(new ActionEvent(this,2,null));
 	    	  mapPanel.setMotifs(SequiturModel.getMotifs());
+	    	  
 	    	  mapPanel.setAllTrajectories(SequiturModel.getRawTrajectory());
 	    	  mapPanel.setAllAnomalies(SequiturModel.getAnomaly());
 	    	  mapPanel1.setMotifs(SequiturModel.getMotifs());
-	    	  
+	    	  mapPanel1.setAllMotifs(SequiturModel.getAllMotifs());
 	       }
 	      else {
 	        raiseValidationError("The timeseries is not loaded yet.");
@@ -575,9 +577,10 @@ public class SequiturView implements Observer, ActionListener{
 		  }
 	  @Override
 	  public void update(Observable o, Object arg) {
+		  System.out.println("before instance of ============"+((SequiturMessage) arg).getType());
 	    if (arg instanceof SequiturMessage) {
 	      final SequiturMessage message = (SequiturMessage) arg;
-	    
+	      System.out.println("message.getType():::::::::::::::::::"+message.getType() );
 	 // new FileName
 	      //
 	      if (SequiturMessage.DATA_FNAME.equalsIgnoreCase(message.getType())) {
@@ -599,15 +602,21 @@ public class SequiturView implements Observer, ActionListener{
 	      //  log(Level.ALL, (String) message.getPayload1());
 	      }
 	      else if (SequiturMessage.CHART_MESSAGE.equalsIgnoreCase(message.getType())) {
-	    	  MotifChartData chartData = (MotifChartData) message.getPayload();
-	    	  @SuppressWarnings("unchecked")
-			ArrayList<ArrayList<RuleInterval>> ruleIntervals = (ArrayList<ArrayList<RuleInterval>>) message.getPayload1();
-	    	@SuppressWarnings("unchecked")
-			ArrayList<HashSet<Integer>> map = (ArrayList<HashSet<Integer>>) message.getPayload2();
+	    	  
+	    	  HashMap<String, ArrayList<Cluster>> allMotifs = (HashMap<String, ArrayList<Cluster>>) message.getPayload();
+	    	  sequiturRulesPane.setMotifData(allMotifs);
+	    	  
+	    	  
+	    	  
+	    	//  MotifChartData chartData = (MotifChartData) message.getPayload();
+	    	 
+		//	ArrayList<ArrayList<RuleInterval>> ruleIntervals = (ArrayList<ArrayList<RuleInterval>>) message.getPayload1();
+	    	
+		//	ArrayList<HashSet<Integer>> map = (ArrayList<HashSet<Integer>>) message.getPayload2();
 	    	  
 	    //	  System.out.println("Check Payload:::::::::::::::::::"+filteredRulesMap );
-	    	  sequiturRulesPane.setRulesData(chartData,ruleIntervals,map);//,frequency);
-	    	  
+	    	//  sequiturRulesPane.setRulesData(chartData,ruleIntervals,map);//,frequency);
+	    	  sequiturRulesPane.setMotifData(allMotifs);
 	    	  frame.validate();
 	    	  frame.repaint();
 	    	//  sequiturRulesPane.clear();

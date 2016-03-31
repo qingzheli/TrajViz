@@ -1,9 +1,12 @@
 package edu.gmu.trajviz.view.table;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 
 import edu.gmu.trajviz.gi.GrammarRules;
+import edu.gmu.trajviz.logic.Cluster;
 import edu.gmu.trajviz.logic.RuleInterval;
 
 /**
@@ -34,6 +37,7 @@ public class SequiturTableModel extends SequiturTableDataModel {
 	   * 
 	   * @param combinedGrammarRules the data for table.
 	   */
+	  /*
 	  public void update(GrammarRules grammarRules) {
 	    int rowIndex = 0;
 	    rows.clear();
@@ -44,24 +48,41 @@ public class SequiturTableModel extends SequiturTableDataModel {
 	        item[nColumn++] = rowIndex;
 	     //   item[nColumn++] = ((Integer)grammarRules.get(rowIndex).get(0).getRule1()).toString()+","+((Integer)grammarRules.get(rowIndex).get(0).getRule2()).toString();
 	        item[nColumn++]	= grammarRules.get(rowIndex).getRuleIntervals().size();
-	       // item[nColumn++] = grammarRules.get(rowIndex).toString();
-	        /*
-	        item[nColumn++] = combinedGrammarRules.get(rowIndex).getRuleLevel();
-	        item[nColumn++] = combinedGrammarRules.get(rowIndex).getOccurrences().size();
-	        item[nColumn++] = combinedGrammarRules.get(rowIndex).getRuleString();
-	        item[nColumn++] = combinedGrammarRules.get(rowIndex).getExpandedRuleString();
-	        item[nColumn++] = combinedGrammarRules.get(rowIndex).getRuleUseFrequency();
-	        item[nColumn++] = combinedGrammarRules.get(rowIndex).getMeanLength();
-	        item[nColumn++] = combinedGrammarRules.get(rowIndex).minMaxLengthAsString();
-	        // item[nColumn++] = saxContainerList.get(rowIndex).getOccurenceIndexes();
-	        */
+	      
 	        rows.add(item);
 	      }
 	    }
 
 	    fireTableDataChanged();
 	  }
-	 
+	  */
+	  
+	  public void update(HashMap<String, ArrayList<Cluster>> allMotifs) {
+		  if(allMotifs !=null){
+			  System.out.println("update(!null)."+allMotifs.size());
+		  int rowIndex = 0;
+		  Iterator it = allMotifs.keySet().iterator();
+		  
+		  rows.clear();
+		  while(it.hasNext()){
+			  
+			  ArrayList<Cluster> clusters = allMotifs.get(it.next());
+				 Object[] item = new Object[getColumnCount()+1];
+				 int nColumn = 0;
+				 item[nColumn++] = clusters.get(0).length;
+				 item[nColumn++] = clusters.size();
+				 rows.add(item);
+			 }
+			  
+			  
+		  fireTableDataChanged();
+		  }
+		  else
+			  System.out.println("update(null).");
+		}
+	  
+	  /*
+	  
 	  public void update(GrammarRules grammarRules, ArrayList<ArrayList<RuleInterval>> ruleIntervals, ArrayList<HashSet<Integer>> mapToOriginRules) {
 		  int rowIndex = 0;
 		    rows.clear();
@@ -75,16 +96,7 @@ public class SequiturTableModel extends SequiturTableDataModel {
 		     //   item[nColumn++] = ((Integer)grammarRules.get(rowIndex).get(0).getRule1()).toString()+","+((Integer)grammarRules.get(rowIndex).get(0).getRule2()).toString();
 		        item[nColumn++]	= ruleIntervals.get(rowIndex).size();//grammarRules.get(filter.get(rowIndex)).getRuleIntervals().size();     //Since some of first intervals are not correct, need to find reason.  
 		       // item[nColumn++] = grammarRules.get(rowIndex).toString();
-		        /*
-		        item[nColumn++] = combinedGrammarRules.get(rowIndex).getRuleLevel();
-		        item[nColumn++] = combinedGrammarRules.get(rowIndex).getOccurrences().size();
-		        item[nColumn++] = combinedGrammarRules.get(rowIndex).getRuleString();
-		        item[nColumn++] = combinedGrammarRules.get(rowIndex).getExpandedRuleString();
-		        item[nColumn++] = combinedGrammarRules.get(rowIndex).getRuleUseFrequency();
-		        item[nColumn++] = combinedGrammarRules.get(rowIndex).getMeanLength();
-		        item[nColumn++] = combinedGrammarRules.get(rowIndex).minMaxLengthAsString();
-		        // item[nColumn++] = saxContainerList.get(rowIndex).getOccurenceIndexes();
-		        */
+		      
 		        rows.add(item);
 		      }
 		    }
@@ -92,7 +104,7 @@ public class SequiturTableModel extends SequiturTableDataModel {
 		    fireTableDataChanged();
 		  }
 			
-		
+		*/
 	  /*
 	   * Important for table column sorting (non-Javadoc)
 	   * 
@@ -129,6 +141,8 @@ public class SequiturTableModel extends SequiturTableDataModel {
 	*/
 	    return String.class;
 	  }
+
+	
 
 	
 
