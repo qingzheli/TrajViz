@@ -55,7 +55,9 @@ public class SequiturModel extends Observable {
 	public static ArrayList<ArrayList<Double>> rawtrajX,rawtrajY,oldtrajX, oldtrajY, trajX, trajY,allTimeline;
 	public static HashMap<Integer, ArrayList<Cluster>> allTrajClusters;  //<length, arraylist of clusters>
 	public static HashMap<Integer, ArrayList<Cluster>> allMotifs;   // this should be a subset of allTrajClusters with size>1;
-	
+	public static int longest3Traj[];
+	public static double distCut;
+	public static ArrayList<ArrayList<Boolean>> isAnomaly;
 	
 	/*
 	 * 
@@ -79,8 +81,9 @@ public class SequiturModel extends Observable {
 	private static final String SPACE = " ";
 	private static final String CR = "\n";
 	private static final int STEP = 2;
-	private static final int DEFAULT_TIME_GAP = 6;//180;
-//	private static final int DEFAULT_TIME_GAP = 180;
+	//private static final int DEFAULT_TIME_GAP = 6;//180;
+	//private static final int DEFAULT_TIME_GAP = 180;
+	private static final int DEFAULT_TIME_GAP = 6;
     private boolean[] isCovered;
     private boolean[] groundTruth;
     private int breakPoint; // the positions<breakPoint are normal, otherwise are abnormal.
@@ -453,7 +456,9 @@ public class SequiturModel extends Observable {
 		  resampling();
 		 // buildModel();
 		  int minLength = minBlocks;
-		  int maxLength = minBlocks+10;
+		  int maxLength= longest3Traj[2];
+		  System.out.println(longest3Traj[2]);
+		  System.out.println("minLength:maxLength = "+minLength+":"+maxLength);
 		  leftPanelRaw();
 		  findMotifs(minLength,maxLength);
 	//	  filterMotifs(minLength,maxLength);
@@ -643,12 +648,15 @@ public class SequiturModel extends Observable {
 	  
 	  private void drawMotifs(int min, int max) {
 		  anomalyRoutes = new ArrayList<Route>();
+		  
+		  
 		  //separate anomalies and motifs
-		  for(int len = min; len<=max;len++){
+		  for(int len = min; len<=max;len = len+min){
 			  ArrayList<Cluster> motif = new ArrayList<Cluster>();
 			  for(int i = 0; i<allTrajClusters.get(len).size(); i++){
 				  if(allTrajClusters.get(len).get(i).getSize()<2)//Anomalies
 				  {
+					  /*
 					  Iterator it = allTrajClusters.get(len).get(i).trajIds.iterator();
 					  String s = it.next().toString();
 					  int[] subTraj = parseTrajId(s);  //subTraj = {Traj#,Start,End};
@@ -660,6 +668,7 @@ public class SequiturModel extends Observable {
 					  }
 					  System.out.println("Anomalous Trajectory: "+subTraj[0]+"-"+subTraj[1]+"-"+subTraj[2]);
 					  anomalyRoutes.add(singleAnomaly);
+					  */
 				  }
 				  //if (allTrajClusters.get(len).get(i).getSize()>=2){
 				  else{
@@ -669,6 +678,7 @@ public class SequiturModel extends Observable {
 				  
 			  }
 			  
+			  
 			  if(motif.size()>0)
 				  {
 				  	for(int x =0; x<motif.size(); x++){
@@ -676,6 +686,47 @@ public class SequiturModel extends Observable {
 				  	}
 				  	allMotifs.put(len, motif);
 				  }
+			  for(int traj = 0; traj<isAnomaly.size();traj++){
+				  int pos = 0;
+				  int startPos = pos;
+				  while(pos<isAnomaly.get(traj).size()){
+					  if(isAnomaly.get(traj).get(pos))    // is the start position of anomaly
+					  {
+						  startPos = pos;
+						  int prePos =pos;
+						  Route singleAnomaly = new Route();
+						  double x = oldtrajX.get(traj).get(pos);
+						  double y = oldtrajY.get(traj).get(pos);
+						  singleAnomaly.addLocation(x, y);
+						  pos++;
+						  while(pos<isAnomaly.get(traj).size()&&isAnomaly.get(traj).get(pos)){
+							 /*
+							  if(euDist(oldtrajX.get(traj).get(pos),oldtrajY.get(traj).get(pos),x,y)>distCut*10){
+								  System.out.println(rawtrajX.get(traj));
+								  System.out.println(oldtrajX.get(traj));
+								  System.out.println(rawtrajY.get(traj));
+								  System.out.println(oldtrajY.get(traj));
+								  
+								  throw new IllegalArgumentException("traj = "+traj+"    pos = "+ pos+"    dist = "+euDist(oldtrajX.get(traj).get(pos),oldtrajY.get(traj).get(pos),x,y)+"prevous pos/distCut: "+distCut);
+							  }
+							  */
+							  x =  oldtrajX.get(traj).get(pos);
+							  y = oldtrajY.get(traj).get(pos);
+							  singleAnomaly.addLocation(x, y);
+							  
+							  prePos = pos;
+							  pos++;
+						  }
+						  if(singleAnomaly.getLats().size()>=minBlocks)
+						  {
+							  anomalyRoutes.add(singleAnomaly);
+							  System.out.println("Anomalous Trajectory: "+traj+"-"+startPos+"-"+pos);
+						  }
+					  }
+					  else
+						  pos++;
+				  }
+			  }
 		  
 		  }
 	//	routes = new ArrayList<ArrayList<Route>>();
@@ -736,12 +787,16 @@ public class SequiturModel extends Observable {
 	}
 
 	private void findMotifs(int minLength,int maxLength) {
-		  for(int len = minLength; len<=maxLength; len++){
+		
+		  for(int len = minLength; len<=maxLength; len = minLength +len){
 			  allTrajClusters.put(len, new  ArrayList<Cluster>());
 		  }
 		  for (int i = 0; i<oldtrajX.size(); i++){
-			  for(int length = minLength; length<maxLength; length++){
-				  for(int s = 0; s<oldtrajX.get(i).size()-length; s++){
+			  for(int length = minLength; length<=maxLength; length =length+minLength){
+				  
+				 // for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.noiseThreshold){
+				//  for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.minBlocks/2){
+				  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length*this.minLink)){
 					  /*
 					  ArrayList<Double> currentSubX = new ArrayList<Double>();
 				      ArrayList<Double> currentSubY = new ArrayList<Double>();
@@ -753,6 +808,13 @@ public class SequiturModel extends Observable {
 					  addToAllTrajClusters(currentSubX, currentSubY);
 					  */
 				      addToAllTrajClusters(i,s,length);
+				      /*
+				      if(length==48)
+				      {
+				    	  System.out.println("Length="+length);
+				    	  throw new IllegalArgumentException();
+				      }
+				      */
 				  }
 			  }
 		  }
@@ -931,16 +993,28 @@ public class SequiturModel extends Observable {
       private void resampling(){
     	  oldtrajX = new ArrayList<ArrayList<Double>>();
 		  oldtrajY = new ArrayList<ArrayList<Double>>();
+		  isAnomaly = new ArrayList<ArrayList<Boolean>>();
 		  allTimeline = new ArrayList<ArrayList<Double>>();
 		  ArrayList<ArrayList<Double>> rawTimeResample = new ArrayList<ArrayList<Double>>(); //  present reTime in ArrayList
 		  double amountDist = 0;  
-			
+		  longest3Traj = new int[3];
+		  longest3Traj[0] = 0;
+		  longest3Traj[1] = 0;
+		  longest3Traj[2] = 0;
+		  
 			for (int i = 0; i<rawtrajX.size(); i++){
 				rawTimeResample.add(new ArrayList<Double>());
 				rawTimeResample.get(i).add(0.0);
 				double trajDist = 0;
 				for(int j = 1; j<rawtrajX.get(i).size(); j++){
 					double dist = Math.sqrt(squareDist(rawtrajX.get(i).get(j-1),rawtrajY.get(i).get(j-1),rawtrajX.get(i).get(j),rawtrajY.get(i).get(j)));
+					double eudist = euDist(rawtrajX.get(i).get(j-1),rawtrajY.get(i).get(j-1),rawtrajX.get(i).get(j),rawtrajY.get(i).get(j));
+					if(eudist!=dist){
+						throw new IllegalArgumentException(dist+" : "+
+					eudist);
+					}
+					
+					
 					trajDist = trajDist+dist;
 					rawTimeResample.get(i).add(trajDist);
 				}
@@ -952,7 +1026,7 @@ public class SequiturModel extends Observable {
 	//		double distCut=amountDist/(alphabetSize*1000);
 		//	double distCut=amountDist/(alphabetSize*rawtrajX.size());
 		//	double distCut=amountDist/(totalPoints*alphabetSize);
-			double distCut = diagnalDistance/alphabetSize;
+			distCut = diagnalDistance/alphabetSize;
 			System.out.println("distCut = "+distCut);
 			ArrayList<ArrayList<Double>> timeResample = new ArrayList<ArrayList<Double>>();
 			for(int i = 0; i<rawtrajX.size();i++){
@@ -960,44 +1034,94 @@ public class SequiturModel extends Observable {
 				timeResample.add(new ArrayList<Double>());
 				oldtrajX.add(new ArrayList<Double>());
 				oldtrajY.add(new ArrayList<Double>());
+				isAnomaly.add(new ArrayList<Boolean>());
+				
 				oldtrajX.get(i).add(rawtrajX.get(i).get(0));
 				oldtrajY.get(i).add(rawtrajY.get(i).get(0));
 				double time = 0;
 				int index = 1;
 				timeResample.get(i).add(time);
+	//			System.out.println("i===================================================================================="+i);
 				while(time<rawTimeResample.get(i).get(rawTimeResample.get(i).size()-1)){
-					time = time+distCut;
 					
 					while(time<=rawTimeResample.get(i).get(index)){
+						
+						if(time+distCut<=rawTimeResample.get(i).get(index)){
+						time = time+distCut;
+					//	System.out.println(rawTimeResample.get(i).get(index)+"=rawTimeResample.get(i)  |  time = "+time);
 						timeResample.get(i).add(time);
 						//double ratio = (time-rawTimeResample.get(i).get(index-1))/distCut;
 						double ratio = (time-rawTimeResample.get(i).get(index-1))/(rawTimeResample.get(i).get(index)-rawTimeResample.get(i).get(index-1));
 						double latitude = rawtrajX.get(i).get(index-1)+(rawtrajX.get(i).get(index)-rawtrajX.get(i).get(index-1))*ratio;//latOri.get(index-1)+(latOri.get(index)-latOri.get(index-1))*ratio;
 						double longitude = rawtrajY.get(i).get(index-1)+(rawtrajY.get(i).get(index)-rawtrajY.get(i).get(index-1))*ratio; 
+						/*
+						
+								System.out.println("ratio = "+ratio);
+								//System.out.println("resample dist = "+euDist(latitude,longitude,rawtrajX.get(i).get(index-1),rawtrajY.get(i).get(index-1)));
+								System.out.println("resample dist = "+euDist(latitude,longitude,oldtrajX.get(i).get(oldtrajX.get(i).size()-1),oldtrajY.get(i).get(oldtrajY.get(i).size()-1)));
+								System.out.println("original dist = "+euDist(rawtrajX.get(i).get(index),rawtrajY.get(i).get(index),rawtrajX.get(i).get(index-1),rawtrajY.get(i).get(index-1)));
+								System.out.println("i="+i+"  index = "+index);
+								System.out.println(latitude+","+longitude);
+								System.out.println(rawtrajX.get(i).get(index-1)+","+rawtrajY.get(i).get(index-1));
+								System.out.println(rawtrajX.get(i).get(index)+","+rawtrajY.get(i).get(index));
+								*/
+							if(euDist(latitude,longitude,oldtrajX.get(i).get(oldtrajX.get(i).size()-1),oldtrajY.get(i).get(oldtrajY.get(i).size()-1))>10*distCut)
+						  {	
+								throw new IllegalArgumentException();
+							  }
+
 						oldtrajX.get(i).add(latitude);
 						oldtrajY.get(i).add(longitude);
+						}
+						else 
+							{
+							time = time+distCut;
+							//	System.out.println(rawTimeResample.get(i).get(index)+"=rawTimeResample.get(i)  |  time = "+time);
+								timeResample.get(i).add(time);
+								oldtrajX.get(i).add(rawtrajX.get(i).get(index));
+								oldtrajY.get(i).add(rawtrajY.get(i).get(index));
+							//	break;
+							}
 					//	timeLine.add(time);
 						
-						time = time +distCut;
+						//time = time +distCut;
 					}
 					index++;
 				}
-			
+				if(oldtrajX.get(i).size()>longest3Traj[0]){
+					longest3Traj[2] = longest3Traj[1];
+					longest3Traj[1] = longest3Traj[0];
+					longest3Traj[0] = oldtrajX.get(i).size();						
+				}
+				else if(oldtrajX.get(i).size()>longest3Traj[1]){
+					longest3Traj[2] = longest3Traj[1];
+					longest3Traj[1] = oldtrajX.get(i).size();
+				}
+				else if(oldtrajX.get(i).size()>longest3Traj[2]){
+					longest3Traj[2] = oldtrajX.get(i).size();
+				}
+		//		System.out.println(oldtrajX.get(i).size() +"   longest3Traj[2] = "+longest3Traj[2]);
+				for(int k = 0; k<oldtrajX.get(i).size();k++){
+					isAnomaly.get(i).add(true);
+				}
 				
 				}
 			
 			
 			System.out.println("distCut = "+distCut);
-			/*
+			
 			for(int j = 0; j<oldtrajX.size(); j++)
 			  {
-				
+				/*
 				  System.out.println(oldtrajX.get(j).size()+"points. "+j+"X:"+oldtrajX.get(j));
 				  System.out.println(j+"rawX:"+rawtrajX.get(j));
 				  System.out.println(j+"Y:"+oldtrajY.get(j));
 				  System.out.println(j+"rawY:"+rawtrajY.get(j));
+				  */
+				  System.out.println(oldtrajX.get(j).size()+"points. "+j+"X:");//+oldtrajX.get(j));
+				
 			  }		  
-			  */
+			  
       }
 	/*
 	 * resample original ts with the same speed.

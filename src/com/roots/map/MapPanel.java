@@ -829,7 +829,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 	//	g.drawPolyline(xPoints, yPoints, nPoints);
 
 		g.setPaintMode();
-		g.setStroke(new BasicStroke(5));
+		g.setStroke(new BasicStroke(2));
 		g.drawPolyline(xPoints, yPoints, latitudes.size());
 		
 		
