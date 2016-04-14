@@ -457,13 +457,18 @@ public class SequiturModel extends Observable {
 		 // buildModel();
 		  int minLength = minBlocks;
 		  int maxLength= longest3Traj[2];
+		//  int maxLength = minLength;
 		  System.out.println(longest3Traj[2]);
 		  System.out.println("minLength:maxLength = "+minLength+":"+maxLength);
 		  leftPanelRaw();
 		  findMotifs(minLength,maxLength);
-	//	  filterMotifs(minLength,maxLength);
+		  //findBestMotifs(minLength,maxLength);
+	
 		  drawMotifs(minLength,maxLength);
 		  System.out.println("allMotifs.size = "+allMotifs.size());
+		  System.out.println("silcoefMap: "+Evaluation.silCoefMap(allMotifs));
+		 // evaluation silcoef 2016Apr
+		  
 		//  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
 		  setChanged();
 		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
@@ -785,7 +790,36 @@ public class SequiturModel extends Observable {
 		  
 		
 	}
-
+	/*
+	private void findHierachicalMotifs(int minLength,int maxLength) {
+		
+		  for(int len = minLength; len<=maxLength; len = minLength +len){
+			  allTrajClusters.put(len, new  ArrayList<Cluster>());
+		  }
+		  for
+	}
+	*/
+	private void findBestMotifs(int minLength,int maxLength) {
+		
+		  for(int len = minLength; len<=maxLength; len = minLength +len){
+			  allTrajClusters.put(len, new  ArrayList<Cluster>());
+		  }
+		  for (int i = 0; i<oldtrajX.size(); i++){
+			  for(int length = minLength; length<=maxLength; length =length+minLength){
+				  
+				 // for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.noiseThreshold){
+				//  for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.minBlocks/2){
+				  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length*this.minLink)){
+				//	  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length)){
+				//  for(int s = 0; s<=oldtrajX.get(i).size()-length; s++){
+					      addToBestTrajClusters(i,s,length);
+				     
+				  }
+			  }
+		  }
+		
+		
+	}
 	private void findMotifs(int minLength,int maxLength) {
 		
 		  for(int len = minLength; len<=maxLength; len = minLength +len){
@@ -797,7 +831,10 @@ public class SequiturModel extends Observable {
 				 // for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.noiseThreshold){
 				//  for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.minBlocks/2){
 				  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length*this.minLink)){
-					  /*
+				//	  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length)){
+				//  for(int s = 0; s<=oldtrajX.get(i).size()-length; s++){
+
+				/*
 					  ArrayList<Double> currentSubX = new ArrayList<Double>();
 				      ArrayList<Double> currentSubY = new ArrayList<Double>();
 				      
@@ -863,6 +900,48 @@ public class SequiturModel extends Observable {
 		}
 		
 		
+		
+	}
+	private void addToBestTrajClusters(int traj, int s, int length){
+		boolean isAdded = false;
+		double minDist = Double.MAX_VALUE;
+		int minCluster = 0;
+		for(int i = 0; i<allTrajClusters.get(length).size(); i++){
+			double dist = 0;
+			for(int index = 0; index<allTrajClusters.get(length).get(i).repLineX.size(); index++){
+				double pairDist = euDist(allTrajClusters.get(length).get(i).repLineX.get(index),allTrajClusters.get(length).get(i).repLineY.get(index),oldtrajX.get(traj).get(s+index),oldtrajY.get(traj).get(s+index));
+				if(pairDist>distCut*(length)*minLink)
+					{
+					dist = Double.MAX_VALUE;
+					break;
+					}
+				else
+				dist = dist+pairDist;
+			}
+			if (dist<minDist)
+				{
+					minDist = dist;
+					minCluster = i;
+				}
+			if(length!=allTrajClusters.get(length).get(i).repLineX.size())
+				throw new IllegalArgumentException(length+"         repLineX.size = "+allTrajClusters.get(length).get(0).repLineX.size());
+			
+			
+		}
+		
+		if((minDist/length)<=(distCut*(length)*minLink)){
+			//isAdded = true;
+		System.out.println("trajId = "+traj);
+		System.out.println("minDist/length = "+minDist/length);
+		System.out.println("threshold      = "+distCut*(length)*minLink);
+		System.out.println("minCluster = "+ minCluster);
+			allTrajClusters.get(length).get(minCluster).addBest(traj, s);
+		}
+		else{
+			Cluster cluster = new Cluster(length);
+			cluster.addBest(traj, s);
+			allTrajClusters.get(length).add(cluster);
+		}
 		
 	}
 
