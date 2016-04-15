@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Observable;
+import java.util.PriorityQueue;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
@@ -47,6 +48,7 @@ import ch.qos.logback.classic.Logger;
 import edu.gmu.trajviz.sax.datastructures.SAXRecords;
 import edu.gmu.trajviz.timeseries.TSException;
 import edu.gmu.trajviz.util.StackTrace;
+import edu.gmu.trajviz.util.Tools;
 public class SequiturModel extends Observable {
 	
 	/*
@@ -55,9 +57,14 @@ public class SequiturModel extends Observable {
 	public static ArrayList<ArrayList<Double>> rawtrajX,rawtrajY,oldtrajX, oldtrajY, trajX, trajY,allTimeline;
 	public static HashMap<Integer, ArrayList<Cluster>> allTrajClusters;  //<length, arraylist of clusters>
 	public static HashMap<Integer, ArrayList<Cluster>> allMotifs;   // this should be a subset of allTrajClusters with size>1;
+	public static HashMap<Integer, ArrayList<String>> allSubseq;
+	public static HashMap<Integer, PriorityQueue<RoutePair>> mergablePair;
+	public static HashMap<Integer, HashMap<String, Cluster>> clusterMaps;
 	public static int longest3Traj[];
 	public static double distCut;
 	public static ArrayList<ArrayList<Boolean>> isAnomaly;
+	public static double threshold;
+	
 	
 	/*
 	 * 
@@ -103,7 +110,7 @@ public class SequiturModel extends Observable {
 	public static TreeMap<String, GrammarRuleRecord> sortedRuleMap;
 	public static ArrayList< ArrayList<HashSet<Integer>>> allClusters;
 	private ArrayList<HashSet<Integer>> clusters;
-	private Cluster cluster;
+//	private Cluster cluster;
 //	private HashMap<String, Cluster> currentClusters;
 	private ArrayList<Integer> filter;
 	public static ArrayList<ArrayList<Integer>> allFilters;
@@ -380,7 +387,7 @@ public class SequiturModel extends Observable {
 		  data1 = new ArrayList<>();
 		  lat_center = (latMax+latMin)/2;
 		  lon_center = (lonMax+lonMin)/2;
-		  diagnalDistance = this.euDist(latMax, lonMax, latMin, lonMin);
+		  diagnalDistance = Tools.euDist(latMax, lonMax, latMin, lonMin);
 		  System.out.println("lonMax:  "+lonMax+"       lonMin: "+lonMin);
 		  System.out.println("latMax:  "+latMax+"       latMin: "+latMin);
 		  System.out.println("Number of trajectories: "+trajCounter);
@@ -461,8 +468,9 @@ public class SequiturModel extends Observable {
 		  System.out.println(longest3Traj[2]);
 		  System.out.println("minLength:maxLength = "+minLength+":"+maxLength);
 		  leftPanelRaw();
-		  findMotifs(minLength,maxLength);
-		  //findBestMotifs(minLength,maxLength);
+		//  findMotifs(minLength,maxLength);
+		//  findBestMotifs(minLength,maxLength);
+		  findHierarchicalMotifs(minLength, maxLength);
 	
 		  drawMotifs(minLength,maxLength);
 		  System.out.println("allMotifs.size = "+allMotifs.size());
@@ -651,7 +659,9 @@ public class SequiturModel extends Observable {
 	  //evaluateResult();
 	  }
 	  
-	  private void drawMotifs(int min, int max) {
+	 
+
+	private void drawMotifs(int min, int max) {
 		  anomalyRoutes = new ArrayList<Route>();
 		  
 		  
@@ -763,16 +773,8 @@ public class SequiturModel extends Observable {
 
 	
 
-	private int[] parseTrajId(String s) {
-		int[] subTraj = new int[3];
-		subTraj[0] = Integer.parseInt(s.substring(1, s.indexOf("S")));
-		subTraj[1] = Integer.parseInt(s.substring(s.indexOf("S")+1, s.indexOf("L")));
-		subTraj[2] = subTraj[1]+Integer.parseInt(s.substring(s.indexOf("L")+1));
-		
-		return subTraj;
-		
-	}
-
+	
+	
 	private void filterMotifs(int min, int max) {
 		  for(int len = min; len<=max;len++){
 			  ArrayList<Cluster> motif = new ArrayList<Cluster>();
@@ -790,15 +792,76 @@ public class SequiturModel extends Observable {
 		  
 		
 	}
-	/*
-	private void findHierachicalMotifs(int minLength,int maxLength) {
+	
+	private void findHierarchicalMotifs(int minLength,int maxLength) {
+		mergablePair = new HashMap<Integer,PriorityQueue<RoutePair>>();
+		clusterMaps = new HashMap<Integer, HashMap<String, Cluster>>();
 		
+		allSubseq = new HashMap<Integer,ArrayList<String>>();
 		  for(int len = minLength; len<=maxLength; len = minLength +len){
 			  allTrajClusters.put(len, new  ArrayList<Cluster>());
+			  allSubseq.put(len, new ArrayList<String>());
+			  mergablePair.put(len, new PriorityQueue<RoutePair>());
+			  clusterMaps.put(len, new HashMap<String, Cluster>());
 		  }
-		  for
+		  for(int i = 0; i<oldtrajX.size(); i++){
+			  for (int length = minLength; length<=maxLength; length = length+minLength){
+				  for(int s = 0; s<oldtrajX.get(i).size()-length; s = (int)(s+length*this.minLink) ){
+					  String subseqId = "T"+i+"S"+s+"L"+length;
+					  allSubseq.get(length).add(subseqId);
+				  }
+			  }
+		  }
+		  for(int len = minLength; len<maxLength; len= len+minLength){
+			  
+			  for(int i = 0; i<allSubseq.get(len).size(); i++){
+				  threshold = distCut*len*minLink;
+				//  System.out.println("Threshold = " + threshold);
+				  for(int j = i+1; j<allSubseq.get(len).size();j++){
+					  RoutePair pair = new RoutePair(allSubseq.get(len).get(i),allSubseq.get(len).get(j),threshold);
+					  if(pair.dist<=threshold){
+					 // if(!pair.isTrivial&&pair.dist<=threshold){
+						  System.out.println(threshold +" Pair: "+pair);
+						  mergablePair.get(len).add(pair);
+					  }
+				  }
+				  
+			  }
+			 System.out.println("PQ = "+mergablePair.get(len));
+			  System.out.println("len = "+ len+ "size = "+ mergablePair.get(len).size()	 + " peak = "+mergablePair.get(len).peek() );
+		  }
+		  
+		  
+		  /*
+		   *  start hierarchical clustering
+		   */
+		  for(int len = minLength; len<maxLength; len= len+minLength){
+			  PriorityQueue<RoutePair> pq = mergablePair.get(len);
+			  HashMap<String, Cluster> findCluster = clusterMaps.get(len);
+			  while(!pq.isEmpty()){
+				  RoutePair pair = pq.poll();
+				  if(!findCluster.containsKey(pair.r1)&&!findCluster.containsKey(pair.r2)) // if neither belongs to a cluster, create new cluster
+				  {
+					Cluster cluster = new Cluster(len);
+					int[] t1 = Tools.parseTrajId(pair.r1);
+					int[] t2 = Tools.parseTrajId(pair.r2);
+					cluster.add(t1[0], t1[1]);
+					cluster.add(t2[0], t2[1]);
+				  findCluster.put(pair.r1, cluster);
+				  findCluster.put(pair.r2, cluster);
+				  allTrajClusters.get(len).add(cluster);
+				  System.out.println("Clusters "+(allTrajClusters.get(len).size()-1)+"\n"+cluster);
+				  }
+				  
+			  }
+			  
+			  
+		  }
+		  
+		  
 	}
-	*/
+	
+
 	private void findBestMotifs(int minLength,int maxLength) {
 		
 		  for(int len = minLength; len<=maxLength; len = minLength +len){
@@ -909,7 +972,7 @@ public class SequiturModel extends Observable {
 		for(int i = 0; i<allTrajClusters.get(length).size(); i++){
 			double dist = 0;
 			for(int index = 0; index<allTrajClusters.get(length).get(i).repLineX.size(); index++){
-				double pairDist = euDist(allTrajClusters.get(length).get(i).repLineX.get(index),allTrajClusters.get(length).get(i).repLineY.get(index),oldtrajX.get(traj).get(s+index),oldtrajY.get(traj).get(s+index));
+				double pairDist = Tools.euDist(allTrajClusters.get(length).get(i).repLineX.get(index),allTrajClusters.get(length).get(i).repLineY.get(index),oldtrajX.get(traj).get(s+index),oldtrajY.get(traj).get(s+index));
 				if(pairDist>distCut*(length)*minLink)
 					{
 					dist = Double.MAX_VALUE;
@@ -949,15 +1012,13 @@ public class SequiturModel extends Observable {
 	private boolean isClose(int i, int j, int bestS1, int bestS2, int length) {
 		
 		for(int index = 0; index<length; index++){
-			if (euDist(trajX.get(i).get(bestS1+index),trajY.get(i).get(bestS1+index),trajX.get(j).get(bestS2+index),trajY.get(j).get(bestS2+index))>this.minLink)
+			if (Tools.euDist(trajX.get(i).get(bestS1+index),trajY.get(i).get(bestS1+index),trajX.get(j).get(bestS2+index),trajY.get(j).get(bestS2+index))>this.minLink)
 				return false;
 			
 		}	
 		return true;
 	}
-	public static double euDist(double x1, double y1 , double x2, double y2) {
-		return Math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
-	}
+	
 
 	private void buildModel() {
 		
@@ -1087,7 +1148,7 @@ public class SequiturModel extends Observable {
 				double trajDist = 0;
 				for(int j = 1; j<rawtrajX.get(i).size(); j++){
 					double dist = Math.sqrt(squareDist(rawtrajX.get(i).get(j-1),rawtrajY.get(i).get(j-1),rawtrajX.get(i).get(j),rawtrajY.get(i).get(j)));
-					double eudist = euDist(rawtrajX.get(i).get(j-1),rawtrajY.get(i).get(j-1),rawtrajX.get(i).get(j),rawtrajY.get(i).get(j));
+					double eudist = Tools.euDist(rawtrajX.get(i).get(j-1),rawtrajY.get(i).get(j-1),rawtrajX.get(i).get(j),rawtrajY.get(i).get(j));
 					if(eudist!=dist){
 						throw new IllegalArgumentException(dist+" : "+
 					eudist);
@@ -1144,7 +1205,7 @@ public class SequiturModel extends Observable {
 								System.out.println(rawtrajX.get(i).get(index-1)+","+rawtrajY.get(i).get(index-1));
 								System.out.println(rawtrajX.get(i).get(index)+","+rawtrajY.get(i).get(index));
 								*/
-							if(euDist(latitude,longitude,oldtrajX.get(i).get(oldtrajX.get(i).size()-1),oldtrajY.get(i).get(oldtrajY.get(i).size()-1))>10*distCut)
+							if(Tools.euDist(latitude,longitude,oldtrajX.get(i).get(oldtrajX.get(i).size()-1),oldtrajY.get(i).get(oldtrajY.get(i).size()-1))>10*distCut)
 						  {	
 								throw new IllegalArgumentException();
 							  }
