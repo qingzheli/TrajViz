@@ -677,7 +677,9 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
             //	  ArrayList<Cluster> clusters = allMotifs.get(it.next());
             	ArrayList<Cluster> clusters = allMotifs.get(ruleDetails);
             	  for(int i = 0; clusters!=null && i< clusters.size(); i++){
-            		  for (int j = 0; j<clusters.get(i).getRoutes().size(); j++){
+            		  Iterator it = clusters.get(i).trajIds.iterator();
+            		  while(it.hasNext()){
+            			  String j = (String) it.next();
             			  route = clusters.get(i).getRoutes().get(j);
             			  paintRoute(g,route.getLats(),route.getLons(),i);
             			  

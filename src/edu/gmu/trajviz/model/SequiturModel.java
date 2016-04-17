@@ -806,22 +806,23 @@ public class SequiturModel extends Observable {
 		  }
 		  for(int i = 0; i<oldtrajX.size(); i++){
 			  for (int length = minLength; length<=maxLength; length = length+minLength){
-				  for(int s = 0; s<oldtrajX.get(i).size()-length; s = (int)(s+length*this.minLink) ){
+				  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int)(s+length*this.minLink) ){
 					  String subseqId = "T"+i+"S"+s+"L"+length;
 					  allSubseq.get(length).add(subseqId);
 				  }
 			  }
 		  }
-		  for(int len = minLength; len<maxLength; len= len+minLength){
+		  for(int len = minLength; len<=maxLength; len= len+minLength){
 			  
 			  for(int i = 0; i<allSubseq.get(len).size(); i++){
-				  threshold = distCut*len*minLink;
+				  threshold = distCut*(len)*minLink;
 				//  System.out.println("Threshold = " + threshold);
 				  for(int j = i+1; j<allSubseq.get(len).size();j++){
+					//  System.out.println("threshold" + threshold);
 					  RoutePair pair = new RoutePair(allSubseq.get(len).get(i),allSubseq.get(len).get(j),threshold);
 					  if(pair.dist<=threshold){
 					 // if(!pair.isTrivial&&pair.dist<=threshold){
-						  System.out.println(threshold +" Pair: "+pair);
+					//	  System.out.println(threshold +" Pair: "+pair);
 						  mergablePair.get(len).add(pair);
 					  }
 				  }
@@ -835,7 +836,7 @@ public class SequiturModel extends Observable {
 		  /*
 		   *  start hierarchical clustering
 		   */
-		  for(int len = minLength; len<maxLength; len= len+minLength){
+		  for(int len = minLength; len<=maxLength; len= len+minLength){
 			  PriorityQueue<RoutePair> pq = mergablePair.get(len);
 			  HashMap<String, Cluster> findCluster = clusterMaps.get(len);
 			  while(!pq.isEmpty()){
@@ -851,6 +852,44 @@ public class SequiturModel extends Observable {
 				  findCluster.put(pair.r2, cluster);
 				  allTrajClusters.get(len).add(cluster);
 				  System.out.println("Clusters "+(allTrajClusters.get(len).size()-1)+"\n"+cluster);
+				  }
+				  else if(!findCluster.containsKey(pair.r1)&&findCluster.containsKey(pair.r2)){    // if r1 is not in cluster r2 is in a cluster
+					  int[] t1 = Tools.parseTrajId(pair.r1);
+					  Cluster cluster = findCluster.get(pair.r2);
+					  cluster.add(t1[0], t1[1]);
+					  findCluster.put(pair.r1, cluster);
+					  
+				  }
+				  else if(findCluster.containsKey(pair.r1)&&!findCluster.containsKey(pair.r2)){   // if r2 is not in cluster r1 is in a cluster
+					  int[] t2 = Tools.parseTrajId(pair.r2);
+					  Cluster cluster = findCluster.get(pair.r1);
+					  cluster.add(t2[0], t2[1]);
+					  findCluster.put(pair.r2, cluster);
+					  
+				  }
+				  else  
+				  {
+					 Cluster c1 = findCluster.get(pair.r1);
+					 Cluster c2 = findCluster.get(pair.r2);
+					 if(c1!=c2){
+						// System.out.println("Before Merege C1: "+c1.trajIds);
+						// System.out.println("Before Merege C2: "+c2.trajIds); 
+						 c1.merge(c2,threshold,findCluster);
+						 if(c1.getRoutes().size()<1){
+							 
+							 allTrajClusters.get(len).remove(c1);
+							 
+						 }
+						 if(c2.getRoutes().size()<1){
+							 allTrajClusters.get(len).remove(c2);
+						 }
+						 /*
+						 if(c1!=null)
+							 System.out.println("After  Merege C1: "+c1.trajIds);
+						 if(c2!=null)
+						 System.out.println("After  Merege C2: "+c2.trajIds);
+						 */
+					 }
 				  }
 				  
 			  }
