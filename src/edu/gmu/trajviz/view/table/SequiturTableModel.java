@@ -7,6 +7,7 @@ import java.util.Iterator;
 
 import edu.gmu.trajviz.gi.GrammarRules;
 import edu.gmu.trajviz.logic.Cluster;
+import edu.gmu.trajviz.logic.Route;
 import edu.gmu.trajviz.logic.RuleInterval;
 
 /**
@@ -55,9 +56,14 @@ public class SequiturTableModel extends SequiturTableDataModel {
 
 	    fireTableDataChanged();
 	  }
-	  */
 	  
-	  public void update(HashMap<String, ArrayList<Cluster>> allMotifs) {
+	  */
+	  /*
+	   * for exact motif
+	   * 
+	   */
+	  
+	  public void updateExactMotif(HashMap<String, ArrayList<Cluster>> allMotifs) {
 		  if(allMotifs !=null){
 			  System.out.println("update(!null)."+allMotifs.size());
 		  int rowIndex = 0;
@@ -81,6 +87,8 @@ public class SequiturTableModel extends SequiturTableDataModel {
 			  System.out.println("update(null).");
 		}
 	  
+	  
+	 
 	  /*
 	  
 	  public void update(GrammarRules grammarRules, ArrayList<ArrayList<RuleInterval>> ruleIntervals, ArrayList<HashSet<Integer>> mapToOriginRules) {
@@ -141,6 +149,31 @@ public class SequiturTableModel extends SequiturTableDataModel {
 	*/
 	    return String.class;
 	  }
+
+	public void update(ArrayList<ArrayList<Route>> routes) {
+		if(routes !=null){
+			  System.out.println("update(!null)."+routes.size());
+		  int rowIndex = 0;
+		  
+		  
+		  rows.clear();
+		  for(int i = 0; i<routes.size();i++){
+			  
+			  ArrayList<Route> cluster = routes.get(i);
+				 Object[] item = new Object[getColumnCount()+1];
+				 int nColumn = 0;
+				 item[nColumn++] = i;
+				 item[nColumn++] = cluster.size();
+				 rows.add(item);
+			 }
+			  
+			  
+		  fireTableDataChanged();
+		  }
+		  else
+			  System.out.println("update(null).");
+		
+	}
 
 	
 

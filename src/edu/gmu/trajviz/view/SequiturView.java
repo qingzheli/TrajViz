@@ -60,6 +60,7 @@ import com.roots.map.MapPanel;
 
 import edu.gmu.trajviz.logic.Cluster;
 import edu.gmu.trajviz.logic.MotifChartData;
+import edu.gmu.trajviz.logic.Route;
 import edu.gmu.trajviz.logic.RuleInterval;
 import edu.gmu.trajviz.model.SequiturMessage;
 import edu.gmu.trajviz.model.SequiturModel;
@@ -565,7 +566,7 @@ public class SequiturView implements Observer, ActionListener{
 	    	  mapPanel.setAllTrajectories(SequiturModel.getRawTrajectory());
 	    	  mapPanel.setAllAnomalies(SequiturModel.getAnomaly());
 	    	  mapPanel1.setMotifs(SequiturModel.getMotifs());
-	    	  mapPanel1.setAllMotifs(SequiturModel.getAllMotifs());
+	    // for exact motif	  mapPanel1.setAllMotifs(SequiturModel.getAllMotifs());
 	       }
 	      else {
 	        raiseValidationError("The timeseries is not loaded yet.");
@@ -603,9 +604,10 @@ public class SequiturView implements Observer, ActionListener{
 	      }
 	      else if (SequiturMessage.CHART_MESSAGE.equalsIgnoreCase(message.getType())) {
 	    	  
-	    	  HashMap<String, ArrayList<Cluster>> allMotifs = (HashMap<String, ArrayList<Cluster>>) message.getPayload();
-	    	  sequiturRulesPane.setMotifData(allMotifs);
-	    	  
+	    	//  HashMap<String, ArrayList<Cluster>> allMotifs = (HashMap<String, ArrayList<Cluster>>) message.getPayload();
+	    	  ArrayList<ArrayList<Route>> routes = (ArrayList<ArrayList<Route>>)message.getPayload(); 
+	    //	  sequiturRulesPane.setMotifData(allMotifs);
+	    	  sequiturRulesPane.setWholeCluster(routes);
 	    	  
 	    	  
 	    	//  MotifChartData chartData = (MotifChartData) message.getPayload();
@@ -616,7 +618,7 @@ public class SequiturView implements Observer, ActionListener{
 	    	  
 	    //	  System.out.println("Check Payload:::::::::::::::::::"+filteredRulesMap );
 	    	//  sequiturRulesPane.setRulesData(chartData,ruleIntervals,map);//,frequency);
-	    	  sequiturRulesPane.setMotifData(allMotifs);
+	    	  //sequiturRulesPane.setMotifData(allMotifs);
 	    	  frame.validate();
 	    	  frame.repaint();
 	    	//  sequiturRulesPane.clear();

@@ -31,6 +31,7 @@ import com.roots.map.MapPanel;
 
 import edu.gmu.trajviz.logic.Cluster;
 import edu.gmu.trajviz.logic.MotifChartData;
+import edu.gmu.trajviz.logic.Route;
 import edu.gmu.trajviz.logic.RuleInterval;
 import edu.gmu.trajviz.model.SequiturMessage;
 import edu.gmu.trajviz.view.table.SequiturTableColumns;
@@ -90,6 +91,8 @@ public int compare(String s1, String s2) {
 };
 
 private HashMap<String, ArrayList<Cluster>> allMotifs;
+
+private ArrayList<ArrayList<Route>> routes;
 
 
 
@@ -262,7 +265,7 @@ public void setRulesData(MotifChartData chartData) {
 public void setMotifData(HashMap<String, ArrayList<Cluster>> allMotifs) {
 	this.acceptListEvents = false;
     this.allMotifs = allMotifs;
-    sequiturTableModel.update(allMotifs);
+    sequiturTableModel.updateExactMotif(allMotifs);
     resetPanel();
     this.acceptListEvents = true;
 	
@@ -281,6 +284,17 @@ public void setRulesData(MotifChartData chartData, ArrayList<ArrayList<RuleInter
 	this.acceptListEvents = true;
 }
 */
+
+
+
+public void setWholeCluster(ArrayList<ArrayList<Route>> routes) {
+	this.acceptListEvents = false;
+    this.routes = routes;
+    sequiturTableModel.update(routes);
+    resetPanel();
+    this.acceptListEvents = true;
+	
+}
 
 
 

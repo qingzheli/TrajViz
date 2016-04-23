@@ -57,9 +57,11 @@ public class SequiturModel extends Observable {
 	public static ArrayList<ArrayList<Double>> rawtrajX,rawtrajY,oldtrajX, oldtrajY, trajX, trajY,allTimeline;
 	public static HashMap<Integer, ArrayList<Cluster>> allTrajClusters;  //<length, arraylist of clusters>
 	public static HashMap<Integer, ArrayList<Cluster>> allMotifs;   // this should be a subset of allTrajClusters with size>1;
+	
 	public static HashMap<Integer, ArrayList<String>> allSubseq;
 	public static HashMap<Integer, PriorityQueue<RoutePair>> mergablePair;
 	public static HashMap<Integer, HashMap<String, Cluster>> clusterMaps;
+	public static ArrayList<HashSet<Integer>> clusterList;
 	public static int longest3Traj[];
 	public static double distCut;
 	public static ArrayList<ArrayList<Boolean>> isAnomaly;
@@ -90,7 +92,7 @@ public class SequiturModel extends Observable {
 	private static final int STEP = 2;
 	//private static final int DEFAULT_TIME_GAP = 6;//180;
 	//private static final int DEFAULT_TIME_GAP = 180;
-	private static final int DEFAULT_TIME_GAP = 6;
+	private static final int DEFAULT_TIME_GAP = 2;
     private boolean[] isCovered;
     private boolean[] groundTruth;
     private int breakPoint; // the positions<breakPoint are normal, otherwise are abnormal.
@@ -470,16 +472,19 @@ public class SequiturModel extends Observable {
 		  leftPanelRaw();
 		//  findMotifs(minLength,maxLength);
 		//  findBestMotifs(minLength,maxLength);
-		  findHierarchicalMotifs(minLength, maxLength);
-	
-		  drawMotifs(minLength,maxLength);
+		//  findHierarchicalMotifs(minLength, maxLength);
+		  wholeHierarchical();
+		  drawWholeCluster(minLength,maxLength);
+		//  drawMotifs(minLength,maxLength);
+		  
 		  System.out.println("allMotifs.size = "+allMotifs.size());
-		  System.out.println("silcoefMap: "+Evaluation.silCoefMap(allMotifs));
+		//  System.out.println("silcoefMap: "+Evaluation.silCoefMap(allMotifs));
 		 // evaluation silcoef 2016Apr
 		  
 		//  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
 		  setChanged();
-		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
+		//  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
+		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, routes));
 		  /*
 		  Comparator<String> expandedRuleComparator = new Comparator<String>(){
 			  @Override public int compare(String r1, String r2)
@@ -659,7 +664,55 @@ public class SequiturModel extends Observable {
 	  //evaluateResult();
 	  }
 	  
-	 
+	  private void drawWholeCluster(int min, int max) {
+		  anomalyRoutes = new ArrayList<Route>();
+		  routes = new ArrayList<ArrayList<Route>>();
+		  
+		  //separate anomalies and motifs
+		
+			  ArrayList<HashSet<Integer>> motif = new ArrayList<HashSet<Integer>>();
+			  for(int i = 0; i<clusterList.size(); i++){
+				ArrayList<Route> cluster = new ArrayList<Route>();
+				Iterator it =clusterList.get(i).iterator();
+				while(it.hasNext()){
+					Route route = Tools.getRoute((Integer) it.next());
+					cluster.add(route);
+				}
+				routes.add(cluster);
+		  
+			  }
+			  
+			  
+			  
+				  	for(int x =0; x<clusterList.size(); x++){
+				  		System.out.println(x+" : "+clusterList.get(x));
+				  	}
+				//  	allMotifs.put(100, motif);
+				
+			  
+		  
+	
+		  
+		  
+		// print clusters
+		  
+		  /*
+		for(int l = min; l<=max; l++){
+			System.out.println(l+"Begin to draw motifs: allMotifs.get(min).size()"+allMotifs.get(l).size());
+			for(int i = 0; i<allMotifs.get(l).size(); i++)
+			{
+				System.out.println("Cluster # "+i+" Size: "+allMotifs.get(l).get(i).getSize());
+				Iterator it = allMotifs.get(l).get(i).trajIds.iterator();
+				while (it.hasNext()){
+					String s = it.next().toString();
+					System.out.println(s);
+					
+				}
+			}
+		}
+		*/
+		
+	}
 
 	private void drawMotifs(int min, int max) {
 		  anomalyRoutes = new ArrayList<Route>();
@@ -774,7 +827,7 @@ public class SequiturModel extends Observable {
 	
 
 	
-	
+	/*
 	private void filterMotifs(int min, int max) {
 		  for(int len = min; len<=max;len++){
 			  ArrayList<Cluster> motif = new ArrayList<Cluster>();
@@ -792,13 +845,15 @@ public class SequiturModel extends Observable {
 		  
 		
 	}
+	*/
 	
 	private void findHierarchicalMotifs(int minLength,int maxLength) {
 		mergablePair = new HashMap<Integer,PriorityQueue<RoutePair>>();
 		clusterMaps = new HashMap<Integer, HashMap<String, Cluster>>();
 		
 		allSubseq = new HashMap<Integer,ArrayList<String>>();
-		  for(int len = minLength; len<=maxLength; len = minLength +len){
+		 // for(int len = minLength; len<=maxLength; len = minLength +len){
+	      for(int len = minLength; len<=maxLength; len =(int)( minLength+len)){	 // (int) (s+length*this.minLink)
 			  allTrajClusters.put(len, new  ArrayList<Cluster>());
 			  allSubseq.put(len, new ArrayList<String>());
 			  mergablePair.put(len, new PriorityQueue<RoutePair>());
@@ -806,7 +861,8 @@ public class SequiturModel extends Observable {
 		  }
 		  for(int i = 0; i<oldtrajX.size(); i++){
 			  for (int length = minLength; length<=maxLength; length = length+minLength){
-				  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int)(s+length*this.minLink) ){
+				//  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int)(s+length*this.minLink) ){
+				  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int)(s+length) ){
 					  String subseqId = "T"+i+"S"+s+"L"+length;
 					  allSubseq.get(length).add(subseqId);
 				  }
@@ -815,7 +871,8 @@ public class SequiturModel extends Observable {
 		  for(int len = minLength; len<=maxLength; len= len+minLength){
 			  
 			  for(int i = 0; i<allSubseq.get(len).size(); i++){
-				  threshold = distCut*(len)*minLink;
+				//  threshold = distCut*(len)*minLink;
+				  threshold = distCut*this.noiseThreshold;
 				//  System.out.println("Threshold = " + threshold);
 				  for(int j = i+1; j<allSubseq.get(len).size();j++){
 					//  System.out.println("threshold" + threshold);
@@ -899,6 +956,87 @@ public class SequiturModel extends Observable {
 		  
 		  
 	}
+	private void wholeHierarchical() {
+		HashMap<Integer,HashSet<Integer>> findCluster = new HashMap<Integer,HashSet<Integer>>();
+	    threshold = (distCut*this.minBlocks)/100;
+	    PriorityQueue<TrajPair> pq = new PriorityQueue<TrajPair>();
+		clusterList = new ArrayList<HashSet<Integer>>();
+	    for(int i = 0; i<oldtrajX.size(); i++){
+	    	for (int j = i+1; j<oldtrajX.size();j++){
+	    		TrajPair pair = new TrajPair(i,j);
+	    	//	System.out.println("allPairs: "+pair);
+	    		if(pair.dist<=threshold){
+	    			pq.add(pair);
+	    		}
+	    	}
+	    }
+		  
+		  
+		  	  
+		  
+		  /*
+		   *  start hierarchical clustering
+		   */
+		 
+		while(!pq.isEmpty()){//&&clusterList.size()<=this.noiseThreshold){
+				  TrajPair pair = pq.remove();// pq.poll();
+			//	  System.out.println("pair: "+pair);
+				  if(!findCluster.containsKey
+						  (pair.r1)
+						  &&!findCluster.containsKey(pair.r2)) // if neither belongs to a cluster, create new cluster
+				  {
+					HashSet<Integer> cluster = new HashSet<Integer>();
+					
+					cluster.add(pair.r1);
+					cluster.add(pair.r2);
+				  findCluster.put(pair.r1, cluster);
+				  findCluster.put(pair.r2, cluster);
+				  clusterList.add(cluster);
+			//	  System.out.println("Clusters "+(clusterList.size()-1)+"\n"+cluster);
+				  }
+				  else if(!findCluster.containsKey(pair.r1)&&findCluster.containsKey(pair.r2)){    // if r1 is not in cluster r2 is in a cluster
+					
+					  HashSet<Integer> cluster = findCluster.get(pair.r2);
+					  cluster.add(pair.r1);
+					  findCluster.put(pair.r1, cluster);
+					  
+				  }
+				  else if(findCluster.containsKey(pair.r1)&&!findCluster.containsKey(pair.r2)){   // if r2 is not in cluster r1 is in a cluster
+					
+					  HashSet<Integer> cluster = findCluster.get(pair.r1);
+					  cluster.add(pair.r2);
+					  findCluster.put(pair.r2, cluster);
+					  
+				  }
+				  else  
+				  {
+					 HashSet<Integer> c1 = findCluster.get(pair.r1);
+					 HashSet<Integer> c2 = findCluster.get(pair.r2);
+					 
+					 if(c1!=c2){
+					//	 System.out.println("Before Clustering: c1= "+c1);
+						// System.out.println("Before Clustering: c2= "+c2);
+						Iterator it = c2.iterator();
+						while(it.hasNext()){
+						Integer traj = (Integer) it.next();
+						c1.add(traj);
+						findCluster.put(traj,c1);
+						
+					 }
+						clusterList.remove(c2);
+					//	System.out.println("After  Clustering: c1= "+c1);
+				//		for(int k = 0; k<clusterList.size();k++)
+				//	    System.out.println(k+" Cluster: "+clusterList.get(k));
+
+				  }
+				  
+			  }
+			  
+			  
+		  }
+		  
+		  
+	}
 	
 
 	private void findBestMotifs(int minLength,int maxLength) {
@@ -911,8 +1049,8 @@ public class SequiturModel extends Observable {
 				  
 				 // for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.noiseThreshold){
 				//  for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.minBlocks/2){
-				  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length*this.minLink)){
-				//	  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length)){
+			//	  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length*this.minLink)){
+					  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length)){    // no overlapping
 				//  for(int s = 0; s<=oldtrajX.get(i).size()-length; s++){
 					      addToBestTrajClusters(i,s,length);
 				     
@@ -1013,6 +1151,7 @@ public class SequiturModel extends Observable {
 			for(int index = 0; index<allTrajClusters.get(length).get(i).repLineX.size(); index++){
 				double pairDist = Tools.euDist(allTrajClusters.get(length).get(i).repLineX.get(index),allTrajClusters.get(length).get(i).repLineY.get(index),oldtrajX.get(traj).get(s+index),oldtrajY.get(traj).get(s+index));
 				if(pairDist>distCut*(length)*minLink)
+					
 					{
 					dist = Double.MAX_VALUE;
 					break;
@@ -1296,7 +1435,7 @@ public class SequiturModel extends Observable {
 				  System.out.println(j+"rawX:"+rawtrajX.get(j));
 				  System.out.println(j+"Y:"+oldtrajY.get(j));
 				  System.out.println(j+"rawY:"+rawtrajY.get(j));
-				  */
+				 */
 				  System.out.println(oldtrajX.get(j).size()+"points. "+j+"X:");//+oldtrajX.get(j));
 				
 			  }		  

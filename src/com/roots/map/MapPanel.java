@@ -675,6 +675,12 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
               
              // while(it.hasNext()){
             //	  ArrayList<Cluster> clusters = allMotifs.get(it.next());
+            /*
+             *  this part is originally for exact motif
+             * 
+             * 	
+             */
+            	/*
             	ArrayList<Cluster> clusters = allMotifs.get(ruleDetails);
             	  for(int i = 0; clusters!=null && i< clusters.size(); i++){
             		  Iterator it = clusters.get(i).trajIds.iterator();
@@ -690,21 +696,28 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
             	  
               
             }
-              
+              */
+            	 /*
+                 *  this above part  is originally for exact motif
+                 * 
+                 * 	
+                 */
+            	
+            	
               /////////////////////////////////////////////////
-              /*
-              for(int i=0; i<motifs.get(ruleDetails).size();i++){
+              for(int j = 0; j<motifs.size(); j++)
+              for(int i=0; i<motifs.get(j).size();i++){
             
-              route = motifs.get(ruleDetails).get(i);
+              route = motifs.get(j).get(i);
               int size = route.getLats().size();
               String msgStart = "M"+ruleDetails+"_T"+i+"S";
               String msgEnd = "M"+ruleDetails+"_T"+i+"E";
         //      paintPoints(g,route.getLats().get(0),route.getLons().get(0),i,msgStart);
          //     paintPoints(g, route.getLats().get(size-1),route.getLons().get(size-1),i,msgEnd);
-              paintRoute(g,route.getLats(),route.getLons(),ruleDetails);
+              paintRoute(g,route.getLats(),route.getLons(),j);
               route = new Route();
               }
-              */
+            }
         //    System.out.println("size:  ::::::::::::::::::::::::::::"+motifs.get(ruleDetails).size());	
             	
             
