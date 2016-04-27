@@ -1,7 +1,7 @@
 package edu.gmu.trajviz.logic;
 
 public class UserSession {
-	  public static final double DEFAULT_MIN_LINK = 0.2;
+	  public static final double DEFAULT_MIN_LINK = 1.2;
 	  public static final int DEFAULT_ALPHABET_SIZE = 100;
 	  public static final int DEFAULT_MINIMUM_BLOCKS =10;
 	  public static final int DEFALULT_NOISE_POINT_THRESHOLD = 3;

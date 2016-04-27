@@ -978,7 +978,7 @@ public class SequiturModel extends Observable {
 		   *  start hierarchical clustering
 		   */
 		 
-		while(!pq.isEmpty()){//&&clusterList.size()<=this.noiseThreshold){
+		while(!pq.isEmpty()){
 				  TrajPair pair = pq.remove();// pq.poll();
 			//	  System.out.println("pair: "+pair);
 				  if(!findCluster.containsKey
@@ -1016,14 +1016,31 @@ public class SequiturModel extends Observable {
 					 if(c1!=c2){
 					//	 System.out.println("Before Clustering: c1= "+c1);
 						// System.out.println("Before Clustering: c2= "+c2);
+					//	if(clusterList.size()>=this.noiseThreshold){
+						 boolean mergable = true;
+						 Iterator iter = c2.iterator();
+							
+						while(iter.hasNext()){
+						Integer traj = (Integer) iter.next();
+						TrajPair testPair = new TrajPair(pair.r1,traj); 
+						if(testPair.dist>threshold*this.minLink)
+							{
+								mergable = false;
+								break;
+							}
+						} 
+						if(mergable){
 						Iterator it = c2.iterator();
+						
 						while(it.hasNext()){
 						Integer traj = (Integer) it.next();
+						
 						c1.add(traj);
 						findCluster.put(traj,c1);
-						
-					 }
+						}
+					 
 						clusterList.remove(c2);
+						}
 					//	System.out.println("After  Clustering: c1= "+c1);
 				//		for(int k = 0; k<clusterList.size();k++)
 				//	    System.out.println(k+" Cluster: "+clusterList.get(k));
