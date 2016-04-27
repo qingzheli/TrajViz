@@ -463,6 +463,11 @@ public class SequiturModel extends Observable {
 		  oldtrajX = rawtrajX;
 		  oldtrajY = rawtrajY;
 		  resampling();
+		  /*
+		   * test the result without resampling
+		   */
+		//  oldtrajX = rawtrajX;
+		//  oldtrajY = rawtrajY;
 		 // buildModel();
 		  int minLength = minBlocks;
 		  int maxLength= longest3Traj[2];
@@ -1018,6 +1023,8 @@ public class SequiturModel extends Observable {
 						// System.out.println("Before Clustering: c2= "+c2);
 					//	if(clusterList.size()>=this.noiseThreshold){
 						 boolean mergable = true;
+						 
+						 
 						 Iterator iter = c2.iterator();
 							
 						while(iter.hasNext()){
@@ -1029,6 +1036,7 @@ public class SequiturModel extends Observable {
 								break;
 							}
 						} 
+						
 						if(mergable){
 						Iterator it = c2.iterator();
 						
