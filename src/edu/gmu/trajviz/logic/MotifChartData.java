@@ -336,15 +336,15 @@ public class MotifChartData extends Observable implements Observer {
    * Cleans-up the rules set by classifying the sub-sequences by length and removing the overlapping
    * in the same length range.
    * 
-   * Sub-sequences with the length difference within threshold: "thresouldLength" will be classified
+   * Sub-sequences with the length difference within R: "thresouldLength" will be classified
    * as a class with the function "classifyMotifs(double)", i.e. 1-100 and 101-205 will be
-   * classified as a class when the threshold is 0.1, because the length difference is 5, which is
-   * less than the threshold (0.1 * 100 = 10). If two sub-sequences within one class share a common
-   * part which is more than the threshold: "thresouldCom", one of them will be removed by the
+   * classified as a class when the R is 0.1, because the length difference is 5, which is
+   * less than the R (0.1 * 100 = 10). If two sub-sequences within one class share a common
+   * part which is more than the R: "thresouldCom", one of them will be removed by the
    * function "removeOverlappingInSimiliar(double)". i.e. 1-100 and 21-120.
    * 
-   * @param intraThreshold, the threshold between the same motifs.
-   * @param interThreshould, the threshold between the different motifs.
+   * @param intraThreshold, the R between the same motifs.
+   * @param interThreshould, the R between the different motifs.
    */
   /*
   protected void removeOverlapping(double intraThreshold, double interThreshould) {
@@ -366,7 +366,7 @@ public class MotifChartData extends Observable implements Observer {
    * ascending order. Then bins all the sub-sequences by length based on the length of the first
    * sub-sequence in each class, that is, the shortest sub-sequence in each class.
    * 
-   * @param lengthThreshold the motif length threshold.
+   * @param lengthThreshold the motif length R.
    */
   /*
   protected void classifyMotifs(double lengthThreshold) {

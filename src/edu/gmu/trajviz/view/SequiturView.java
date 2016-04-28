@@ -554,7 +554,7 @@ public class SequiturView implements Observer, ActionListener{
 	      log(Level.INFO, "process data action performed");
 	      if (this.isTimeSeriesLoaded) {
 	    	//  mapPanel1.setRuleDetails(-1);  //reset the to -1 to avoid IndexOutOfBoundException
-	        // check the values for window/minimum link threshold/alphabet, etc.
+	        // check the values for window/minimum link R/alphabet, etc.
 	    	  this.controller.getSession().setMinLink(Double.valueOf(this.minLinkField.getText()));
 	    	  this.controller.getSession().setAlphabet(Integer.valueOf(this.alphabetSizeField.getText()));
 	    	  this.controller.getSession().setMinBlocks(Integer.valueOf(this.minBlocksField.getText()));

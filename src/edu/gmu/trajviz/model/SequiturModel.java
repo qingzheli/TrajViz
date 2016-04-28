@@ -63,8 +63,9 @@ public class SequiturModel extends Observable {
 	public static int longest3Traj[];
 	public static double distCut;
 	public static ArrayList<ArrayList<Boolean>> isAnomaly;
-	public static double threshold;
-	
+	public static double R;
+	public static HashMap<String, HashSet<String>> motifMatches;
+	public static HashMap<String, Cluster> subtrajClusterMap;
 	
 	/*
 	 * 
@@ -436,6 +437,7 @@ public class SequiturModel extends Observable {
 		  this.anomalyRoutes = new ArrayList<Route>();
 		  this.allTrajClusters = new HashMap<Integer, ArrayList<Cluster>>();
 		  this.rawAllIntervals = new ArrayList<RuleInterval>();
+		  this.subtrajClusterMap = new HashMap<String,Cluster>();
 		//  this.currentClusters = new HashMap<String,Cluster>();
 		  this.lat = new ArrayList<Double>();
 		  this.lon = new ArrayList<Double>();
@@ -469,13 +471,14 @@ public class SequiturModel extends Observable {
 		  System.out.println("minLength:maxLength = "+minLength+":"+maxLength);
 		  leftPanelRaw();
 		//  findMotifs(minLength,maxLength);
-		//  findBestMotifs(minLength,maxLength);
-		  findHierarchicalMotifs(minLength, maxLength);
+		  findBestMotifs(minLength,maxLength);
+		//  findHierarchicalMotifs(minLength, maxLength);
 	
 		  drawMotifs(minLength,maxLength);
 		  System.out.println("allMotifs.size = "+allMotifs.size());
 		  System.out.println("silcoefMap: "+Evaluation.silCoefMap(allMotifs));
-		 // evaluation silcoef 2016Apr
+		  findTop1Motifs(minLength,maxLength);
+		  // evaluation silcoef 2016Apr
 		  
 		//  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
 		  setChanged();
@@ -815,14 +818,14 @@ public class SequiturModel extends Observable {
 		  for(int len = minLength; len<=maxLength; len= len+minLength){
 			  
 			  for(int i = 0; i<allSubseq.get(len).size(); i++){
-				  threshold = distCut*(len)*minLink;
-				//  System.out.println("Threshold = " + threshold);
+				  R = distCut*(len)*minLink;
+				//  System.out.println("Threshold = " + R);
 				  for(int j = i+1; j<allSubseq.get(len).size();j++){
-					//  System.out.println("threshold" + threshold);
-					  RoutePair pair = new RoutePair(allSubseq.get(len).get(i),allSubseq.get(len).get(j),threshold);
-					  if(pair.dist<=threshold){
-					 // if(!pair.isTrivial&&pair.dist<=threshold){
-					//	  System.out.println(threshold +" Pair: "+pair);
+					//  System.out.println("R" + R);
+					  RoutePair pair = new RoutePair(allSubseq.get(len).get(i),allSubseq.get(len).get(j),R);
+					  if(pair.dist<=R){
+					 // if(!pair.isTrivial&&pair.dist<=R){
+					//	  System.out.println(R +" Pair: "+pair);
 						  mergablePair.get(len).add(pair);
 					  }
 				  }
@@ -874,7 +877,7 @@ public class SequiturModel extends Observable {
 					 if(c1!=c2){
 						// System.out.println("Before Merege C1: "+c1.trajIds);
 						// System.out.println("Before Merege C2: "+c2.trajIds); 
-						 c1.merge(c2,threshold,findCluster);
+						 c1.merge(c2,R,findCluster);
 						 if(c1.getRoutes().size()<1){
 							 
 							 allTrajClusters.get(len).remove(c1);
@@ -920,6 +923,74 @@ public class SequiturModel extends Observable {
 			  }
 		  }
 		
+		
+	}
+	private void findTop1Motifs(int minLength,int maxLength) {
+		int len = minLength;
+		int bestMotifCount = 0;
+	//	motifMatches = new HashMap<String, HashSet<String>>();
+		String bestMotifLocation = null;
+		
+		R = minLength*distCut*minLink;
+			//  allTrajClusters.put(len, new  ArrayList<Cluster>());
+		  for (int i = 0; i<oldtrajX.size(); i++){
+	//		  for(int length = minLength; length<=maxLength; length =length+minLength){
+				  
+				 // for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.noiseThreshold){
+				//  for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.minBlocks/2){
+			  	  
+			  for(int s = 0; s<=oldtrajX.get(i).size()-len; s++){
+				//	  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length)){
+				//  for(int s = 0; s<=oldtrajX.get(i).size()-length; s++){
+				  HashMap<String, HashSet<String>> pointer = new HashMap<String, HashSet<String>>();
+				  		
+					     String current = "T"+i+"S"+s+"L"+len;
+					     int count = 0;
+					     pointer.put(current, new HashSet<String>());
+					     Route currentRoute = Tools.getSubroute(i, s, len);
+					     for(int j = 0; j<oldtrajX.size();j++){
+					    	 if(i!=j){
+					    		 for(int sj = 0; sj<oldtrajX.get(j).size()-len; sj++){
+					    			 String name = "T"+j+"S"+sj+"L"+len;
+					    			 Route route = Tools.getSubroute(j, sj, len);
+					    			 if(Tools.routeEuDist(currentRoute, route)<=R){
+					    				 {
+					    					 count++;
+					    					 pointer.get(current).add(name);
+					    					 break;
+					    				 }
+					    				 
+					    			 }
+					    			 
+					    		 }
+					    	 }
+					     }
+					     if(count>bestMotifCount){
+					    	 bestMotifCount = count;
+					    	 bestMotifLocation = current;
+					    	 motifMatches = pointer;
+					     }
+				     
+		//		  }
+			  }
+			  
+		  }
+		  
+		  
+		  System.out.println("bestMotifCount = "+bestMotifCount);
+		  System.out.println("bestMotifLocation = "+bestMotifLocation);
+		  System.out.println("motifMatches = "+motifMatches);
+		   Collections.sort(allTrajClusters.get(len));
+		 for(int i=0; i<allTrajClusters.get(len).size(); i++){
+		//	 System.out.println(allTrajClusters.get(len).get(i));
+			 Cluster resultCluster = allTrajClusters.get(len).get(i);
+			 int[] subtraj = Tools.parseTrajId(bestMotifLocation);
+			 if(resultCluster.findTraj(subtraj)){
+				 System.out.println("result Cluster: Rank = "+(allTrajClusters.get(len).size()-i));
+				 System.out.println("Size = "+resultCluster.getSize());
+				 break;
+			 }
+		 }
 		
 	}
 	private void findMotifs(int minLength,int maxLength) {
@@ -1035,7 +1106,7 @@ public class SequiturModel extends Observable {
 			//isAdded = true;
 		System.out.println("trajId = "+traj);
 		System.out.println("minDist/length = "+minDist/length);
-		System.out.println("threshold      = "+distCut*(length)*minLink);
+		System.out.println("R      = "+distCut*(length)*minLink);
 		System.out.println("minCluster = "+ minCluster);
 			allTrajClusters.get(length).get(minCluster).addBest(traj, s);
 		}
