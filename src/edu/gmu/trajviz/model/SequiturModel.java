@@ -54,7 +54,12 @@ public class SequiturModel extends Observable {
 	/*
 	 * 
 	 */
+	public static int top1EuDistanceCalled;
+	public static int allEuDistanceCalled;
 	public static ArrayList<ArrayList<Double>> rawtrajX,rawtrajY,oldtrajX, oldtrajY, trajX, trajY,allTimeline;
+	public static HashMap<Integer, ArrayList<Center>> allCenterPoints;
+	public static HashMap<Integer, ArrayList<ArrayList<Double>>> allCenterX, allCenterY;
+	public static HashMap<Integer, HashMap<Center, ArrayList<Center>>> allNeighbors; 
 	public static HashMap<Integer, ArrayList<Cluster>> allTrajClusters;  //<length, arraylist of clusters>
 	public static HashMap<Integer, ArrayList<Cluster>> allMotifs;   // this should be a subset of allTrajClusters with size>1;
 	public static HashMap<Integer, ArrayList<String>> allSubseq;
@@ -64,8 +69,11 @@ public class SequiturModel extends Observable {
 	public static double distCut;
 	public static ArrayList<ArrayList<Boolean>> isAnomaly;
 	public static double R;
+	public static double rs;
 	public static HashMap<String, HashSet<String>> motifMatches;
 	public static HashMap<String, Cluster> subtrajClusterMap;
+	public static int slidePoint;
+	public static int coverPoint;
 	
 	/*
 	 * 
@@ -91,7 +99,7 @@ public class SequiturModel extends Observable {
 	private static final int STEP = 2;
 	//private static final int DEFAULT_TIME_GAP = 6;//180;
 	//private static final int DEFAULT_TIME_GAP = 180;
-	private static final int DEFAULT_TIME_GAP = 6;
+	private static final int DEFAULT_TIME_GAP = 3;
     private boolean[] isCovered;
     private boolean[] groundTruth;
     private int breakPoint; // the positions<breakPoint are normal, otherwise are abnormal.
@@ -465,16 +473,19 @@ public class SequiturModel extends Observable {
 		  resampling();
 		 // buildModel();
 		  int minLength = minBlocks;
-		  int maxLength= longest3Traj[2];
+		  int maxLength = minLength;
+		//  int maxLength= longest3Traj[2];
+		//  R = minLength*distCut*minLink;
+		//  rs = R*R;
 		//  int maxLength = minLength;
 		  System.out.println(longest3Traj[2]);
 		  System.out.println("minLength:maxLength = "+minLength+":"+maxLength);
 		  leftPanelRaw();
 		//  findMotifs(minLength,maxLength);
-		  findBestMotifs(minLength,maxLength);
+		//  findBestMotifs(minLength,maxLength);
 		//  findHierarchicalMotifs(minLength, maxLength);
-	
-		  drawMotifs(minLength,maxLength);
+		  findAllMotifs(minLength,maxLength);
+	//	  drawMotifs(minLength,maxLength);
 		  System.out.println("allMotifs.size = "+allMotifs.size());
 		  System.out.println("silcoefMap: "+Evaluation.silCoefMap(allMotifs));
 		  findTop1Motifs(minLength,maxLength);
@@ -663,6 +674,214 @@ public class SequiturModel extends Observable {
 	  }
 	  
 	 
+
+	private void findAllMotifs(int min, int max) {
+		allEuDistanceCalled = 0;
+		allCenterX = new HashMap<Integer, ArrayList<ArrayList<Double>>>();
+		allCenterY = new HashMap<Integer, ArrayList<ArrayList<Double>>>();
+		allCenterPoints = new HashMap<Integer, ArrayList<Center>>();
+		allNeighbors = new HashMap<Integer, HashMap<Center, ArrayList<Center>>>(); 
+		//establish center ts
+		for(int len = min; len<=max; len = len+min){
+			slidePoint = (int) (len*minLink);
+			R = slidePoint * distCut;
+			coverPoint = slidePoint+len;
+			allNeighbors.put(len, new HashMap<Center, ArrayList<Center>>());
+			allCenterX.put(len, new ArrayList<ArrayList<Double>>());
+			allCenterY.put(len, new ArrayList<ArrayList<Double>>());
+			allCenterPoints.put(len, new ArrayList<Center>());
+		//	coverPoint = slidePoint+len;
+			//	ArrayList<ArrayList<Double>> xcenters = allCenterX.get(len);
+			for(int traj = 0; traj<oldtrajX.size(); traj++)
+			{	
+				
+				ArrayList<Double> centerX = new ArrayList<Double>();
+				ArrayList<Double> centerY = new ArrayList<Double>();
+				ArrayList<Double> currentX = oldtrajX.get(traj);
+				ArrayList<Double> currentY = oldtrajY.get(traj);
+				
+				if(currentX.size()<coverPoint){
+				//	continue;
+					coverPoint = currentX.size();
+					slidePoint = 1;
+				}
+				
+				double xAmount = 0;
+				double yAmount = 0;
+				for(int s = 0; s<coverPoint; s++){
+					xAmount = xAmount+currentX.get(s);
+					yAmount = yAmount+currentY.get(s);
+				}
+				centerX.add(xAmount/coverPoint);
+				centerY.add(yAmount/coverPoint);
+				for(int s = 1; s<=currentX.size()-coverPoint; s++){
+					xAmount = xAmount-currentX.get(s-1)+currentX.get(s+len-1);
+					yAmount = yAmount-currentY.get(s-1)+currentY.get(s+len-1);
+					centerX.add(xAmount/coverPoint);
+					centerY.add(yAmount/coverPoint);
+				//	System.out.println(s + ": xAmount = "+ xAmount/len+", "+yAmount/len);
+				}
+				allCenterX.get(len).add(centerX);
+				allCenterY.get(len).add(centerY);
+				/*
+				if(len>currentX.size()/2)
+					{
+						int midIndex = currentX.size()/2-len/2;
+						allCenterPoints.get(len).add(new Center(traj, midIndex,len, centerX.get(midIndex),centerY.get(midIndex)));
+					}
+				else{
+				for(int i = 0; len*(1+i+0.5)<currentX.size(); i++)
+				{
+						int s = (int) (len*(i+0.5));
+							allCenterPoints.get(len).add(new Center(traj,s,len,centerX.get(s),centerY.get(s)));
+							
+					
+				}
+				*/
+				
+				
+				int centerCount = (currentX.size()-coverPoint)/slidePoint;
+				/*
+				System.out.println("coverPoint = "+coverPoint);
+				System.out.println("slidePoint = "+slidePoint);
+				System.out.println("centerCount = "+centerCount);
+				*/
+				for(int i=0; i<=centerCount;i++){
+					int s= i*slidePoint;
+					allCenterPoints.get(len).add(new Center(traj,s,len,centerX.get(s),centerY.get(s)));
+				}
+				
+				
+			}
+			
+			
+				
+		//    System.out.println(allCenterPoints.get(len));
+			/*
+			double minRatio = 100;
+			double maxRatio = 0;
+			for(int i = 0; i<allCenterPoints.get(len).size(); i++){
+				Center c1 = allCenterPoints.get(len).get(i);
+				for(int j = i+1; j<allCenterPoints.get(len).size();j++){
+					Center c2 = allCenterPoints.get(len).get(j);
+					double centerSquareEd = c1.squareDistance(c2);
+					double centerEd = Tools.euDist(c1.x, c1.y, c2.x, c2.y);
+					Route r1 = Tools.getSubroute(c1.traj, c1.s, c1.l);
+					Route r2 = Tools.getSubroute(c2.traj, c2.s, c2.l);
+					double avgEd = Tools.routeEuDist(r1, r2);
+					double ratio = centerEd/avgEd;
+					if(ratio<minRatio)
+						minRatio = ratio;
+					if(ratio>maxRatio)
+						maxRatio = ratio;
+					
+					System.out.println(i+ "= i :"+c1);
+					System.out.println(j+ "= j :"+c2);
+					System.out.println("centerED(c1,c2) = "+centerEd);
+					
+					System.out.println("AvgED(t1,t2) = "+avgEd);
+					System.out.println("centerEd/AvgEd = "+ratio);
+					
+					
+				}
+				
+			}
+
+			System.out.println("minRatio = "+minRatio);
+			System.out.println("maxRatio = "+maxRatio);
+			*/
+			ArrayList<Center> centers = allCenterPoints.get(len);
+			HashMap<Center, ArrayList<Center>> neighbors = new HashMap<Center, ArrayList<Center>>();
+	//		double center_R = 1.5*(rs+coverPoint*coverPoint*distCut*distCut);
+//			double center_R = distCut*minLink*alphabetSize;
+			double center_R = 2*R*R;
+			// top
+			for(int i = 0; i<centers.size(); i++){
+				Center c1 = centers.get(i);
+				for(int j = i+1; j<centers.size(); j++){
+					Center c2 = centers.get(j);
+					if(c1.traj!=c2.traj){
+						double squareDistance = c1.squareDistance(c2);
+						if(squareDistance<=center_R)
+						{
+							if(c1.isClose(c2, R/this.noiseThreshold, slidePoint)){
+						/*
+								System.out.println(c1);
+								System.out.println(c1.neighborMap);
+							//	c2.isClose(c1, R, len);
+								System.out.println(c2);
+								System.out.println(c2.neighborMap);
+								*/
+							}
+						}
+							
+							
+							/*
+						{
+							if(!neighbors.containsKey(c1)){
+								neighbors.put(c1, new ArrayList<Center>());
+								neighbors.get(c1).add(c2);
+								}
+							else{
+								boolean isTrivial = false;
+								for(int p = 0; p<neighbors.get(c1).size(); p++){
+									if(neighbors.get(c1).get(p).traj == c2.traj){
+										if(squareDistance<c1.squareDistance(neighbors.get(c1).get(p))){
+											neighbors.get(c1).set(p, c2);
+										}
+										isTrivial = true;
+										break;
+									}
+								}
+								if(!isTrivial)
+									neighbors.get(c1).add(c2);
+							}
+							
+							if(!neighbors.containsKey(c2)){
+								neighbors.put(c2, new ArrayList<Center>());
+								neighbors.get(c2).add(c1);	
+							}
+							else{
+								boolean isTrivial = false;
+								for(int p = 0; p<neighbors.get(c2).size(); p++){
+									if(neighbors.get(c2).get(p).traj == c1.traj){
+										if(squareDistance<c2.squareDistance(neighbors.get(c2).get(p))){
+											neighbors.get(c2).set(p, c1);
+											isTrivial = true;
+										}
+										break;
+									}
+								}
+								if(!isTrivial)
+									neighbors.get(c2).add(c1);
+							}
+													
+						}
+						*/
+					}
+				}
+			}
+			/*
+			Iterator it = neighbors.keySet().iterator();
+			while(it.hasNext())
+			{	
+				Center current = (Center) it.next();
+				System.out.println(current+" size = "+neighbors.get(current).size()+neighbors.get(current));
+			}
+			System.out.println("neighbors.size() = "+neighbors.size());
+			*/
+			for(int i = 0; i<centers.size(); i++){
+				Center c1 = centers.get(i);
+				System.out.println(c1+" size = "+c1.neighborMap.size());
+				System.out.println(c1.neighborMap);
+			}
+		}
+		
+		System.out.println("find all motif R = "+R);
+		System.out.println("all Motif EuDistance called = "+this.allEuDistanceCalled);
+		
+		
+	}
 
 	private void drawMotifs(int min, int max) {
 		  anomalyRoutes = new ArrayList<Route>();
@@ -926,12 +1145,13 @@ public class SequiturModel extends Observable {
 		
 	}
 	private void findTop1Motifs(int minLength,int maxLength) {
+		top1EuDistanceCalled = 0;
 		int len = minLength;
 		int bestMotifCount = 0;
 	//	motifMatches = new HashMap<String, HashSet<String>>();
 		String bestMotifLocation = null;
 		
-		R = minLength*distCut*minLink;
+		
 			//  allTrajClusters.put(len, new  ArrayList<Cluster>());
 		  for (int i = 0; i<oldtrajX.size(); i++){
 	//		  for(int length = minLength; length<=maxLength; length =length+minLength){
@@ -950,10 +1170,11 @@ public class SequiturModel extends Observable {
 					     Route currentRoute = Tools.getSubroute(i, s, len);
 					     for(int j = 0; j<oldtrajX.size();j++){
 					    	 if(i!=j){
-					    		 for(int sj = 0; sj<oldtrajX.get(j).size()-len; sj++){
+					    		 for(int sj = 0; sj<=oldtrajX.get(j).size()-len; sj++){
 					    			 String name = "T"+j+"S"+sj+"L"+len;
 					    			 Route route = Tools.getSubroute(j, sj, len);
-					    			 if(Tools.routeEuDist(currentRoute, route)<=R){
+					    			 top1EuDistanceCalled++;
+					    			 if(Tools.routeEuDist(currentRoute, route)<=R/this.noiseThreshold){
 					    				 {
 					    					 count++;
 					    					 pointer.get(current).add(name);
@@ -975,11 +1196,12 @@ public class SequiturModel extends Observable {
 			  }
 			  
 		  }
-		  
-		  
+		  System.out.println("top 1 motif Eudistance called = "+this.top1EuDistanceCalled);
+		  System.out.println("find top 1 motif R = "+R);
 		  System.out.println("bestMotifCount = "+bestMotifCount);
 		  System.out.println("bestMotifLocation = "+bestMotifLocation);
 		  System.out.println("motifMatches = "+motifMatches);
+		  /*
 		   Collections.sort(allTrajClusters.get(len));
 		 for(int i=0; i<allTrajClusters.get(len).size(); i++){
 		//	 System.out.println(allTrajClusters.get(len).get(i));
@@ -991,6 +1213,7 @@ public class SequiturModel extends Observable {
 				 break;
 			 }
 		 }
+		 */
 		
 	}
 	private void findMotifs(int minLength,int maxLength) {
@@ -1307,11 +1530,11 @@ public class SequiturModel extends Observable {
 						/*
 						
 								System.out.println("ratio = "+ratio);
-								//System.out.println("resample dist = "+euDist(latitude,longitude,rawtrajX.get(i).get(index-1),rawtrajY.get(i).get(index-1)));
-								System.out.println("resample dist = "+euDist(latitude,longitude,oldtrajX.get(i).get(oldtrajX.get(i).size()-1),oldtrajY.get(i).get(oldtrajY.get(i).size()-1)));
+								//System.out.println("resample dist = "+euDist(x,y,rawtrajX.get(i).get(index-1),rawtrajY.get(i).get(index-1)));
+								System.out.println("resample dist = "+euDist(x,y,oldtrajX.get(i).get(oldtrajX.get(i).size()-1),oldtrajY.get(i).get(oldtrajY.get(i).size()-1)));
 								System.out.println("original dist = "+euDist(rawtrajX.get(i).get(index),rawtrajY.get(i).get(index),rawtrajX.get(i).get(index-1),rawtrajY.get(i).get(index-1)));
 								System.out.println("i="+i+"  index = "+index);
-								System.out.println(latitude+","+longitude);
+								System.out.println(x+","+y);
 								System.out.println(rawtrajX.get(i).get(index-1)+","+rawtrajY.get(i).get(index-1));
 								System.out.println(rawtrajX.get(i).get(index)+","+rawtrajY.get(i).get(index));
 								*/
@@ -1359,18 +1582,19 @@ public class SequiturModel extends Observable {
 			
 			
 			System.out.println("distCut = "+distCut);
-			
+			/*
 			for(int j = 0; j<oldtrajX.size(); j++)
 			  {
-				/*
+				
 				  System.out.println(oldtrajX.get(j).size()+"points. "+j+"X:"+oldtrajX.get(j));
 				  System.out.println(j+"rawX:"+rawtrajX.get(j));
 				  System.out.println(j+"Y:"+oldtrajY.get(j));
 				  System.out.println(j+"rawY:"+rawtrajY.get(j));
-				  */
+				  
 				  System.out.println(oldtrajX.get(j).size()+"points. "+j+"X:");//+oldtrajX.get(j));
 				
 			  }		  
+			  */
 			  
       }
 	/*
@@ -1508,8 +1732,8 @@ public class SequiturModel extends Observable {
 			while(time<=reTime.get(index))
 			{
 				double ratio = (time-reTimeS)/(reTime.get(index)-reTime.get(index-1));
-				double latitude = latOri.get(index-1)+(latOri.get(index)-latOri.get(index-1))*ratio;
-				double longitude = lonOri.get(index-1)+(lonOri.get(index)-lonOri.get(index-1))*ratio;
+				double x = latOri.get(index-1)+(latOri.get(index)-latOri.get(index-1))*ratio;
+				double y = lonOri.get(index-1)+(lonOri.get(index)-lonOri.get(index-1))*ratio;
 				
 			}
 			index++;
@@ -1779,7 +2003,7 @@ public class SequiturModel extends Observable {
 	/*
 		private void drawOnMap() {
 			 // Generate All Motifs and record them on files respectively.
-			 // String header = "type,latitude,longitude";
+			 // String header = "type,x,y";
 	//		  System.out.println("Total rules:"+chartData.getRulesNumber());
 			  
 			//  ArrayList<SAXMotif> allMotifs = chartData.getAllMotifs();
@@ -2936,7 +3160,7 @@ System.out.println("]");
 /*
 	private void drawOnMap() {
 		 // Generate All Motifs and record them on files respectively.
-		 // String header = "type,latitude,longitude";
+		 // String header = "type,x,y";
 //		  System.out.println("Total rules:"+chartData.getRulesNumber());
 		  
 		//  ArrayList<SAXMotif> allMotifs = chartData.getAllMotifs();

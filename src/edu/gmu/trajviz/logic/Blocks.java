@@ -63,9 +63,9 @@ public class Blocks {
 	public int findBlockIdForPoint(Location point){
 		 
 		//System.out.println("latID: "+(Math.floor((point.latitude-latMin)/latCut))+" lonID: "+(Math.floor((point.longitude-lonMin)/lonCut)));
-		if(point.latitude<-90||point.longitude<-180)
-			return (int)(point.latitude);
-		return (int)(Math.floor((point.latitude-latMin)/latCut))*nLon+(int)(Math.floor((point.longitude-lonMin)/lonCut));
+		if(point.x<-90||point.y<-180)
+			return (int)(point.x);
+		return (int)(Math.floor((point.x-latMin)/latCut))*nLon+(int)(Math.floor((point.y-lonMin)/lonCut));
 	}
 	public Block findBlockById(int id){
 		return blocks.get(id);

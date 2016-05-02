@@ -113,7 +113,7 @@ import edu.gmu.trajviz.view.SequiturRulesPanel;
  * This class is a JPanel which can be integrated into any swing app just by creating an instance and adding like a JLabel.
  *
  * The map has the size <code>256*1<<zoomlevel</code>. This measure is referred to as map-coordinates. Geometric locations
- * like longitude and latitude can be obtained by helper methods. Note that a point in map-coordinates corresponds to a given
+ * like y and x can be obtained by helper methods. Note that a point in map-coordinates corresponds to a given
  * geometric position but also depending on the current zoom level.
  *
  * You can zoomIn around current mouse position by left double click. Left right click zooms out.
@@ -125,7 +125,7 @@ import edu.gmu.trajviz.view.SequiturRulesPanel;
  * <li>{@link #setMapPosition(Point)} which sets the map's top left corner. (In map coordinates)</li>
  * <li>{@link #setCenterPosition(Point)} which sets the map's center position. (In map coordinates)</li>
  * <li>{@link #computePosition(java.awt.geom.Point2D.Double)} returns the position in the map panels coordinate system
- * for the given longitude and latitude. If you want to center the map around this geometric location you need
+ * for the given y and x. If you want to center the map around this geometric location you need
  * to pass the result to the method</li>
  * </ul>
  * </p>
@@ -556,8 +556,8 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
     /**
      * Gets the coordinates to use for overdraw rendering, eg the swing coordinates
      * that you could use in paintComponent or a glasspane.
-     * @param lon longitude
-     * @param lon latitude
+     * @param lon y
+     * @param lon x
      * @return the screen coords 
      */
     public Point getScreenCoordinates(double lon, double lat) {
@@ -858,7 +858,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 	//	g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, transparency));
 		g.setPaintMode();
 		g.drawString(msg,p.x,p.y);
-	//	System.out.println("longitude : "+longitude+", "+latitude+"    longi: "+longi + ", "+lati);
+	//	System.out.println("y : "+y+", "+x+"    longi: "+longi + ", "+lati);
 	//	System.out.println("P: "+p.x+", "+p.y+"    P1: "+p1.x + ", "+p1.y);
 	//	g.drawLine(p.x, p.y, p1.x, p1.y);
 		//repaint();
