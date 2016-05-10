@@ -49,12 +49,18 @@ import edu.gmu.trajviz.sax.datastructures.SAXRecords;
 import edu.gmu.trajviz.timeseries.TSException;
 import edu.gmu.trajviz.util.StackTrace;
 import edu.gmu.trajviz.util.Tools;
+import libsvm.*;
+import net.sf.javaml.classification.Classifier;
+import net.sf.javaml.core.Dataset;
+import net.sf.javaml.core.DefaultDataset;
+import net.sf.javaml.core.DenseInstance;
+import net.sf.javaml.core.Instance;
 public class SequiturModel extends Observable {
 	
 	/*
 	 * 
 	 */
-	public static ArrayList<ArrayList<Double>> rawtrajX,rawtrajY,oldtrajX, oldtrajY, trajX, trajY,allTimeline;
+	public static ArrayList<ArrayList<Double>> rawtrajX,rawtrajY,oldtrajX, oldtrajY, trajX, trajY,allTimeline, equalPointsTraj, trainingResampled, testingResampled;
 	public static HashMap<Integer, ArrayList<Cluster>> allTrajClusters;  //<length, arraylist of clusters>
 	public static HashMap<Integer, ArrayList<Cluster>> allMotifs;   // this should be a subset of allTrajClusters with size>1;
 	
@@ -68,14 +74,20 @@ public class SequiturModel extends Observable {
 	public static double threshold;
 	public static HashMap<Double, Integer> densityCount;
 	
-	public static ArrayList<Integer> classLabel;
+	public static ArrayList<String> classLabel;
 //	public static HashSet<Integer> classes;
 	public static ArrayList<Double> travelDistance;
-	public static HashMap<Integer, ArrayList<Integer>> labelMap;  //<Classlabel, TrajectoryIds> 
+	public static double mintraveldistance;
+	public static double maxtraveldistance;
+	public static HashMap<String, ArrayList<Integer>> labelMap;  //<Classlabel, TrajectoryIds> 
 	public static ArrayList<Group> groups;
 	public static ArrayList<SingleClass> allSingleClasses;
 	public double groupSplitThreshold;
 	public double recursiveCount;
+	public int trainingSize;
+	public double trainMinDist;
+	public double trainMaxDist;
+	public Group allInOneGroup;
 	/*
 	 * 
 	 */
@@ -85,7 +97,7 @@ public class SequiturModel extends Observable {
 //	public final static double (minLink*2) = 0.0;
 	
 	public final static int EVAL_RESOLUTION = 100;
-	
+	public final static double trainingTestRatio = 0.8;
 	final static Charset DEFAULT_CHARSET = StandardCharsets.UTF_8;
 	public final static String EVALUATION_HEAD = "DataName,MinLink,AlphabetSize,MinBlocks,NCThreshold,RunningTime,AvgDistance,AvgeStdDev,MinInterDistance,SilhouetteCoefficient,TotalRules,TotalDataPoints, TotalSubTrajectories,CoveredPoints, ImmergableRuleCount\n";
 //	public static final int ALPHABETSIZE = 50;
@@ -94,7 +106,7 @@ public class SequiturModel extends Observable {
 	//public static RuleInterval[][][] allSubTrajectories;
 	public double diagnalDistance;
 	public long totalPoints;
-	private ArrayList<Integer> status;
+	private ArrayList<String> status;
 	private static final String SPACE = " ";
 	private static final String CR = "\n";
 	private static final int STEP = 2;
@@ -260,8 +272,8 @@ public class SequiturModel extends Observable {
 		  ArrayList<Double> data1 = new ArrayList<Double>();
 		  rawtrajX = new ArrayList<ArrayList<Double>>();
 		  rawtrajY = new ArrayList<ArrayList<Double>>();
-		  classLabel = new ArrayList<Integer>();
-		  status = new ArrayList<Integer>();    // taxi loading status
+		  classLabel = new ArrayList<String>();
+		  status = new ArrayList<String>();    // taxi loading status
 		  ArrayList<Long> timeAsUnixEpoc = new ArrayList<Long>();   //number of seconds since Jan. 1 1970 midnight GMT, if the time is in milliseconds, it will need to be converted to seconds,otherwise it may over Integer's limite. 
 		  
 		  try{
@@ -280,7 +292,7 @@ public class SequiturModel extends Observable {
 					  double value = new BigDecimal(lineSplit[0]).doubleValue();
 					  
 					  double value1 = new BigDecimal(lineSplit[1]).doubleValue();
-					  int value2 = Integer.parseInt(lineSplit[2]);
+					  String value2 = lineSplit[2];
 					  long value3 = Long.parseLong(lineSplit[3]);
 					 /*
 					  if(value2==1000)
@@ -321,7 +333,7 @@ public class SequiturModel extends Observable {
 						  data.add((double)trajectoryCounter);  //adding dummy point to split two trajectories
 						  data1.add((double)trajectoryCounter);
 						  trajectoryCounter--;
-						  status.add(-1);
+						  status.add("-1");
 						  timeAsUnixEpoc.add(value3);
 						  //following is adding the first point of a new trajectories
 						  if((value<=90)&&(value>=-90))
@@ -349,7 +361,7 @@ public class SequiturModel extends Observable {
 				  data.add((double)trajectoryCounter);
 				  data1.add((double)trajectoryCounter);
 				  trajCounter = 0 - (trajectoryCounter+1000);
-				  status.add(-1);
+				  status.add("-1");
 				  timeAsUnixEpoc.add(timeAsUnixEpoc.get(timeAsUnixEpoc.size()-1));
 			  reader.close();
 			  totalPoints = lineCounter;
@@ -432,6 +444,7 @@ public class SequiturModel extends Observable {
 	  
 	  
 	  public synchronized void processData(double minLink, int alphabetSize, int minBlocks, int noiseThreshold)throws IOException{
+		  trainingSize = (int)(rawtrajX.size()*this.trainingTestRatio);
 		  sortedCounter = 0;
 		  this.allTrajClusters = new HashMap<Integer, ArrayList<Cluster>>();
 		  this.allMotifs = new HashMap<Integer, ArrayList<Cluster>>();
@@ -475,8 +488,9 @@ public class SequiturModel extends Observable {
 		  
 		  oldtrajX = rawtrajX;
 		  oldtrajY = rawtrajY;
-		  resampling();
-		  classification688();
+		//  resampling();
+		  	rescale();
+		 classification688();
 		  /*
 		   * test the result without resampling
 		   */
@@ -494,7 +508,7 @@ public class SequiturModel extends Observable {
 		//  findHierarchicalMotifs(minLength, maxLength);
 		//  wholeHierarchical();
 		 
-		  drawWholeCluster(minLength,maxLength);
+	//	  drawWholeCluster(minLength,maxLength);
 		//  drawMotifs(minLength,maxLength);
 		  
 		  System.out.println("allMotifs.size = "+allMotifs.size());
@@ -683,20 +697,83 @@ public class SequiturModel extends Observable {
 		  */
 	  //evaluateResult();
 	  }
-	  
-	  private void classification688() {
-		  /*
-		   * Decision Stump Tree
-		   */
+	  private void classification688(){
+		  decisionStump();
+	//	  stumpTree();
+		  SVMclassification();
+		  testClassification();
+		 // testClassifier();
+	  }
+	  private void stumpTree(){
+		  
+		  double step = (maxtraveldistance-mintraveldistance)/this.minBlocks;
+		  
+		  
+		  groups = new ArrayList<Group>();
+		  Group firstgroup = new Group();
+		//  firstgroup.leftBoundary = 0;
+		//  firstgroup.rightBoundary = mintraveldistance+step;
+		  firstgroup.left = 0;
+		  firstgroup.right= mintraveldistance+step;
+		  groups.add(firstgroup);
+		  ArrayList<Double> cut = new ArrayList<Double>();
+		  for(int i = 1; i<this.minBlocks-1;i++)
+		    {
+			  Group group = new Group();
+			  group.left = groups.get(groups.size()-1).right;
+			  group.right = group.left+step;
+			  
+			  groups.add(group);
+			  
+			  cut.add(mintraveldistance+step*i);
+		    }
+		  Group lastgroup = new Group();
+		  lastgroup.left = groups.get(groups.size()-1).right;
+		  lastgroup.right = Double.MAX_VALUE;
+		  groups.add(lastgroup);
+		  allInOneGroup = new Group();
+		  for (int i = 0; i<trainingResampled.size(); i++){
+			  int groupId = findgroup(i);
+			  groups.get(groupId).add(i);
+			  allInOneGroup.add(i);
+		  }
+		  allInOneGroup.train();
+		  //merge
+		  for(int i=0;i<groups.size();i++){
+			  System.out.println("group "+i+" : "+groups.get(i));
+			  
+		  }
+		  for(int i=0;i<groups.size();i++){
+			  System.out.println("group "+i+" : "+groups.get(i));
+			  groups.get(i).train();
+		  }
+		    
+	  }
+	  private int findgroup(int i) {
+		  double dist = travelDistance.get(i);
+		if(dist<groups.get(0).right)
+		  return 0;
+		if(dist>=groups.get(groups.size()-1).left)
+			return groups.size()-1;
+		for(int g=1;g<groups.size();g++){
+			if(dist>=groups.get(g).left&&dist<groups.get(g).right)
+				return g;
+		}
+		return 0;
+	}
+
+	private void decisionStump() {
+		  
 		  PriorityQueue<SingleClass> pq = new PriorityQueue<SingleClass>();
 		  densityCount = new HashMap<Double, Integer>();
 		  allSingleClasses = new ArrayList<SingleClass>();
 		  groups = new ArrayList<Group>();
+		  allInOneGroup = new Group();
 		//  classes = new HashSet<Integer>();
-		  labelMap = new HashMap<Integer, ArrayList<Integer>>();
+		  labelMap = new HashMap<String, ArrayList<Integer>>();
 //		  System.out.println("Traval Distance = "+travelDistance);
-		  for (int i = 0; i<classLabel.size(); i++){
-			  Integer label = classLabel.get(i);
+		  for (int i = 0; i<trainingResampled.size(); i++){
+			  String label = classLabel.get(i);
 			  if(labelMap.containsKey(label)){
 				  labelMap.get(label).add(i);
 			  }
@@ -710,17 +787,20 @@ public class SequiturModel extends Observable {
 		  }
 		  Iterator it = labelMap.keySet().iterator();
 		  while(it.hasNext()){
-			  Integer label = (Integer) it.next();
+			  String label = (String) it.next();
 			  SingleClass singleClass= new SingleClass(label,labelMap.get(label));
 			  allSingleClasses.add(singleClass);
+			  allInOneGroup.add(singleClass);
 			  pq.add(singleClass);
 		  }
+		  
+		 // for(int i = 0`)
 		  
 //		  SingleClass single
 		  Group currentGroup = new Group();   //first group
 		  currentGroup.leftBoundary = 0;
 		  double leftMost = pq.peek().left;
-		  System.out.println("class Map: \n "+labelMap);
+		//  System.out.println("class Map: \n "+labelMap);
 		  while(!pq.isEmpty()){
 			  SingleClass single = pq.remove();
 			  int[] countClass = countClassAtPosition(single);
@@ -752,53 +832,285 @@ public class SequiturModel extends Observable {
 			  
 		  }
 		  currentGroup.rightBoundary = currentGroup.right;
-		  //groupSplitThreshold = (currentGroup.right-leftMost)/this.noiseThreshold;
-		  groupSplitThreshold = 1.0/this.noiseThreshold;
+		  groupSplitThreshold = (currentGroup.right-leftMost)/this.noiseThreshold;
+		//  groupSplitThreshold = 1.0/this.noiseThreshold;
 		  groups.add(currentGroup);
 		  System.out.println("groups size = "+groups.size() );
 		  for(int i = 0; i<groups.size(); i++)
-		  System.out.println(groups.get(i));
+	//	  System.out.println(groups.get(i));
 		  
-		  /*
-		   * above: Decision Stump
-		   * below: Recursively divide large group into small group
-		   */
+		  // above: Decision Stump
+		  // below: Recursively divide large group into small group
+		  
 	      System.out.println("Group split threshold = "+this.groupSplitThreshold);
 		  System.out.println(this.densityCount);
-		  ArrayList<Group> finalGroups=new ArrayList<Group>();
+		  ArrayList<Group> removedGroups=new ArrayList<Group>();
+		  ArrayList<Group> smallGroups = new ArrayList<Group>();
 		  for(int i=0; i<groups.size(); i++){
-			 
+			  	  
 				   Group largeGroup = groups.get(i); 
-				//   groupSplitThreshold = largeGroup.right-largeGroup.left;
-				   if((largeGroup.right-largeGroup.left)/largeGroup.right>groupSplitThreshold){
-					   recursiveCount = 0;
-					   ArrayList<Group> tempGroups = recursiveDivide(largeGroup);
-					   groups.remove(i);
-					   groups.addAll(tempGroups);
+				//   System.out.println("largeGroup:"+largeGroup);
+				   if(largeGroup.right-largeGroup.left>groupSplitThreshold){
+					    
+					    ArrayList<Double> cut = new ArrayList<Double>();
+					    cut.add(largeGroup.left);
+					    int cuts = 2;
+					    while((largeGroup.right-largeGroup.left)/cuts>groupSplitThreshold){
+						   cuts++;
+					   }
+					   double step = (largeGroup.right-largeGroup.left)/cuts;
+					   for(int j = 1; j<cuts; j++) 
+					   {
+						   double value = cut.get(j-1)+step;
+						   cut.add(value);
+					   }
+					   
+					   cut.add(largeGroup.right);
+				//	   System.out.println("Cut = "+cut);
+					   for(int j = 0; j<cut.size()-1;j++){
+						   double leftc = cut.get(j);
+						   double rightc = cut.get(j+1);
+						   Group smallGroup = new Group();
+						   for(int k =0; k<largeGroup.family.size();k++){
+							   SingleClass currentClass = largeGroup.family.get(k);
+							   if((leftc>=currentClass.left&&leftc<=currentClass.right)||(rightc>=currentClass.left&&rightc<=currentClass.right)){
+								   smallGroup.add(currentClass);
+							   }
+						   }
+						   if(smallGroup.family.size()>0){
+							   smallGroup.leftBoundary = leftc;
+							   smallGroup.rightBoundary = rightc;
+							   smallGroups.add(smallGroup);
+				//			   System.out.println("small group = "+smallGroup);
+						   }
+					      
+					   }
+					   
+					   removedGroups.add(largeGroup);
+					  // i--;
+					//   groups.addAll(smallGroups);
+					   
 				   }
+				   
+				   
+				   
+				   
+				//   groupSplitThreshold = largeGroup.right-largeGroup.left;
+				   
 			  
 		  }
-		  for(int i=0; i<groups.size(); i++){
-				 
-			   Group largeGroup = groups.get(i); 
-			
-			   if(largeGroup.family.size()==0||(largeGroup.family.size()<2&&(largeGroup.rightBoundary <0&&largeGroup.leftBoundary<0))){
-				   
-				   groups.remove(i);
-				   i = i-1;
-				   
-			   }
-		  
-	  }
+		  for(int i=0; i<removedGroups.size();i++){
+			  groups.remove(removedGroups.get(i));
+		  }
+		  groups.addAll(smallGroups);
+		 
 		  System.out.println("After split groups size = "+groups.size() );
-		  for(int i = 0; i<groups.size(); i++)
-		  System.out.println(groups.get(i));
-		  /*
-		   * above devide large Group into small Group
-		   */
+		  trainMinDist = Double.MAX_VALUE;
+		  trainMaxDist = -1;
+		  for(int i = 1; i<groups.size(); i++)
+		  {
+			  Group left = groups.get(i-1);
+			  Group right = groups.get(i);
+			  if(left.right<right.left){
+				  
+				  left.rightBoundary = (right.left+left.right)/2;
+				  right.leftBoundary = left.rightBoundary;
+			  }
+			  
+			  
+		  }
+		  for(int i = 0; i<groups.size(); i++){
+			  Group g = groups.get(i);
+			  if(g.leftBoundary<0)
+				  g.leftBoundary = g.left;
+			  if(g.rightBoundary<0)
+				  g.rightBoundary = g.right;
+		//	  System.out.println(groups.get(i));
+		  }
+		  groups.get(groups.size()-1).rightBoundary = groups.get(groups.size()-1).right;
 		  
-		  
-		  
+
+	}
+	
+	private void SVMclassification(){
+		
+		//all in one group
+		//Classifier svm1 = new LibSVM();
+		LibSVM svm1 = new LibSVM();
+		svm_parameter para = new svm_parameter();
+		switch(this.minBlocks){
+		case 1: para.kernel_type = svm_parameter.C_SVC; break;
+		case 2: para.kernel_type = svm_parameter.EPSILON_SVR; break;
+		case 4: para.kernel_type = svm_parameter.NU_SVC; break;
+		case 5: para.kernel_type = svm_parameter.NU_SVR; break;
+		case 6: para.kernel_type = svm_parameter.POLY;para.gamma =1;para.degree = 2; break;
+		case 7: para.kernel_type = svm_parameter.RBF; break;
+		case 8: para.kernel_type = svm_parameter.SIGMOID; break;
+		default: para.kernel_type = svm_parameter.LINEAR; 
+		}
+		
+		System.out.println(svm1.getParameters());
+		if(this.minBlocks>0&&this.minBlocks<10)
+			svm1.setParameters(para);
+		Dataset datasets = new DefaultDataset();
+		for(int i = 0; i<allInOneGroup.family.size();i++){
+			SingleClass single = allInOneGroup.family.get(i);
+			for(int k = 0; k<single.member.size(); k++){
+				Integer traj = single.member.get(k);
+				Instance instance = trajToInstance(traj);
+				datasets.add(instance);
+			}
+			
+			
+		}
+		allInOneGroup.svm = svm1;
+		allInOneGroup.svm.buildClassifier(datasets);
+		
+		//multiple groups classifier
+		for(int i = 0; i<groups.size(); i++){
+			Group  group = groups.get(i);
+			LibSVM svm = new LibSVM();
+			if(this.minBlocks>0&&this.minBlocks<10)
+				svm.setParameters(para);
+			Dataset data = new DefaultDataset();
+			for(int j = 0; j<group.family.size(); j++){
+				SingleClass single = group.family.get(j);
+				for(int k = 0; k<single.member.size(); k++){
+					Integer traj = single.member.get(k);
+					Instance instance = trajToInstance(traj);
+					data.add(instance);
+				}
+			}
+			svm.buildClassifier(data);
+			group.svm = svm;
+		}
+	}
+	public static Instance trajToInstance(Integer traj) {
+		double[] values = new double[alphabetSize*2]; 
+		for(int index = 0; index<alphabetSize*2; index++)		
+			values[index] = equalPointsTraj.get(traj).get(index);
+		Instance instance  = new DenseInstance(values,classLabel.get(traj));
+		return instance;
+	}
+
+	private void testClassifier(){
+		int correct = 0;
+		int wrong = 0;
+		int correct1 = 0;
+		int wrong1 = 0;
+		
+		for(int i = 0; i<testingResampled.size(); i++){
+			int traj = i+trainingSize;
+			int gid = findgroup(i);
+			Instance ins = trajToInstance(traj);
+			String svm1ClassLabel = (String) allInOneGroup.svm.classify(ins);
+			
+			String svmClassLabel = (String) groups.get(gid).svm.classify(ins);
+			if(svmClassLabel.equals(classLabel.get(traj)))
+				correct++;
+			else
+				wrong++;
+			if(svm1ClassLabel.equals(classLabel.get(traj)))
+				correct1++;
+			else
+				wrong1++;
+		
+		}
+	System.out.println("Correct predictions  " + correct);
+    System.out.println("Wrong predictions " + wrong);
+    System.out.println("Accuracy = "+((double)correct)/(correct+wrong));
+    System.out.println("1 Group Correct predictions  " + correct1);
+    System.out.println("1 Group Wrong predictions " + wrong1);
+    System.out.println("1 Group Accuracy = "+((double)correct1)/(correct1+wrong1));		
+		
+	}
+	private void testClassification(){
+		int correct = 0;
+		int wrong = 0;
+		int correct1 = 0;
+		int wrong1 = 0;
+		for(int i = 0; i<testingResampled.size(); i++){
+			int traj = i+trainingSize;
+			Instance ins = trajToInstance(traj);
+			String svm1ClassLabel = (String) allInOneGroup.svm.classify(ins);
+			double trajDistance = travelDistance.get(traj);
+			String predictedClassValue;
+			HashMap<String, Integer> vote = new HashMap<String, Integer>();
+			
+			if(trajDistance<groups.get(0).left)
+				{
+					/*
+					Group g = null;
+					for(int j=0; j<groups.size();j++){
+						if(groups.get(j).left==trainMinDist){
+							g = groups.get(j);
+							break;
+						}
+					}
+					*/
+					predictedClassValue = (String) groups.get(0).svm.classify(ins);
+				}
+			else if(trajDistance>groups.get(groups.size()-1).right)
+			{
+				/*
+				Group g = null;
+				for(int j=0; j<groups.size();j++){
+					if(groups.get(j).right==trainMaxDist){
+						g = groups.get(j);
+						break;
+					}
+				}
+				*/
+				predictedClassValue = (String) groups.get(groups.size()-1).svm.classify(ins);
+			}
+			else
+			{
+				for(int j = 0; j<groups.size(); j++){
+					Group group = groups.get(j);
+					String currentPredict;
+					if(trajDistance>=group.left&&trajDistance<=group.right){
+						currentPredict = (String) group.svm.classify(ins);
+						if(vote.containsKey(currentPredict))
+							{
+								int count=vote.get(currentPredict)+1;
+								vote.put(currentPredict, count) ;
+							}
+						else
+							vote.put(currentPredict, 1);
+					}
+
+				}
+				Iterator it = vote.keySet().iterator();
+				int maxCount = 0;
+				String maxValue = "!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!";
+				System.out.println("vote Map: " +vote );
+				while(it.hasNext()){
+					String currentPredict = (String) it.next();
+					if(vote.get(currentPredict)>=maxCount){
+						maxCount = vote.get(currentPredict);
+						maxValue = currentPredict;
+					}
+				}
+				predictedClassValue = maxValue;
+				System.out.println("predictedClassValue = " + predictedClassValue);
+			}
+			
+			if(predictedClassValue.equals(classLabel.get(traj)))
+				correct++;
+			else
+				wrong++;
+			if(svm1ClassLabel.equals(classLabel.get(traj)))
+					correct1++;
+			else
+				wrong1++;
+			
+		}
+		System.out.println("Correct predictions  " + correct);
+        System.out.println("Wrong predictions " + wrong);
+        System.out.println("Accuracy = "+((double)correct)/(correct+wrong));
+        System.out.println("1 Group Correct predictions  " + correct1);
+        System.out.println("1 Group Wrong predictions " + wrong1);
+        System.out.println("1 Group Accuracy = "+((double)correct1)/(correct1+wrong1));
 	}
 
 	private int[] countClassAtPosition(SingleClass single) {
@@ -827,7 +1139,7 @@ public class SequiturModel extends Observable {
 		recursiveCount++;
 		int minCount = Integer.MAX_VALUE;
 		ArrayList<Group> answer = new ArrayList<Group>();
-		if(largeGroup.family.size() <3||recursiveCount>labelMap.size())
+		if(largeGroup.family.size() <2||recursiveCount>labelMap.size())
 			{
 				answer.add(largeGroup);
 				return answer;
@@ -1567,6 +1879,105 @@ public class SequiturModel extends Observable {
 	}
 	private void rescale(){
 		travelDistance = new ArrayList<Double>();
+		ArrayList<ArrayList<Double>> rescalex = new ArrayList<ArrayList<Double>>();
+		ArrayList<ArrayList<Double>> rescaley = new ArrayList<ArrayList<Double>>();
+		allTimeline = new ArrayList<ArrayList<Double>>();
+		ArrayList<ArrayList<Double>> rawTimeResample = new ArrayList<ArrayList<Double>>();
+		longest3Traj = new int[3];
+		  longest3Traj[0] = 0;
+		  longest3Traj[1] = 0;
+		  longest3Traj[2] = 0;
+		  mintraveldistance = Double.MAX_VALUE;
+		  maxtraveldistance = -1;
+		  for(int i = 0; i<rawtrajX.size(); i++){
+			  rawTimeResample.add(new ArrayList<Double>());
+			  rawTimeResample.get(i).add(0.0);
+			  double trajDist = 0;
+				for(int j = 1; j<rawtrajX.get(i).size(); j++){
+					double dist = Math.sqrt(squareDist(rawtrajX.get(i).get(j-1),rawtrajY.get(i).get(j-1),rawtrajX.get(i).get(j),rawtrajY.get(i).get(j)));
+					double eudist = Tools.euDist(rawtrajX.get(i).get(j-1),rawtrajY.get(i).get(j-1),rawtrajX.get(i).get(j),rawtrajY.get(i).get(j));
+					if(eudist!=dist){
+						throw new IllegalArgumentException(dist+" : "+
+					eudist);
+					}
+					
+					
+					trajDist = trajDist+dist;
+					rawTimeResample.get(i).add(trajDist);
+				}
+				double firstLastDist = Tools.euDist(rawtrajX.get(i).get(0), rawtrajY.get(i).get(0), rawtrajX.get(i).get(rawtrajX.get(i).size()-1), rawtrajY.get(i).get(rawtrajY.get(i).size()-1));
+			//	travelDistance.add(firstLastDist);
+				if(trajDist<mintraveldistance)
+					mintraveldistance = trajDist;
+				if(trajDist>maxtraveldistance)
+					maxtraveldistance = trajDist;
+				travelDistance.add(trajDist);
+			
+		  }
+		  
+		  equalPointsTraj = new ArrayList<ArrayList<Double>>();
+		  for(int i = 0; i<rawtrajX.size();i++ ){
+				distCut = travelDistance.get(i)/(this.alphabetSize-1);
+				equalPointsTraj.add(new ArrayList<Double>());
+				equalPointsTraj.get(i).add(rawtrajX.get(i).get(0));
+				equalPointsTraj.get(i).add(rawtrajY.get(i).get(0));
+				double time = distCut;
+				int index = 1;
+				while(time<travelDistance.get(i)){
+					
+					while(time>=rawTimeResample.get(i).get(index))
+						{
+							index++;
+						}
+					if(index<rawTimeResample.get(i).size()){
+						double ratio = (time-rawTimeResample.get(i).get(index-1))/(rawTimeResample.get(i).get(index)-rawTimeResample.get(i).get(index-1));
+						double latitude = rawtrajX.get(i).get(index-1)+(rawtrajX.get(i).get(index)-rawtrajX.get(i).get(index-1))*ratio;//latOri.get(index-1)+(latOri.get(index)-latOri.get(index-1))*ratio;
+						double longitude = rawtrajY.get(i).get(index-1)+(rawtrajY.get(i).get(index)-rawtrajY.get(i).get(index-1))*ratio; 
+						equalPointsTraj.get(i).add(latitude);
+						equalPointsTraj.get(i).add(longitude);
+						time=time+distCut;
+						}
+					
+				/*	
+					else 
+					{
+					time = time+distCut;
+					//	System.out.println(rawTimeResample.get(i).get(index)+"=rawTimeResample.get(i)  |  time = "+time);
+						
+						equalPointsTraj.get(i).add(rawtrajX.get(i).get(index));
+						equalPointsTraj.get(i).add(rawtrajY.get(i).get(index));
+					//	break;
+					}
+					*/
+				}
+				if(equalPointsTraj.get(i).size()>=2*this.alphabetSize)
+				{
+				equalPointsTraj.get(i).remove(equalPointsTraj.get(i).size()-1);
+				equalPointsTraj.get(i).remove(equalPointsTraj.get(i).size()-1);
+				}
+				equalPointsTraj.get(i).add(rawtrajX.get(i).get(rawtrajX.get(i).size()-1));
+				equalPointsTraj.get(i).add(rawtrajY.get(i).get(rawtrajY.get(i).size()-1));
+			}
+		  for(int j = 0; j<oldtrajX.size(); j++)
+		  {
+			
+		//	  System.out.println(rawtrajX.get(j).size()+"points. "+j+"X:"+rawtrajX.get(j));
+		//	  System.out.println(rawtrajY.get(j).size()+"points. "+j+"Y:"+rawtrajY.get(j));
+		//	  System.out.println(equalPointsTraj.get(j).size()+"points. "+j+"equalPointsTraj:"+equalPointsTraj.get(j));
+			  
+			
+		  }	
+		  
+		  trainingResampled = new ArrayList<ArrayList<Double>>();
+			testingResampled = new ArrayList<ArrayList<Double>>();
+			
+			for(int i = 0; i<trainingSize;i++){
+				trainingResampled.add(equalPointsTraj.get(i));
+			}
+			for(int i = trainingSize; i<equalPointsTraj.size(); i++){
+				testingResampled.add(equalPointsTraj.get(i));
+			}
+		  
 	}
       private void resampling(){
     	  travelDistance = new ArrayList<Double>();
