@@ -49,6 +49,7 @@ import edu.gmu.trajviz.sax.datastructures.SAXRecords;
 import edu.gmu.trajviz.timeseries.TSException;
 import edu.gmu.trajviz.util.StackTrace;
 import edu.gmu.trajviz.util.Tools;
+import net.sf.javaml.core.Instance;
 public class SequiturModel extends Observable {
 	
 	/*
@@ -57,9 +58,9 @@ public class SequiturModel extends Observable {
 	public static int top1EuDistanceCalled;
 	public static int allEuDistanceCalled;
 	public static ArrayList<ArrayList<Double>> rawtrajX,rawtrajY,oldtrajX, oldtrajY, trajX, trajY,allTimeline;
-	public static HashMap<Integer, ArrayList<Center>> allCenterPoints;
-	public static HashMap<Integer, ArrayList<ArrayList<Double>>> allCenterX, allCenterY;
-	public static HashMap<Integer, HashMap<Center, ArrayList<Center>>> allNeighbors; 
+	public static HashMap<Integer, ArrayList<ArrayList<Center>>> allCenterPoints;
+//	public static HashMap<Integer, ArrayList<ArrayList<Double>>> allCenterX, allCenterY;
+//	public static HashMap<Integer, HashMap<Center, ArrayList<Center>>> allNeighbors; 
 	public static HashMap<Integer, ArrayList<Cluster>> allTrajClusters;  //<length, arraylist of clusters>
 	public static HashMap<Integer, ArrayList<Cluster>> allMotifs;   // this should be a subset of allTrajClusters with size>1;
 	public static HashMap<Integer, ArrayList<String>> allSubseq;
@@ -190,6 +191,7 @@ public class SequiturModel extends Observable {
 	private Map<Integer, Double> accumulatDistance;
 	public static HashMap<String,Double> allDiscordDistances;
 	  private static Level LOGGING_LEVEL = Level.DEBUG;
+	public static ArrayList<Double> travelDistance;
 	
 	  static {
 	    consoleLogger = (Logger) LoggerFactory.getLogger(SequiturModel.class);
@@ -677,82 +679,23 @@ public class SequiturModel extends Observable {
 
 	private void findAllMotifs(int min, int max) {
 		allEuDistanceCalled = 0;
-		allCenterX = new HashMap<Integer, ArrayList<ArrayList<Double>>>();
-		allCenterY = new HashMap<Integer, ArrayList<ArrayList<Double>>>();
-		allCenterPoints = new HashMap<Integer, ArrayList<Center>>();
-		allNeighbors = new HashMap<Integer, HashMap<Center, ArrayList<Center>>>(); 
+	//	allCenterX = new HashMap<Integer, ArrayList<ArrayList<Double>>>();
+	//	allCenterY = new HashMap<Integer, ArrayList<ArrayList<Double>>>();
+		allCenterPoints = new HashMap<Integer, ArrayList<ArrayList<Center>>>();
+	//	allNeighbors = new HashMap<Integer, HashMap<Center, ArrayList<Center>>>(); 
 		//establish center ts
 		for(int len = min; len<=max; len = len+min){
 			slidePoint = (int) (len*minLink);
 			R = slidePoint * distCut;
 			coverPoint = slidePoint+len;
-			allNeighbors.put(len, new HashMap<Center, ArrayList<Center>>());
-			allCenterX.put(len, new ArrayList<ArrayList<Double>>());
-			allCenterY.put(len, new ArrayList<ArrayList<Double>>());
-			allCenterPoints.put(len, new ArrayList<Center>());
+	//		allNeighbors.put(len, new HashMap<Center, ArrayList<Center>>());
+		//	allCenterX.put(len, new ArrayList<ArrayList<Double>>());
+		//	allCenterY.put(len, new ArrayList<ArrayList<Double>>());
+			ArrayList<ArrayList<Center>> centerArraylist = getCenterArrayList(len);
+			allCenterPoints.put(len, centerArraylist);
+			
 		//	coverPoint = slidePoint+len;
 			//	ArrayList<ArrayList<Double>> xcenters = allCenterX.get(len);
-			for(int traj = 0; traj<oldtrajX.size(); traj++)
-			{	
-				
-				ArrayList<Double> centerX = new ArrayList<Double>();
-				ArrayList<Double> centerY = new ArrayList<Double>();
-				ArrayList<Double> currentX = oldtrajX.get(traj);
-				ArrayList<Double> currentY = oldtrajY.get(traj);
-				
-				if(currentX.size()<coverPoint){
-				//	continue;
-					coverPoint = currentX.size();
-					slidePoint = 1;
-				}
-				
-				double xAmount = 0;
-				double yAmount = 0;
-				for(int s = 0; s<coverPoint; s++){
-					xAmount = xAmount+currentX.get(s);
-					yAmount = yAmount+currentY.get(s);
-				}
-				centerX.add(xAmount/coverPoint);
-				centerY.add(yAmount/coverPoint);
-				for(int s = 1; s<=currentX.size()-coverPoint; s++){
-					xAmount = xAmount-currentX.get(s-1)+currentX.get(s+len-1);
-					yAmount = yAmount-currentY.get(s-1)+currentY.get(s+len-1);
-					centerX.add(xAmount/coverPoint);
-					centerY.add(yAmount/coverPoint);
-				//	System.out.println(s + ": xAmount = "+ xAmount/len+", "+yAmount/len);
-				}
-				allCenterX.get(len).add(centerX);
-				allCenterY.get(len).add(centerY);
-				/*
-				if(len>currentX.size()/2)
-					{
-						int midIndex = currentX.size()/2-len/2;
-						allCenterPoints.get(len).add(new Center(traj, midIndex,len, centerX.get(midIndex),centerY.get(midIndex)));
-					}
-				else{
-				for(int i = 0; len*(1+i+0.5)<currentX.size(); i++)
-				{
-						int s = (int) (len*(i+0.5));
-							allCenterPoints.get(len).add(new Center(traj,s,len,centerX.get(s),centerY.get(s)));
-							
-					
-				}
-				*/
-				
-				
-				int centerCount = (currentX.size()-coverPoint)/slidePoint;
-				/*
-				System.out.println("coverPoint = "+coverPoint);
-				System.out.println("slidePoint = "+slidePoint);
-				System.out.println("centerCount = "+centerCount);
-				*/
-				for(int i=0; i<=centerCount;i++){
-					int s= i*slidePoint;
-					allCenterPoints.get(len).add(new Center(traj,s,len,centerX.get(s),centerY.get(s)));
-				}
-				
-				
-			}
 			
 			
 				
@@ -880,6 +823,74 @@ public class SequiturModel extends Observable {
 		System.out.println("find all motif R = "+R);
 		System.out.println("all Motif EuDistance called = "+this.allEuDistanceCalled);
 		
+		
+	}
+
+	private ArrayList<ArrayList<Center>> getCenterArrayList(int len) {
+		ArrayList<ArrayList<Center>> allCenters = new ArrayList<ArrayList<Center>>();
+		for(int traj = 0; traj<oldtrajX.size(); traj++)
+		{	
+			
+			ArrayList<Double> centerX = new ArrayList<Double>();
+			ArrayList<Double> centerY = new ArrayList<Double>();
+			ArrayList<Double> currentX = oldtrajX.get(traj);
+			ArrayList<Double> currentY = oldtrajY.get(traj);
+			
+			if(currentX.size()<coverPoint){
+			//	continue;
+				coverPoint = currentX.size();
+				slidePoint = 1;
+			}
+			
+			double xAmount = 0;
+			double yAmount = 0;
+			for(int s = 0; s<coverPoint; s++){
+				xAmount = xAmount+currentX.get(s);
+				yAmount = yAmount+currentY.get(s);
+			}
+			centerX.add(xAmount/coverPoint);
+			centerY.add(yAmount/coverPoint);
+			for(int s = 1; s<=currentX.size()-coverPoint; s++){
+				xAmount = xAmount-currentX.get(s-1)+currentX.get(s+len-1);
+				yAmount = yAmount-currentY.get(s-1)+currentY.get(s+len-1);
+				centerX.add(xAmount/coverPoint);
+				centerY.add(yAmount/coverPoint);
+			//	System.out.println(s + ": xAmount = "+ xAmount/len+", "+yAmount/len);
+			}
+			allCenterX.get(len).add(centerX);
+			allCenterY.get(len).add(centerY);
+			/*
+			if(len>currentX.size()/2)
+				{
+					int midIndex = currentX.size()/2-len/2;
+					allCenterPoints.get(len).add(new Center(traj, midIndex,len, centerX.get(midIndex),centerY.get(midIndex)));
+				}
+			else{
+			for(int i = 0; len*(1+i+0.5)<currentX.size(); i++)
+			{
+					int s = (int) (len*(i+0.5));
+						allCenterPoints.get(len).add(new Center(traj,s,len,centerX.get(s),centerY.get(s)));
+						
+				
+			}
+			*/
+			
+			
+			int centerCount = (currentX.size()-coverPoint)/slidePoint;
+			/*
+			System.out.println("coverPoint = "+coverPoint);
+			System.out.println("slidePoint = "+slidePoint);
+			System.out.println("centerCount = "+centerCount);
+			*/
+			for(int i=0; i<=centerCount;i++){
+				int s= i*slidePoint;
+				allCenterPoints.get(len).add(new Center(traj,s,len,centerX.get(s),centerY.get(s)));
+			}
+			
+			
+		}
+		return allCenters;
+			
 		
 	}
 
@@ -3885,5 +3896,10 @@ System.out.println("]");
     }
     return result;
 }
+
+	public static Instance trajToInstance(Integer traj) {
+		// TODO Auto-generated method stub
+		return null;
+	}
 
 }
