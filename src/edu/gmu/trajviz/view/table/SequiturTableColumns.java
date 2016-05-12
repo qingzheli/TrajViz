@@ -8,7 +8,7 @@ package edu.gmu.trajviz.view.table;
 public enum SequiturTableColumns {
 	
 	 
-	  RULE_NUMBER("Length"),
+	  RULE_NUMBER("Bid"),
 	 // RULE_LEVEL("Level"), 
 	  //RULE_FREQUENCY("Frequency in R0"), 
 	  //SEQUITUR_RULE("Rule"), 

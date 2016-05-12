@@ -2,6 +2,10 @@ package edu.gmu.trajviz.logic;
 
 import java.util.ArrayList;
 
+import edu.gmu.trajviz.model.Center;
+import edu.gmu.trajviz.model.SequiturModel;
+import edu.gmu.trajviz.util.Tools;
+
 public class Blocks {
 //	public int n;   //means a area with n*n blocks
 	public int nLat;
@@ -52,12 +56,18 @@ public class Blocks {
 		for (int i=0;i<size;i++)
 		{
 			blocks.add(new Block(i,nLon,latCut,lonCut,latMin,lonMin));
+			SequiturModel.allTrajClusters.put(i, new ArrayList<Cluster>());
 		}
-	//	printBlockMap();
+		printBlockMap();
 
 	}
 	public void addPoint2Block(Location point){
 		blocks.get(findBlockIdForPoint(point)).addPoint(point);
+		
+	}
+	public void addCenter2Block(Center center) {
+		Location point = new Location(center.x,center.y);
+		blocks.get(this.findBlockIdForPoint(point)).addCenter(center);
 		
 	}
 	public int findBlockIdForPoint(Location point){
@@ -124,7 +134,8 @@ public class Blocks {
 	}
 	
 	public static double distFrom(double lat1, double lng1, double lat2, double lng2) {
-	    double earthRadius = 6371.0; //3958.75 miles or 6371.0 kilometers
+	    return Tools.euDist(lat1, lng1, lat2, lng2);
+	/*	double earthRadius = 6371.0; //3958.75 miles or 6371.0 kilometers
 	    double dLat = Math.toRadians(lat2-lat1);
 	    double dLng = Math.toRadians(lng2-lng1);
 	    double sindLat = Math.sin(dLat / 2);
@@ -135,5 +146,7 @@ public class Blocks {
 	    double dist = earthRadius * c;
 
 	    return dist;
+	    */
 	    }
+
 }

@@ -65,11 +65,11 @@ public class SequiturTableModel extends SequiturTableDataModel {
 		  
 		  rows.clear();
 		  while(it.hasNext()){
-			  
-			  ArrayList<Cluster> clusters = allMotifs.get(it.next());
+			  Integer id = (Integer) it.next();
+			  ArrayList<Cluster> clusters = allMotifs.get(id);
 				 Object[] item = new Object[getColumnCount()+1];
 				 int nColumn = 0;
-				 item[nColumn++] = clusters.get(0).length;
+				 item[nColumn++] = id;
 				 item[nColumn++] = clusters.size();
 				 rows.add(item);
 			 }
