@@ -78,7 +78,8 @@ public class SequiturModel extends Observable {
 	public static HashMap<String, Cluster> subtrajClusterMap;
 	public static int slidePoint;
 	public static int coverPoint;
-	
+	public static HashMap<Integer, ArrayList<String>> anomalyMap;
+	public static Map<Integer, ArrayList<String>> sortedAnomalyMap;
 	/*
 	 * 
 	 */
@@ -102,7 +103,7 @@ public class SequiturModel extends Observable {
 	private static final String CR = "\n";
 	private static final int STEP = 2;
 	private static final int DEFAULT_TIME_GAP = 6;//180;
-	//private static final int DEFAULT_TIME_GAP = 180;
+//	private static final int DEFAULT_TIME_GAP = 180;
 //	private static final int DEFAULT_TIME_GAP = 3;
     private boolean[] isCovered;
     private boolean[] groundTruth;
@@ -472,10 +473,15 @@ public class SequiturModel extends Observable {
 		  }
 	//	  buildModel();
 		//  drawRawTrajectories();
-		  
+		  long time = System.currentTimeMillis()/1000;
+		  leftPanelRaw();
+		  System.out.println("leftPanelRaw time: "+(System.currentTimeMillis()/1000-time));
+		   time = System.currentTimeMillis();
 		  oldtrajX = rawtrajX;
 		  oldtrajY = rawtrajY;
 		  resampling();
+		  System.out.println("resampling time: "+(System.currentTimeMillis()-time));
+	
 		 // buildModel();
 		  int minLength = minBlocks;
 		  int maxLength = minLength;
@@ -486,20 +492,45 @@ public class SequiturModel extends Observable {
 		//  int maxLength = minLength;
 		  System.out.println(longest3Traj[2]);
 		  System.out.println("minLength:maxLength = "+minLength+":"+maxLength);
-		  leftPanelRaw();
+		
+		  time = System.currentTimeMillis();
+		  
 		  findAllMotifSax();
+		  System.out.println("findAllMotif time: "+(System.currentTimeMillis()-time));
+		   
+		 
 		//  findMotifs(minLength,maxLength);
 		//  findBestMotifs(minLength,maxLength);
 		//  findHierarchicalMotifs(minLength, maxLength);
 		//  findAllMotifs(minLength,maxLength);
 		//  drawMotifs(minLength,maxLength);
-		  drawMotifsax();
+		  time = System.currentTimeMillis()/1000;
+		  
+		 // drawMotifsax();
+		  drawAnomalyOnly();
+		  System.out.println("drawMotifsax time: "+(System.currentTimeMillis()/1000-time));
+		  sortedAnomalyMap = new TreeMap<Integer, ArrayList<String>>(Collections.reverseOrder());
+		  Iterator it = anomalyMap.entrySet().iterator();
+		  while(it.hasNext()){
+			  Entry<Integer,ArrayList<String>> entry = (Entry<Integer, ArrayList<String>>) it.next();
+			  sortedAnomalyMap.put(entry.getKey(), entry.getValue());
+		  }
+		  
+		  
 		  System.out.println("allMotifs.size = "+allMotifs.size());
+		  System.out.println("AnomalyMap = "+anomalyMap);
+		  System.out.println("SortedAnomalyMap = "+sortedAnomalyMap);
+		  it = sortedAnomalyMap.entrySet().iterator();
+		  while(it.hasNext()){
+			  Entry<Integer,ArrayList<String>> entry = (Entry<Integer, ArrayList<String>>) it.next();
+			  System.out.println(entry.getKey()+","+entry.getValue());
+		  }
 		//  System.out.println("silcoefMap: "+Evaluation.silCoefMap(allMotifs));
 	//	  findTop1Motifs(minLength,maxLength);
 		  // evaluation silcoef 2016Apr
 		  
 		//  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
+		 TrajDiscords.getDiscordsEvaluation();
 		  setChanged();
 		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
 		  /*
@@ -691,17 +722,22 @@ private void findAllMotifSax(){
 	*/
 	paa2saxseqs();
 	for(int i = 0; i<blocks.blocks.size(); i++){
-		blocks.blocks.get(i).findHierarchicalMotifs();
+		//blocks.blocks.get(i).findHierarchicalMotifs();
+		blocks.blocks.get(i).findAnomaly();
 	}
+	/*
 	Iterator it = allTrajClusters.keySet().iterator();
 	
 	while(it.hasNext()){
 		Integer id = (Integer) it.next();
 		ArrayList<Cluster> current  = allTrajClusters.get(id);
+		*/
+	/*
 		if(current.size()>0)
 		System.out.println(id+":"+current);
+		
 	}
-	
+	*/
 	
 }
 	
@@ -893,6 +929,66 @@ private void findAllMotifSax(){
 		return allCenters;
 			
 		
+	}
+	private void drawAnomalyOnly() {
+		  anomalyRoutes = new ArrayList<Route>();
+		 anomalyMap = new HashMap<Integer, ArrayList<String>>();
+		
+			  for(int traj = 0; traj<isAnomaly.size();traj++){
+				  int pos = 0;
+				  int endPos = 0;
+				  int startPos = pos;
+				  while(pos<isAnomaly.get(traj).size()){
+					  if(isAnomaly.get(traj).get(pos))    // is the start position of anomaly
+					  {
+						  startPos = pos;
+						  int prePos =pos;
+						  Route singleAnomaly = new Route();
+						  double x = oldtrajX.get(traj).get(pos);
+						  double y = oldtrajY.get(traj).get(pos);
+						  singleAnomaly.addLocation(x, y);
+						  pos++;
+						  while(pos<isAnomaly.get(traj).size()&&isAnomaly.get(traj).get(pos)){
+							 /*
+							  if(euDist(oldtrajX.get(traj).get(pos),oldtrajY.get(traj).get(pos),x,y)>distCut*10){
+								  System.out.println(rawtrajX.get(traj));
+								  System.out.println(oldtrajX.get(traj));
+								  System.out.println(rawtrajY.get(traj));
+								  System.out.println(oldtrajY.get(traj));
+								  
+								  throw new IllegalArgumentException("traj = "+traj+"    pos = "+ pos+"    dist = "+euDist(oldtrajX.get(traj).get(pos),oldtrajY.get(traj).get(pos),x,y)+"prevous pos/distCut: "+distCut);
+							  }
+							  */
+							  x =  oldtrajX.get(traj).get(pos);
+							  y = oldtrajY.get(traj).get(pos);
+							  singleAnomaly.addLocation(x, y);
+							  
+							  prePos = pos;
+							  pos++;
+						  }
+						  if(singleAnomaly.getLats().size()>=minBlocks)
+						  {
+							  Integer l = singleAnomaly.getLats().size();
+							  anomalyRoutes.add(singleAnomaly);
+							  String anomalyString = "T"+traj+"S"+startPos+"L"+l;
+							  if(anomalyMap.containsKey(l)){
+								  anomalyMap.get(l).add(anomalyString);
+								  
+							  }
+							  else{
+								  ArrayList<String> anomalies = new ArrayList<String>();
+								  anomalies.add(anomalyString);
+								  anomalyMap.put(l, anomalies);
+							  }
+					//		  System.out.println("Anomalous Trajectory: "+traj+"-"+startPos+"-"+pos);
+						  }
+					  }
+					  else
+						  pos++;
+				  }
+			  }
+		  
+		  
 	}
 	private void drawMotifsax() {
 		  anomalyRoutes = new ArrayList<Route>();
@@ -1519,6 +1615,7 @@ private void paa2saxseqs() {
 			  saxseqs.add(saxseq);
 		  }
 		  //test
+		  /*
 		  for (int traj = 0; traj<paats.size();traj++){
 			
 			  System.out.println(traj+" paats = "+paats.get(traj));
@@ -1528,7 +1625,7 @@ private void paa2saxseqs() {
 		  for(int i = 0; i<blocks.blocks.size(); i++){
 			  System.out.println(i+" Block Center Count = "+blocks.blocks.get(i).centers.size());
 		  }
-
+*/
 		/*
 			 
 			words.add(id.toString());

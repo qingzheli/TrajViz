@@ -58,7 +58,7 @@ public class Blocks {
 			blocks.add(new Block(i,nLon,latCut,lonCut,latMin,lonMin));
 			SequiturModel.allTrajClusters.put(i, new ArrayList<Cluster>());
 		}
-		printBlockMap();
+	//	printBlockMap();
 
 	}
 	public void addPoint2Block(Location point){

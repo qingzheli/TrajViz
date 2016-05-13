@@ -61,7 +61,54 @@ public class Block {
 		
 	}
 	*/
-	
+	public void findAnomaly(){
+		if(centers.size()>0){
+			SequiturModel.allSubseq.put(id, new ArrayList<String>());
+		
+		double r = SequiturModel.R;
+		int len = SequiturModel.minBlocks; 
+		int step = (int)(len*SequiturModel.minLink);
+		ArrayList<String> residualSet = new ArrayList<String>();
+		for(int i = 0; i<centers.size(); i++){
+			Center center = centers.get(i);
+			for(int s = center.s; s<=center.e; s= s+step){
+				String subseqId = "T"+center.traj+"S"+s+"L"+len;
+				SequiturModel.allSubseq.get(id).add(subseqId);
+				residualSet.add(subseqId);
+			}
+		}
+		 for(int i = 0; i<SequiturModel.allSubseq.get(id).size(); i++){
+			 String subseq1 = SequiturModel.allSubseq.get(id).get(i);
+			 if(residualSet.contains(subseq1)){
+				 int[] sub1 = Tools.parseTrajId(subseq1); 
+				 for(int j = 0; j<SequiturModel.allSubseq.get(id).size(); j++){
+					 String subseq2 = SequiturModel.allSubseq.get(id).get(j);
+					 int[] sub2 = Tools.parseTrajId(subseq2);
+					 if(sub1[0]!=sub2[0]){
+					 //if(Tools.e)					 
+						 RoutePair pair = new RoutePair(subseq1,subseq2,r);
+						 if(pair.dist<=r){
+							 residualSet.remove(subseq1);
+							 residualSet.remove(subseq2);
+							 setisAnomalyFalse(subseq1);
+							 setisAnomalyFalse(subseq2);
+							 
+						 }
+				 }
+				 
+				 }
+			 }
+		 }
+		}
+	}
+	public static void setisAnomalyFalse(String subseq) {
+		int[] sub = Tools.parseTrajId(subseq);
+		for(int s = 0; s<sub[2]; s++){
+			int i = sub[1]+s;
+			SequiturModel.isAnomaly.get(sub[0]).set(i, false);
+		}
+		
+	}
 	public void findHierarchicalMotifs() {
 		if(centers.size()>0){
 		SequiturModel.allSubseq.put(id, new ArrayList<String>());
@@ -100,11 +147,11 @@ public class Block {
 		  }
 		  
 			  for(int i = 0; i<SequiturModel.allSubseq.get(id).size(); i++){
-				 
+				 String subseq1 = SequiturModel.allSubseq.get(id).get(i);
 				//  System.out.println("Threshold = " + R);
 				  for(int j = i+1; j<SequiturModel.allSubseq.get(id).size();j++){
 					//  System.out.println("R" + R);
-					  String subseq1 = SequiturModel.allSubseq.get(id).get(i);
+					  
 					  String subseq2 = SequiturModel.allSubseq.get(id).get(j);
 					  if(Tools.parseTrajId(subseq1)[0]!=Tools.parseTrajId(subseq2)[0]){
 					  RoutePair pair = new RoutePair(subseq1,subseq2,r);
