@@ -62,16 +62,19 @@ public class Block {
 	}
 	*/
 	public void findAnomaly(){
+		
 		if(centers.size()>0){
 			SequiturModel.allSubseq.put(id, new ArrayList<String>());
 		
 		double r = SequiturModel.R;
+	//	System.out.println("r = "+r);
 		int len = SequiturModel.minBlocks; 
 		int step = (int)(len*SequiturModel.minLink);
 		ArrayList<String> residualSet = new ArrayList<String>();
 		for(int i = 0; i<centers.size(); i++){
 			Center center = centers.get(i);
-			for(int s = center.s; s<=center.e; s= s+step){
+		//	for(int s = center.s; s<=center.e; s= s+step){
+			for(int s = center.s; s<=center.e; s= s+1){
 				String subseqId = "T"+center.traj+"S"+s+"L"+len;
 				SequiturModel.allSubseq.get(id).add(subseqId);
 				residualSet.add(subseqId);
@@ -87,7 +90,31 @@ public class Block {
 					 if(sub1[0]!=sub2[0]){
 					 //if(Tools.e)					 
 						 RoutePair pair = new RoutePair(subseq1,subseq2,r);
+						 /*
+						  if(subseq1.equals("T0S6L10")||subseq2.equals("T0S6L10")){
+								 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+								 System.out.println(subseq1);
+								 System.out.println(subseq2);
+								 System.out.println("distance(sub1,sub2) = "+pair.dist);
+								 
+							 }
+						  if(subseq1.equals("T0S7L10")||subseq2.equals("T0S7L10")){
+								 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+								 System.out.println(subseq1);
+								 System.out.println(subseq2);
+								 System.out.println("distance(sub1,sub2) = "+pair.dist);
+								 
+							 }
+							 */
 						 if(pair.dist<=r){
+							 /*
+							 if(sub1[0] == 0&&sub1[1]>4&&sub1[1]<15 ||sub2[0]==0&&sub2[1]>4&&sub2[1]<15 ){
+								 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+								 System.out.println(subseq1);
+								 System.out.println(subseq2);
+								 System.out.println("distance(sub1,sub2) = "+pair.dist);
+								
+							 }*/ 
 							 residualSet.remove(subseq1);
 							 residualSet.remove(subseq2);
 							 setisAnomalyFalse(subseq1);
@@ -103,7 +130,13 @@ public class Block {
 	}
 	public static void setisAnomalyFalse(String subseq) {
 		int[] sub = Tools.parseTrajId(subseq);
+		int length = 0;
+		if((sub[1]+sub[2])==SequiturModel.oldtrajX.get(sub[0]).size())
+			length = sub[2];
+		else
+			length = 2;
 		for(int s = 0; s<sub[2]; s++){
+	//	for(int s = 0; s<length; s++){
 			int i = sub[1]+s;
 			SequiturModel.isAnomaly.get(sub[0]).set(i, false);
 		}

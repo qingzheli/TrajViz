@@ -564,8 +564,11 @@ public class SequiturView implements Observer, ActionListener{
 	    	  
 	    	  mapPanel.setAllTrajectories(SequiturModel.getRawTrajectory());
 	    	  mapPanel.setAllAnomalies(SequiturModel.getAnomaly());
-	    	  mapPanel1.setMotifs(SequiturModel.getMotifs());
-	    	  mapPanel1.setAllMotifs(SequiturModel.getAllMotifs());
+	    	  mapPanel1.setAllTrajectories(SequiturModel.getRawTrajectory());
+	    	  mapPanel1.setAllAnomalies(SequiturModel.getDiscord());
+	    	  // following is setting motif view;
+	    	 // mapPanel1.setMotifs(SequiturModel.getMotifs());
+	    	 // mapPanel1.setAllMotifs(SequiturModel.getAllMotifs());
 	       }
 	      else {
 	        raiseValidationError("The timeseries is not loaded yet.");
