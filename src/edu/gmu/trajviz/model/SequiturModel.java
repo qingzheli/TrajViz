@@ -502,6 +502,9 @@ public class SequiturModel extends Observable {
 		  time = System.currentTimeMillis();
 		  
 		  findAllMotifSax();
+		  
+		  System.out.println("Dataset = "+this.fileNameOnly);
+		  System.out.println("MinLink = "+minLink+", AlphabetSize = "+this.alphabetSize+", slidingWindow = "+this.minBlocks+ ", resampling rate = "+this.noiseThreshold);
 		  System.out.println("findAllMotif time: "+(System.currentTimeMillis()-time));
 		   
 		 
@@ -515,30 +518,35 @@ public class SequiturModel extends Observable {
 		 // drawMotifsax();
 		  drawAnomalyOnly();
 		  System.out.println("drawMotifsax time: "+(System.currentTimeMillis()-time));
+		  
+		  
+		/*  
 		  sortedAnomalyMap = new TreeMap<Integer, ArrayList<String>>(Collections.reverseOrder());
 		  Iterator it = anomalyMap.entrySet().iterator();
+		
 		  while(it.hasNext()){
 			  Entry<Integer,ArrayList<String>> entry = (Entry<Integer, ArrayList<String>>) it.next();
 			  sortedAnomalyMap.put(entry.getKey(), entry.getValue());
 		  }
 		  
 		  
-		  System.out.println("allMotifs.size = "+allMotifs.size());
-		  System.out.println("AnomalyMap = "+anomalyMap);
-		  System.out.println("SortedAnomalyMap = "+sortedAnomalyMap);
+	//	  System.out.println("allMotifs.size = "+allMotifs.size());
+//		  System.out.println("AnomalyMap = "+anomalyMap);
+	//	  System.out.println("SortedAnomalyMap = "+sortedAnomalyMap);
 		  
 		  it = sortedAnomalyMap.entrySet().iterator();
 		  while(it.hasNext()){
 			  Entry<Integer,ArrayList<String>> entry = (Entry<Integer, ArrayList<String>>) it.next();
 			  System.out.println(entry.getKey()+","+entry.getValue());
 		  }
+		  */
 		//  System.out.println("silcoefMap: "+Evaluation.silCoefMap(allMotifs));
 	//	  findTop1Motifs(minLength,maxLength);
 		  // evaluation silcoef 2016Apr
 		  
 		//  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
 		// TrajDiscords.getDiscordsEvaluation();
-		  System.out.println("R = "+SequiturModel.R);
+		//  System.out.println("R = "+SequiturModel.R);
 		  time = System.currentTimeMillis();
 		  TrajDiscords.getThresholdDiscordsEvaluation((int)(minBlocks));
 		  System.out.println("getThresholdDiscordsEvaluation time: "+(System.currentTimeMillis()-time));
@@ -876,6 +884,17 @@ private void computePointConfusionMatrix() {
 	System.out.println("D/A\t True\t False");
 	System.out.println("T\t"+tt+"\t"+tf);
 	System.out.println("F\t"+ft+"\t"+ff);
+	double accuracy = ((double)tt+ff)/(tt+ff+tf+ft);
+	double precision = (double)tt/(tt+ft);
+	double recall = (double)tt/(tt+tf);
+	double f1 = 2*(double)tt/(2*tt+tf+ft);
+	double fmeasure = 2* (precision*recall)/(precision+recall);
+	System.out.println("accuracy = "+accuracy );
+	System.out.println("precision = "+precision );
+	System.out.println("recall = "+recall );
+	System.out.println("f1 = "+f1 );
+	System.out.println("fmeasure = "+fmeasure );
+
 	}
 
 private void findAllMotifSax(){
