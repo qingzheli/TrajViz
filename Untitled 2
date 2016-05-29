@@ -1,0 +1,178 @@
+private void clusterRules() {
+			
+		      /*
+	         * Postprocessing merge, connect
+	         */
+			
+			/*
+			 * Warning: rules in clusters are real rules, rules in clusterMap are filter rules. 
+			 * 
+			 */
+		    
+		    
+	        /* print all rule details
+	         */
+	         
+	          for(int i=0;i<rules.size();i++){
+	        	  System.out.println("Rule number: "+rules.getRuleRecord(i).getRuleNumber()+" Fre in R0: "+rules.get(i).frequencyInR0()+" LEVEL: "+rules.get(i).getRuleLevel()+" "+rules.get(i)+" StringOccurence: "+rules.getRuleRecord(i).occurrencesToString()+"OccurenceInR0: "+rules.get(i).r0OccurrencesToString()+" Rule String: "+rules.getRuleRecord(i).getExpandedRuleString()+" Rule Positions: "+rules.getRuleRecord(i).getR0Intervals());
+	          }
+	        
+	       /*  */
+	         
+	        filterMap = new HashMap<Integer,Integer>();
+	        for (int i = 1; i<rules.size();i++){
+	        	System.out.println("Before filter: Frequency in R0: "+ rules.get(i).frequencyInR0()+"  Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
+					if ((rules.get(i).frequencyInR0()>=1&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=1))//||
+						//	(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getR0Intervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
+						{
+						//HashSet<Integer> set = new HashSet<Integer>();
+						System.out.println("Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
+						filterMap.put(i, filter.size());
+						filter.add(i);
+					/*	
+						if(rules.get(i).getR0Intervals().size()<2)
+							System.out.println("Bug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+i);
+						*/
+						}
+					
+				}
+	        System.out.println("filter Size = "+filter.size());
+	        allFilters.add(filter);
+	        if(filter.size()>1){
+	        //HashMap<Integer,ArrayList<Integer>> mergeRecord = new HashMap<Integer, ArrayList<Integer>>();
+	        long t1s = System.currentTimeMillis();
+	        RuleDistanceMatrix rdm;
+	        System.out.println("AlphabetSize="+this.alphabetSize);
+	        rdm = new RuleDistanceMatrix(blocks,rules, filter,minBlocks, minLink); 
+	        long t1e = System.currentTimeMillis();
+	        long buildMatrixTime = t1e-t1s;
+	        
+	  //      clusters = new ArrayList<HashSet<Integer>>(); 
+	       /*
+	        for(int i = 0; i<rdm.filter.size();i++){
+	      	 families.add(new HashSet<Integer>());
+	      	 
+	      	 
+	      	 families.get(i).add(i);
+	      	//  mergeRecord.put(i, family.add(i) );
+	        }
+	       */
+	        long t2s =System.currentTimeMillis();
+	        NumberFormat formatter = new DecimalFormat("#0.00");
+	        System.out.println("rdm.pq.size(): "+rdm.pq.size());
+	        int mergableCount = 0;
+	        while(rdm.pq.size()>0){
+	      	  PairDistance pair = rdm.pq.remove();
+	      	  int lineSize;
+	      	  int colSize;
+	      	  int totalSize;
+	      	  if(isMergable(rdm.matrix,clusters,pair.getLine(),pair.getCol(),clusterMap, minLink)){
+	      		  hasNewCluster=true;
+	      		  mergableCount++;
+	      	//	  merge(rules,rdm.filter.get(pair.getLine()),rdm.filter.get(pair.getCol()));
+	      		  if(clusterMap.containsKey(pair.getLine())||clusterMap.containsKey(pair.getCol()))
+	      		  {
+	      			  if(!clusterMap.containsKey(pair.getLine())){
+	      				  clusters.get(clusterMap.get(pair.getCol())).add(filter.get(pair.getLine()));
+	      				  clusterMap.put(pair.getLine(), clusterMap.get(pair.getCol()));
+	      			//	  System.out.println("Adding Line  to a cluster, Line:"+pair.getLine()+" Colu:"+pair.getCol()+clusters.get(clusterMap.get(pair.getCol())));
+	      				//  System.out.println("Map:"+clusterMap);
+	      				  
+	      			  }
+	      			  else if(!clusterMap.containsKey(pair.getCol())){
+	      				  clusters.get(clusterMap.get(pair.getLine())).add(filter.get(pair.getCol()));
+	      				  clusterMap.put(pair.getCol(), clusterMap.get(pair.getLine()));
+	      			//	  System.out.println("Adding Colum to a cluster,Colum:"+pair.getCol()+" Colu:"+pair.getCol()+clusters.get(clusterMap.get(pair.getLine())));
+	      			//	  System.out.println("Map:"+clusterMap);
+	      			  }
+	      			  else{
+	      				  if(!clusterMap.get(pair.getLine()).equals(clusterMap.get(pair.getCol())))
+	      				  {
+	      				//  System.out.println("Before Merge, line in cluster:"+clusterMap.get(pair.getLine())+clusters.get(clusterMap.get(pair.getLine()))+" colu in cluster:"+clusterMap.get(pair.getCol())+clusters.get(clusterMap.get(pair.getCol())));
+	      				  lineSize = clusters.get(clusterMap.get(pair.getLine())).size();
+	      				  colSize = clusters.get(clusterMap.get(pair.getCol())).size();
+	      				  clusters.get(clusterMap.get(pair.getLine())).addAll(clusters.get(clusterMap.get(pair.getCol())));
+	      				  int colCluster = clusterMap.get(pair.getCol());
+	      				  for(int v : clusters.get(clusterMap.get(pair.getCol())))
+	      					  {
+	      				//	  System.out.print("v: "+v+" ");
+	      					  clusterMap.put(filterMap.get(v), clusterMap.get(pair.getLine()));
+	      					  clusters.get(clusterMap.get(pair.getLine())).add(v);
+	      					  }
+	      				  //System.out.println();
+	      				  clusters.get(colCluster).clear();
+	      				 // System.out.println("After  Merge, Line:"+pair.getLine()+clusters.get(clusterMap.get(pair.getLine()))+" Colu:"+pair.getCol()+clusters.get(colCluster));
+	      				 // System.out.println("Map:"+clusterMap);
+	      				  totalSize = clusters.get(clusterMap.get(pair.getLine())).size();
+	      				  //if((lineSize+colSize)!=totalSize){
+	      					//  System.out.println("Error Candidate here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
+	      				  //}
+	      				  }
+	      				  //else
+	      					// System.out.println("Same Cluster! "+clusterMap.get(pair.getLine())+","+clusterMap.get(pair.getCol()));
+	      			  }
+	      		  }
+	      		  else{
+	      			  HashSet<Integer> set = new HashSet<Integer>();
+	      			  set.add(filter.get(pair.getLine()));            
+	      			  set.add(filter.get(pair.getCol()));
+	      			  clusters.add(set);
+	      			  clusterMap.put(pair.getLine(), clusters.size()-1);
+	      			  clusterMap.put(pair.getCol(), clusters.size()-1);
+	      			//  System.out.println("Created a cluster: "+clusters.get(clusters.size()-1));
+	      			//  System.out.println("Map:"+clusterMap);
+	      		  }
+	      		  
+	      		  /*
+	      		  clusters.get(pair.getLine()).addAll(clusters.get(pair.getCol()));
+	      		  clusters.get(pair.getCol()).addAll(clusters.get(pair.getLine()));
+	      		  
+	      		  for(int i: families.get(pair.getCol()))
+	      			  families.get(pair.getLine()).add(i);
+	      		  for(int i: families.get(pair.getLine()))
+	      			  families.get(pair.getCol()).add(i);
+	      			  */	        		
+	      	//	  System.out.print("Merged Pair: <"+pair.getLine()+", "+pair.getCol()+"> = "+rdm.matrix[pair.getLine()][pair.getCol()]);
+	      	//	  System.out.print(" all distances: ");
+	      		  /*
+	      		  for (int i : clusters.get(clusterMap.get(pair.getLine())))
+	    				for(int j : clusters.get(clusterMap.pair.getCol()))
+	    				{
+	    				
+	    				System.out.print(formatter.format(rdm.matrix[i][j])+", ");
+	    					
+	    				}*/
+	      	//	  System.out.println();
+	      	  }
+	        }
+	        
+		  
+	        
+	        
+	        System.out.println("MergableCount: "+mergableCount);
+	        
+	        /*
+	        ArrayList<HashSet<Integer>> tempCluster = new ArrayList<HashSet<Integer>>();
+	        for(int i=0;i<clusters.size();i++)
+	        {
+	      	  if(clusters.get(i).size()>0)
+	      		  tempCluster.add(clusters.get(i));
+	        }
+	        clusters = tempCluster; // be aware!!!! hashMap did not update here, but who cares?
+	        */
+	        allClusters.add(clusters);
+	        long t2e = System.currentTimeMillis();
+	        long clusterTime = t2e -t2s;
+	    	System.out.println("build matrix: "+(double)(buildMatrixTime/1000.0));
+			  System.out.println("Clustering Time: "+(clusterTime/1000.0));
+	        /*
+	        for(int i = 0; i<clusters.size();i++){
+	      	  System.out.println("i = "+i+" : "+clusters.get(i));
+	        }
+	        */
+	       
+			  System.out.println("cluster map size = "+ clusterMap.size());
+			    System.out.println("clusterMap:   "+clusterMap);
+	        }
+	        
+		}

@@ -1,0 +1,32 @@
+=======================================0.2 20 2 0 1.txt with mergeTerminals
+[306,309]Trajectory: 19length = 4    Rank: null
+
+[663,665]Trajectory: 40length = 3    Rank: null
+
+[983,984]Trajectory: 58length = 2    Rank: 67
+
+[1000,1001]Trajectory: 59length = 2   Rank: 125
+
+[1516,1518]Trajectory: 90length = 3      null
+
+[4250,4254]Trajectory: 251length = 5    36
+
+[4257,4265]Trajectory: 251length = 9      1
+
+[4267,4282]Trajectory: 252length = 16	  4
+
+[4305,4316]Trajectory: 254length = 12     8
+
+[4318,4326]Trajectory: 255length = 9      12
+
+[4339,4350]Trajectory: 256length = 12     null
+
+[4352,4357]Trajectory: 257length = 6     9
+
+[4360,4367]Trajectory: 257length = 8     2
+
+[4369,4377]Trajectory: 258length = 9     14
+
+[4379,4384]Trajectory: 258length = 6     3
+
+[4392,4401]Trajectory: 259length = 10    9 

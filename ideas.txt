@@ -1,0 +1,136 @@
+ideas:
+done!  1. Sparse the clusters, that is, move the first cluster to east(lat+1), move the second cluster to south (lat-1),(lon+1),(lon-1)
+done!  2. Reverse the first trajectory for each cluster
+
+FINAL Confusion Matrix:
+Total True Anomaly:	4878	122
+Total False Anomaly:	59	244941
+
+Í3. For the second trajectory from the 5th point, find point 5_sub (no other points nearby && nearest point) replace the 5th point. do the same until 10th point.  
+
+Í
+=======================================0.2 20 2 0 1.txt with mergeTerminals
+[306,309]'Trajectory: 19'length = 4    Rank: null
+
+[663,665]'Trajectory: 40'length = 3    Rank: null
+
+[983,984]'Trajectory: 58'length = 2    Rank: 67
+
+[1000,1001]'Trajectory: 59'length = 2   Rank: 125
+
+[1516,1518]'Trajectory: 90'length = 3      null
+
+[4250,4254]'Trajectory: 251'length = 5    36
+
+[4257,4265]'Trajectory: 251'length = 9      1
+
+[4267,4282]'Trajectory: 252'length = 16	  4
+
+[4305,4316]'Trajectory: 254'length = 12     8
+
+[4318,4326]'Trajectory: 255'length = 9      12
+
+[4339,4350]'Trajectory: 256'length = 12     null
+
+[4352,4357]'Trajectory: 257'length = 6     9
+
+[4360,4367]'Trajectory: 257'length = 8     2
+
+[4369,4377]'Trajectory: 258'length = 9     14
+
+[4379,4384]'Trajectory: 258'length = 6     3
+
+[4392,4401]'Trajectory: 259'length = 10    9 
+==========================================0.2 20 2 0 1.txt without mergeTerminals
+interval    trajectory ID, 'length,  rank, eliminated By merge Terminals
+[44,49]'Trajectory: 3'length = 6  null                Y
+
+[306,309]'Trajectory: 19'length = 4 null              N
+
+[337,338]'Trajectory: 20'length = 2  118              Y
+
+[473,474]'Trajectory: 28'length = 2  127              Y
+
+[580,582]'Trajectory: 35'length = 3  null             Y
+
+[663,665]'Trajectory: 40'length = 3  null             N
+
+[846,848]'Trajectory: 50'length = 35 null             Y
+
+[983,984]'Trajectory: 58'length = 2  67               N
+
+[1000,1001]'Trajectory: 59'length = 2  125            N
+
+[1063,1066]'Trajectory: 63'length = 4   171           Y
+
+[1151,1154]'Trajectory: 68'length = 4   64            Y
+
+[1476,1477]'Trajectory: 87'length = 2   null	 		y
+
+[1504,1506]'Trajectory: 89'length = 3   null          Y
+
+[1516,1518]'Trajectory: 90'length = 3    NULL         N
+
+[1642,1644]'Trajectory: 97'length = 3   NULL          Y
+
+[1646,1647]'Trajectory: 97'length = 2    NULL         Y
+
+[1813,1816]'Trajectory: 107'length = 4   NULL         Y
+
+[1896,1898]'Trajectory: 112'length = 3   NULL         Y
+
+[2352,2355]'Trajectory: 139'length = 4   NULL         Y
+
+[2438,2441]'Trajectory: 144'length = 4    138         Y
+
+[2496,2497]'Trajectory: 147'length = 2   NULL         Y
+
+[2547,2548]'Trajectory: 150'length = 2    119         Y
+
+[2836,2837]'Trajectory: 167'length = 2     60         Y
+
+[3140,3143]'Trajectory: 185'length = 4    159         Y
+
+[3206,3208]'Trajectory: 189'length = 3    NULL        Y
+
+[3244,3245]'Trajectory: 191'length = 2    NULL        Y
+
+[3778,3781]'Trajectory: 223'length = 4    67          Y
+
+[4012,4018]'Trajectory: 237'length = 7    NULL        Y
+
+[4026,4027]'Trajectory: 237'length = 2    57          Y
+
+[4043,4044]'Trajectory: 238'length = 2    NULL        Y
+
+[4131,4135]'Trajectory: 244'length = 5    NULL        Y
+
+[4144,4146]'Trajectory: 244'length = 3    NULL        Y
+
+[4152,4154]'Trajectory: 245'length = 3    NULL        Y
+
+[4171,4174]'Trajectory: 246'length = 4    NULL        Y
+
+[4250,4254]'Trajectory: 251'length = 5     36         N
+
+[4257,4265]'Trajectory: 251'length = 9     1          N
+
+[4267,4282]'Trajectory: 252'length = 16    4          N
+
+[4305,4316]'Trajectory: 254'length = 12    8          N
+
+[4318,4326]'Trajectory: 255'length = 9     12         N
+
+[4339,4350]'Trajectory: 256'length = 12    null       N
+
+[4352,4357]'Trajectory: 257'length = 6     9         N
+
+[4360,4367]'Trajectory: 257'length = 8     2         N
+
+[4369,4377]'Trajectory: 258'length = 9     14        N
+
+[4379,4384]'Trajectory: 258'length = 6      3        N
+
+[4392,4401]'Trajectory: 259'length = 10      9       N
+
+[4416,4418]'Trajectory: 260'length = 3       18      Y
