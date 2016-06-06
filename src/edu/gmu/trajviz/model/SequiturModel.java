@@ -55,6 +55,13 @@ public class SequiturModel extends Observable {
 	/*
 	 * 
 	 */
+	public static FileWriter frcsv;
+	public static FileWriter frhead;
+	public String dataset;
+	public double heuristicF1Point;
+	public double heuristicF1Overlap;
+	public long bruteForceTime;
+	public long heuristicTime;
 	public static final Double OVERLAP_DEGREE = 0.8;
 	private static final int STEP = 2;
 	private static final int DEFAULT_TIME_GAP = 6;//180;
@@ -458,6 +465,18 @@ public class SequiturModel extends Observable {
 		  this.subtrajClusterMap = new HashMap<String,Cluster>();
 		  this.allAnomalies = new ArrayList<String>();
 		  this.allDiscords = new ArrayList<String>();
+		  String outputfn = this.fileNameOnly+"_"+this.alphabetSize+".csv";
+		  frhead = new FileWriter(fileNameOnly+"_Result.csv");
+		  frcsv = new FileWriter(outputfn);
+		  this.dataset = this.fileNameOnly;
+		  this.heuristicF1Point = -1.0;
+		  this.heuristicF1Overlap = -1.0;
+		  this.bruteForceTime = 0;
+		  this.heuristicTime = 0;
+		  
+		  
+		  String head = "MinLink, AlphabetSize,MinBlock,ResampleRate, HeuristicF1Point, HeuristicF1Overlap, HeuristicTime, BruteForceTime\n";
+		  frhead.append(head);
 		//  this.currentClusters = new HashMap<String,Cluster>();
 		  this.lat = new ArrayList<Double>();
 		  this.lon = new ArrayList<Double>();
@@ -502,10 +521,11 @@ public class SequiturModel extends Observable {
 		  time = System.currentTimeMillis();
 		  
 		  findAllMotifSax();
-		  
+		  this.heuristicTime = System.currentTimeMillis()-time;
+
 		  System.out.println("Dataset = "+this.fileNameOnly);
 		  System.out.println("MinLink = "+minLink+", AlphabetSize = "+this.alphabetSize+", slidingWindow = "+this.minBlocks+ ", resampling rate = "+this.noiseThreshold);
-		  System.out.println("findAllMotif time: "+(System.currentTimeMillis()-time));
+		  System.out.println("findAllMotif time: "+this.heuristicTime);
 		   
 		 
 		//  findMotifs(minLength,maxLength);
@@ -549,12 +569,17 @@ public class SequiturModel extends Observable {
 		//  System.out.println("R = "+SequiturModel.R);
 		  time = System.currentTimeMillis();
 		  TrajDiscords.getThresholdDiscordsEvaluation((int)(minBlocks));
-		  System.out.println("getThresholdDiscordsEvaluation time: "+(System.currentTimeMillis()-time));
+		  this.bruteForceTime = (System.currentTimeMillis()-time);
+		  System.out.println("getThresholdDiscordsEvaluation time: "+this.bruteForceTime);
 		  DrawDiscordOnly();	
 		  computePointConfusionMatrix();
 		  computeHitsConfusionMatrix();
 		  System.out.println("allAnomalies = "+allAnomalies);
 		  System.out.println("allDiscords  = "+allDiscords);
+		  frcsv.append(this.minLink+","+this.alphabetSize+","+this.minBlocks+","+this.noiseThreshold+","+this.heuristicF1Overlap+","+this.heuristicF1Point+","+this.heuristicTime+","+this.bruteForceTime);
+		  frcsv.close();
+		  frhead.close();
+		  System.out.println("Done!");
 		  setChanged();
 		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
 		  /*
@@ -797,6 +822,7 @@ private void computeHitsConfusionMatrix() {
 	double recall = tt/(tt+tf);
 	double f1 = 2*tt/(2*tt+tf+ft);
 	double fmeasure = 2* (precision*recall)/(precision+recall);
+	this.heuristicF1Overlap = f1;
 	System.out.println("D/A\t True\t False");
 	System.out.println("T\t"+tt+"\t"+tf);
 	System.out.println("F\t"+ft+"\t"+ff);
@@ -889,6 +915,7 @@ private void computePointConfusionMatrix() {
 	double recall = (double)tt/(tt+tf);
 	double f1 = 2*(double)tt/(2*tt+tf+ft);
 	double fmeasure = 2* (precision*recall)/(precision+recall);
+	this.heuristicF1Point = f1;
 	System.out.println("accuracy = "+accuracy );
 	System.out.println("precision = "+precision );
 	System.out.println("recall = "+recall );
