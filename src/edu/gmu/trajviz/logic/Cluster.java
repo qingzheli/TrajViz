@@ -168,7 +168,7 @@ private boolean isClose(int traj, int s) {
 			
 		//	System.out.println("Eudist: "+SequiturModel.euDist(repLineX.get(index),repLineY.get(index),SequiturModel.oldtrajX.get(traj).get(s+index),SequiturModel.oldtrajY.get(traj).get(s+index)));
 		//	if (Tools.euDist(repLineX.get(index),repLineY.get(index),SequiturModel.oldtrajX.get(traj).get(s+index),SequiturModel.oldtrajY.get(traj).get(s+index))>SequiturModel.minLink)
-			if (Tools.euDist(repLineX.get(index),repLineY.get(index),SequiturModel.oldtrajX.get(traj).get(s+index),SequiturModel.oldtrajY.get(traj).get(s+index))>SequiturModel.distCut*length*SequiturModel.minLink)
+			if (Tools.pointEuDist(repLineX.get(index),repLineY.get(index),SequiturModel.oldtrajX.get(traj).get(s+index),SequiturModel.oldtrajY.get(traj).get(s+index))>SequiturModel.distCut*length*SequiturModel.minLink)
 
 			return false;
 			
@@ -195,7 +195,7 @@ public void merge(Cluster c2,double threshold,HashMap<String, Cluster> findClust
 	  //  if(Tools.closeRouteEuDist(route, this.repRoute, R)/(this.getSize()+1)<=Tools.closeRouteEuDist(route, c2.respRoute, R)/(c2.getSize()+1)){
 	 //   if(Tools.closeRouteEuDist(route, this.repRoute, R)<=Tools.closeRouteEuDist(route, c2.repRoute, R)){	
 	    //if(Tools.closeRouteEuDist(route, this.repRoute, threshold)<=threshold)
-	    if(Tools.routeEuDist(route, this.repRoute)<=threshold)
+	    if(Tools.routeSqrEuDist(route, this.repRoute)<=threshold)
 	    {	
   
 	    	int[] subTraj = Tools.parseTrajId(name);
@@ -230,7 +230,7 @@ public void merge(Cluster c2,double threshold,HashMap<String, Cluster> findClust
 		  //  if(Tools.closeRouteEuDist(route, c2.repRoute, R)/(c2.getSize()+1)<=Tools.closeRouteEuDist(route, this.repRoute, R)/(this.getSize()+1)){
 		 //   if(Tools.closeRouteEuDist(route, c2.repRoute, R)<=Tools.closeRouteEuDist(route, this.repRoute, R)){
 		//    if(Tools.closeRouteEuDist(route, c2.repRoute, threshold)<=threshold){
-		    if(Tools.routeEuDist(route, this.repRoute)<=threshold){
+		    if(Tools.routeSqrEuDist(route, this.repRoute)<=threshold){
 		    	int[] subTraj = Tools.parseTrajId(name);
 		    	c2.add(subTraj[0], subTraj[1]);
 		    	removeCandidate.add(name.toString());

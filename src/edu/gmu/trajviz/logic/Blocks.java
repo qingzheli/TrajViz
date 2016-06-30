@@ -134,7 +134,7 @@ public class Blocks {
 	}
 	
 	public static double distFrom(double lat1, double lng1, double lat2, double lng2) {
-	    return Tools.euDist(lat1, lng1, lat2, lng2);
+	    return Tools.pointEuDist(lat1, lng1, lat2, lng2);
 	/*	double earthRadius = 6371.0; //3958.75 miles or 6371.0 kilometers
 	    double dLat = Math.toRadians(lat2-lat1);
 	    double dLng = Math.toRadians(lng2-lng1);

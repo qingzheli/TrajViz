@@ -60,7 +60,7 @@ public class TrajPair implements Comparable<TrajPair> {
 			  return 1;
 		  	return 0;
 	}
-	
+	/*
 	public boolean isClose(double threshold) {
 		
 		for(int index = 0; index<length; index++){
@@ -70,6 +70,6 @@ public class TrajPair implements Comparable<TrajPair> {
 		}	
 		return true;
 	}
-	
+	*/
 
 }

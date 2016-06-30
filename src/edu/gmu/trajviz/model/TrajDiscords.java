@@ -106,7 +106,7 @@ public class TrajDiscords{
 			
 			{
 				
-				double dist = Tools.routeEuDist(outerRoute, innerRoute);
+				double dist = Tools.routeSqrEuDist(outerRoute, innerRoute);
 				if(dist<currentMinDist){
 				currentMinDist = dist;
 				discordId = "T"+traj+"S"+i+"L"+size;
@@ -226,7 +226,7 @@ public class TrajDiscords{
 			
 			{
 				
-				double dist = Tools.routeEuDist(outerRoute, innerRoute);
+				double dist = Tools.routeSqrEuDist(outerRoute, innerRoute);
 				if(dist<currentMinDist){
 				currentMinDist = dist;
 				discordId = "T"+traj+"S"+i+"L"+size;

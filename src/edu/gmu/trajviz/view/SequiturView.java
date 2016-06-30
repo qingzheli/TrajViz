@@ -565,7 +565,10 @@ public class SequiturView implements Observer, ActionListener{
 	    	  mapPanel.setAllTrajectories(SequiturModel.getRawTrajectory());
 	    	  mapPanel.setAllAnomalies(SequiturModel.getAnomaly());
 	    	  mapPanel1.setAllTrajectories(SequiturModel.getRawTrajectory());
-	    	  mapPanel1.setAllAnomalies(SequiturModel.getDiscord());
+	    	//  mapPanel1.setAllAnomalies(SequiturModel.getDiscord());  // display discords
+	    	  
+	    	  mapPanel1.setAllAnomalies(SequiturModel.getTrueAnomaly());
+	    	  
 	    	  // following is setting motif view;
 	    	 // mapPanel1.setMotifs(SequiturModel.getMotifs());
 	    	 // mapPanel1.setAllMotifs(SequiturModel.getAllMotifs());

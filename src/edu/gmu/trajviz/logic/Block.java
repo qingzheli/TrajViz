@@ -90,31 +90,9 @@ public class Block {
 					 if(sub1[0]!=sub2[0]){
 					 //if(Tools.e)					 
 						 RoutePair pair = new RoutePair(subseq1,subseq2,r);
-						 /*
-						  if(subseq1.equals("T0S6L10")||subseq2.equals("T0S6L10")){
-								 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-								 System.out.println(subseq1);
-								 System.out.println(subseq2);
-								 System.out.println("distance(sub1,sub2) = "+pair.dist);
-								 
-							 }
-						  if(subseq1.equals("T0S7L10")||subseq2.equals("T0S7L10")){
-								 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-								 System.out.println(subseq1);
-								 System.out.println(subseq2);
-								 System.out.println("distance(sub1,sub2) = "+pair.dist);
-								 
-							 }
-							 */
+						
 						 if(pair.dist<=r){
-							 /*
-							 if(sub1[0] == 0&&sub1[1]>4&&sub1[1]<15 ||sub2[0]==0&&sub2[1]>4&&sub2[1]<15 ){
-								 System.out.println("!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-								 System.out.println(subseq1);
-								 System.out.println(subseq2);
-								 System.out.println("distance(sub1,sub2) = "+pair.dist);
-								
-							 }*/ 
+							
 							 residualSet.remove(subseq1);
 							 residualSet.remove(subseq2);
 							 setisAnomalyFalse(subseq1);

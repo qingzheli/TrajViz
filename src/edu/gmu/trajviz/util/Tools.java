@@ -6,7 +6,7 @@ import edu.gmu.trajviz.model.SequiturModel;
 
 public class Tools {
 	
-	public static double euDist(double x1, double y1 , double x2, double y2) {
+	public static double pointEuDist(double x1, double y1 , double x2, double y2) {
 		
 	//	System.out.println("x1,y1,x2,y2 : "+x1+","+y1+","+x2+","+y2);
 		return Math.sqrt((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
@@ -38,14 +38,28 @@ public class Tools {
 		return dist/r1.getLats().size();
 	}
 	*/
-	public static Double routeEuDist(Route r1, Route r2) {
+	public static Double routeSqrEuDist(Route r1, Route r2) {
 		if(r1.getLats().size()!=r2.getLats().size())
 		{
 			throw new IllegalArgumentException("r1.size != r2.size    ->"+r1.getLats().size()+ " : " +r2.getLats().size());
 		}
 		double dist = 0;
 		for(int i = 0; i<r1.getLats().size(); i++){
-			double pointDist = Tools.euDist(r1.getLats().get(i), r1.getLons().get(i), r2.getLats().get(i), r2.getLons().get(i));
+			dist = dist+(r1.getLats().get(i)-r2.getLats().get(i))*(r1.getLats().get(i)-r2.getLats().get(i))+(r1.getLons().get(i)-r2.getLons().get(i))*(r1.getLons().get(i)-r2.getLons().get(i));
+
+			
+		}
+		
+		return dist;
+	}
+	public static Double routeHuDist(Route r1, Route r2) {
+		if(r1.getLats().size()!=r2.getLats().size())
+		{
+			throw new IllegalArgumentException("r1.size != r2.size    ->"+r1.getLats().size()+ " : " +r2.getLats().size());
+		}
+		double dist = 0;
+		for(int i = 0; i<r1.getLats().size(); i++){
+			double pointDist = Tools.pointEuDist(r1.getLats().get(i), r1.getLons().get(i), r2.getLats().get(i), r2.getLons().get(i));
 	//		System.out.println("PointeuDist = "+pointDist);
 			dist = dist+ pointDist;
 		}
@@ -96,7 +110,7 @@ public class Tools {
 				subR2.addLocation(r2.getLats().get(j), r2.getLons().get(j));
 			}
 	//		SequiturModel.allEuDistanceCalled++;
-			double currentDist = routeEuDist(r1,subR2);
+			double currentDist = routeSqrEuDist(r1,subR2);
 		//	System.out.println("currentdist = "+currentDist);
 			
 			if(currentDist<minDist){

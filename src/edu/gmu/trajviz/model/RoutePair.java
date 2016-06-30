@@ -38,7 +38,7 @@ public class RoutePair implements Comparable<RoutePair> {
 			  route2.addLocation(lat2, lon2);
 		  }
 		 // dist = Tools.closeRouteEuDist(route1, route2,threshold);
-		  dist = Tools.routeEuDist(route1, route2);
+		  dist = Tools.routeSqrEuDist(route1, route2);
 		  }
 		  else
 			  {
@@ -100,6 +100,7 @@ public class RoutePair implements Comparable<RoutePair> {
 			  return 1;
 		  	return 0;
 	}
+	/*
 	public boolean isClose(double threshold) {
 		
 		for(int index = 0; index<length; index++){
@@ -109,5 +110,6 @@ public class RoutePair implements Comparable<RoutePair> {
 		}	
 		return true;
 	}
+	*/
 
 }
