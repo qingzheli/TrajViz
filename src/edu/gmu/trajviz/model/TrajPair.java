@@ -34,7 +34,7 @@ public class TrajPair implements Comparable<TrajPair> {
 		  }
 		  
 			
-		  dist = Tools.RouteSITED(route1, route2);
+		  dist = Tools.RouteSITED(route1, route2,SequiturModel.R);
 		  }
 		  else
 			  {

@@ -55,10 +55,15 @@ public class Blocks {
 		blocks = new ArrayList<Block>();
 		for (int i=0;i<size;i++)
 		{
-			blocks.add(new Block(i,nLon,latCut,lonCut,latMin,lonMin));
+			Block block = new Block(i,nLon,latCut,lonCut,latMin,lonMin,this);
+			blocks.add(block);
 			SequiturModel.allTrajClusters.put(i, new ArrayList<Cluster>());
 		}
+		for(int i = 0; i<blocks.size();i++){
+			blocks.get(i).setNearbyBlocks();
+		}
 	//	printBlockMap();
+		
 
 	}
 	public void addPoint2Block(Location point){
@@ -73,12 +78,16 @@ public class Blocks {
 	public int findBlockIdForPoint(Location point){
 		 
 		//System.out.println("latID: "+(Math.floor((point.latitude-latMin)/latCut))+" lonID: "+(Math.floor((point.longitude-lonMin)/lonCut)));
-		if(point.x<-90||point.y<-180)
-			return (int)(point.x);
+	//	if(point.x<-90||point.y<-180)
+	//		return (int)(point.x);
 		return (int)(Math.floor((point.x-latMin)/latCut))*nLon+(int)(Math.floor((point.y-lonMin)/lonCut));
 	}
 	public Block findBlockById(int id){
-		return blocks.get(id);
+	//	System.out.println("findBlock id = "+id);
+		if(id<0)
+			return null;
+		else
+			return blocks.get(id);
 	}
 	public Block findBlockByLocation(Location point){
 		return blocks.get(findBlockIdForPoint(point));
@@ -89,7 +98,9 @@ public class Blocks {
 		{
 			for (int j = 0; j<nLon; j++)
 				{
-					System.out.print(blocks.get(i).id+"\t");
+					Block block = blocks.get(i);
+				//	System.out.print(block.id+"("+block.n.id+","+block.ne.id+","+block.e.id+","+block.se.id+","+block.s.id+","+block.sw.id+","+block.w.id+","+block.nw.id+"\t");
+					System.out.print(block.id+"\t");
 					i++;
 				}
 		System.out.println();

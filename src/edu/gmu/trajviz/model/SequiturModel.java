@@ -56,6 +56,7 @@ public class SequiturModel extends Observable {
 	 * 
 	 */
 //	public static ArrayList<String> allTrueAnomalyString;
+	public static int count_works = 0; 
 	public static FileWriter frcsv;
 	public static FileWriter frhead;
 	public String dataset;
@@ -512,6 +513,10 @@ public class SequiturModel extends Observable {
 		  oldtrajY = rawtrajY;
 	//	  dummyResampling();
 		  resampling();
+		  System.out.println("distCut = "+distCut);
+			double r = SequiturModel.distCut*minBlocks*minLink;
+			System.out.println("r================="+r);
+			  SequiturModel.R = r*r;  
 		//  oldtrajX = rawtrajX;
 		//  oldtrajY = rawtrajY;
 		  System.out.println("resampling time: "+(System.currentTimeMillis()-time));
@@ -593,6 +598,7 @@ public class SequiturModel extends Observable {
 		  frcsv.append(this.minLink+","+this.alphabetSize+","+this.minBlocks+","+this.noiseThreshold+","+this.heuristicF1Overlap+","+this.heuristicF1Point+","+this.heuristicTime+","+this.bruteForceTime);
 		  frcsv.close();
 		  frhead.close();
+		  System.out.println("Count works = "+count_works);
 		  System.out.println("Done!");
 		  setChanged();
 		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
@@ -922,10 +928,23 @@ private void findAllMotifSax(){
 	}
 	*/
 	paa2saxseqs();
+	long time = System.currentTimeMillis();
+	for(int i = 0; i<blocks.blocks.size();i++){
+		blocks.blocks.get(i).setResidualSet();
+	}
+	System.out.println("setResidualSetTime = "+(System.currentTimeMillis()-time));
+	time = System.currentTimeMillis();
 	for(int i = 0; i<blocks.blocks.size(); i++){
 		//blocks.blocks.get(i).findHierarchicalMotifs();
 		blocks.blocks.get(i).findAnomaly();
 	}
+	System.out.println("findIntraBlockAnomalyTime = "+(System.currentTimeMillis()-time));
+	time = System.currentTimeMillis();
+	for(int i = 0; i<blocks.blocks.size(); i++){
+		
+		blocks.blocks.get(i).checkNearby();;
+	}
+	System.out.println("findInterBlockAnomalyTime = "+(System.currentTimeMillis()-time));
 //	System.out.println("isAnomaly[0] = "+isAnomaly.get(0));
 	/*
 	Iterator it = allTrajClusters.keySet().iterator();
@@ -1333,7 +1352,7 @@ public static void DrawDiscordOnly()
 						  if(singleAnomaly.getLats().size()>=3)//(int)(minBlocks*SequiturModel.minLink))
 						  {
 							  Integer l = singleAnomaly.getLats().size();
-							  System.out.println("DEBUG::::::::::::::: l = "+l);
+					//		  System.out.println("DEBUG::::::::::::::: l = "+l);
 							  for(int i = 0; i<l;i++){
 								  isLongAnomaly.get(traj).set(prePos-i, true);
 							  }
@@ -1756,7 +1775,7 @@ public static void DrawDiscordOnly()
 					    			 String name = "T"+j+"S"+sj+"L"+len;
 					    			 Route route = Tools.getSubroute(j, sj, len);
 					    			 top1EuDistanceCalled++;
-					    			 if(Tools.routeSqrEuDist(currentRoute, route)<=R/this.noiseThreshold){
+					    			 if(Tools.routeSqrEuDist(currentRoute, route,R)<=R/this.noiseThreshold){
 					    				 {
 					    					 count++;
 					    					 pointer.get(current).add(name);
@@ -1980,6 +1999,7 @@ private void paa2saxseqs() {
 					  blocks.blocks.get(previousid).addSubtrajectory(traj,);
 					  */
 				  }
+			//	  blocks.addCenter2Block(center);
 				  previousid = id;  
 
 			  }
@@ -2291,6 +2311,7 @@ private void paa2saxseqs() {
 				timeResample.get(j).add(time);
 	//			System.out.println("i===================================================================================="+i);
 				while(time<rawTimeResample.get(i).get(rawTimeResample.get(i).size()-1)){
+					if(index-1<anomalyGroundTruth.get(j).size())
 					if(anomalyGroundTruth.get(j).get(index-1)==0){
 						currentIsAnomaly = false;
 						
@@ -2367,7 +2388,7 @@ private void paa2saxseqs() {
 			}
 			
 			
-			System.out.println("distCut = "+distCut);
+			
 			/*
 			for(int j = 0; j<oldtrajX.size(); j++)
 			  {
@@ -2381,8 +2402,7 @@ private void paa2saxseqs() {
 				
 			  }		  
 			  */
-			double r = SequiturModel.distCut*minBlocks*minLink;
-			  SequiturModel.R = r*r;  
+			
       }
 	/*
 	 * resample original ts with the same speed.

@@ -106,7 +106,7 @@ private static double getMinInterDistance(int i, String name, ArrayList<Cluster>
 			
 			while(it.hasNext()){
 				String a = (String) it.next();
-				 dist = dist+Tools.routeSqrEuDist(route,clusters.get(k).getRoutes().get(a));
+				 dist = dist+Tools.routeSqrEuDist(route,clusters.get(k).getRoutes().get(a),SequiturModel.R);
 				
 			}
 			double avgDist = dist/clusters.get(k).getRoutes().size();
@@ -123,7 +123,7 @@ private static double getAvgIntraDistance(String name, Cluster cluster) {
 	while(it.hasNext()){
 		String next = (String) it.next();
 		if (!name.equals(next)){
-			sum = sum+Tools.routeSqrEuDist(cluster.getRoutes().get(name),cluster.getRoutes().get(next));
+			sum = sum+Tools.routeSqrEuDist(cluster.getRoutes().get(name),cluster.getRoutes().get(next),SequiturModel.R);
 		//	System.out.println("Sum = "+sum);
 			count++;
 		}
@@ -138,7 +138,7 @@ private static Double getMinDist(Cluster c1, Cluster c2) {
 	
 	for(int i = 0; i<c1.getRoutes().size();i++)
 		for(int j = 0; j<c2.getRoutes().size();j++){
-			double dist = Tools.routeSqrEuDist(c1.getRoutes().get(i),c2.getRoutes().get(j));
+			double dist = Tools.routeSqrEuDist(c1.getRoutes().get(i),c2.getRoutes().get(j),SequiturModel.R);
 			if(dist<min){
 				min = dist;
 			}

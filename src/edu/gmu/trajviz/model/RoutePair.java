@@ -20,10 +20,10 @@ public class RoutePair implements Comparable<RoutePair> {
 		r2 = s2;
 		t1 = Tools.parseTrajId(r1);
 		t2 = Tools.parseTrajId(r2);
-		this.threshold = threshold;
+		//this.threshold = threshold;
 		
 		  
-		  if(t1[0]!=t2[0]){
+		  if(!Tools.isTrivialMatch(s1, s2)){
 		  if (t1[2]!=t2[2] )
 			throw new IllegalArgumentException(r1+" is not comparable with "+ r2+"          t1[2] = "+t1[2]+"   t2[2] = "+ t2[2]);
 		  length = t1[2];
@@ -38,7 +38,7 @@ public class RoutePair implements Comparable<RoutePair> {
 			  route2.addLocation(lat2, lon2);
 		  }
 		 // dist = Tools.closeRouteEuDist(route1, route2,threshold);
-		  dist = Tools.routeSqrEuDist(route1, route2);
+		  dist = Tools.routeSqrEuDist(route1, route2,SequiturModel.R);
 		  }
 		  else
 			  {
@@ -81,12 +81,7 @@ public class RoutePair implements Comparable<RoutePair> {
 	public String toString(){
 		return "distance ( "+r1+", "+r2+" ) = "+dist+"\n";
 	}
-	public boolean isTrivial(){
-		if(t1[0]==t2[0])
-			return true;
-		else
-			return false;
-	}
+	
 	
 	@Override
 	public int compareTo(RoutePair pair2) {

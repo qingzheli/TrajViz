@@ -195,7 +195,7 @@ public void merge(Cluster c2,double threshold,HashMap<String, Cluster> findClust
 	  //  if(Tools.closeRouteEuDist(route, this.repRoute, R)/(this.getSize()+1)<=Tools.closeRouteEuDist(route, c2.respRoute, R)/(c2.getSize()+1)){
 	 //   if(Tools.closeRouteEuDist(route, this.repRoute, R)<=Tools.closeRouteEuDist(route, c2.repRoute, R)){	
 	    //if(Tools.closeRouteEuDist(route, this.repRoute, threshold)<=threshold)
-	    if(Tools.routeSqrEuDist(route, this.repRoute)<=threshold)
+	    if(Tools.routeSqrEuDist(route, this.repRoute,SequiturModel.R)<=threshold)
 	    {	
   
 	    	int[] subTraj = Tools.parseTrajId(name);
@@ -230,7 +230,7 @@ public void merge(Cluster c2,double threshold,HashMap<String, Cluster> findClust
 		  //  if(Tools.closeRouteEuDist(route, c2.repRoute, R)/(c2.getSize()+1)<=Tools.closeRouteEuDist(route, this.repRoute, R)/(this.getSize()+1)){
 		 //   if(Tools.closeRouteEuDist(route, c2.repRoute, R)<=Tools.closeRouteEuDist(route, this.repRoute, R)){
 		//    if(Tools.closeRouteEuDist(route, c2.repRoute, threshold)<=threshold){
-		    if(Tools.routeSqrEuDist(route, this.repRoute)<=threshold){
+		    if(Tools.routeSqrEuDist(route, this.repRoute,SequiturModel.R)<=threshold){
 		    	int[] subTraj = Tools.parseTrajId(name);
 		    	c2.add(subTraj[0], subTraj[1]);
 		    	removeCandidate.add(name.toString());
