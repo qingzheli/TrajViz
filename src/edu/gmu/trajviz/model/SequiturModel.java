@@ -55,6 +55,7 @@ public class SequiturModel extends Observable {
 	/*
 	 * 
 	 */
+//	public static ArrayList<String> allTrueAnomalyString;
 	public static FileWriter frcsv;
 	public static FileWriter frhead;
 	public String dataset;
@@ -83,7 +84,7 @@ public class SequiturModel extends Observable {
 	public static HashMap<Integer, HashMap<String, Cluster>> clusterMaps;
 	public static int longest3Traj[];
 	public static double distCut;
-	public static ArrayList<ArrayList<Boolean>> isAnomaly,isLongAnomaly,isDiscord;
+	public static ArrayList<ArrayList<Boolean>> isAnomaly,isLongAnomaly,isDiscord, isTrueAnomaly;
 	public static double R;
 	public static double rs;
 	public static HashMap<String, HashSet<String>> motifMatches;
@@ -91,7 +92,7 @@ public class SequiturModel extends Observable {
 	public static int slidePoint;
 	public static int coverPoint;
 	public static HashMap<Integer, ArrayList<String>> anomalyMap;
-	public static ArrayList<String> allAnomalies, allDiscords,allTrueAnomalyString;
+	public static ArrayList<String> allAnomalies, allDiscords,allTrueAnomalyString, allResampledTrueAnomalyString;
 	public static Map<Integer, ArrayList<String>> sortedAnomalyMap;
 	/*
 	 * 
@@ -509,7 +510,7 @@ public class SequiturModel extends Observable {
 		   time = System.currentTimeMillis();
 		  oldtrajX = rawtrajX;
 		  oldtrajY = rawtrajY;
-		//  dummyResampling();
+	//	  dummyResampling();
 		  resampling();
 		//  oldtrajX = rawtrajX;
 		//  oldtrajY = rawtrajY;
@@ -581,6 +582,10 @@ public class SequiturModel extends Observable {
 		  System.out.println("getThresholdDiscordsEvaluation time: "+this.bruteForceTime);
 		 // DrawDiscordOnly();
 		  drawGroundTruth();
+		  System.out.println("distCut = "+distCut);
+		//	computeDummyConfusionMatrix();
+		  computeResampledConfusionMatrix();
+		  computeHitsGroundTruthConfusionMatrix();
 		  computePointConfusionMatrix();
 		  computeHitsConfusionMatrix();
 		  System.out.println("allAnomalies = "+allAnomalies);
@@ -591,184 +596,85 @@ public class SequiturModel extends Observable {
 		  System.out.println("Done!");
 		  setChanged();
 		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
-		  /*
-		  Comparator<String> expandedRuleComparator = new Comparator<String>(){
-			  @Override public int compare(String r1, String r2)
-			  {
-				  Integer iteration1 = 0;
-				  Integer iteration2 = 0;
-				  Integer rule1 = 0;
-				  Integer rule2 = 0;
-				  if (r1.charAt(0)=='I' )
-					{
-						if(r1.contains("r")){
-							int rIndex = r1.indexOf("r");
-							iteration1 = Integer.valueOf(r1.substring(1, rIndex));
-							rule1 = Integer.valueOf(r1.substring(rIndex+1));
-						//	System.out.println("r1: "+r1+" iteration: "+iteration1+" rule1: "+rule1);
-							
-					//		System.out.println(s+" = "+subRule );
-						}
-						else 
-							throw new IllegalArgumentException(r1+" is not comparable with "+ r2);
-					}
-				  else
-					 throw new IllegalArgumentException(r1+" is not comparable with "+ r2);
-				  if (r2.charAt(0)=='I' )
-					{
-						if(r2.contains("r")){
-							int rIndex = r2.indexOf("r");
-							iteration2 = Integer.valueOf(r2.substring(1, rIndex));
-							rule2 = Integer.valueOf(r2.substring(rIndex+1));
-						//	System.out.println("r2: "+r2+" iteration2: "+iteration2+" rule2: "+rule2);
-							
-					//		System.out.println(s+" = "+subRule );
-							
-						}
-						else 
-							throw new IllegalArgumentException(r1+" is not comparable with "+ r2);
-					}
-				  else
-					  new IllegalArgumentException(r1+" is not comparable with "+ r2);
-			
-				  if(allRules.get(iteration2).get(rule2).getActualRuleYield() > allRules.get(iteration1).get(rule1).getActualRuleYield())
-						  return 1;
-				 
-				  else 
-					  return -1;
-				   
-			  }
-		  };
-
-		  SequiturModel.sortedRuleMap = new TreeMap<String, GrammarRuleRecord>(expandedRuleComparator);
-		  
-		  hasNewCluster = true;
-		  StringBuffer sb = new StringBuffer();
-		  if (null == this.latOri ||null == this.lonOri|| this.latOri.size()==0 || this.lonOri.size()==0 ){
-			  this.log("unable to \"Process data\" - no data were loaded...");
-		  }
-		  else{
-			  consoleLogger.info("setting up GI with params: ");
-			  sb.append(" algorithm: Sequitur");
-			  sb.append(" MinLink: ").append(minLink);
-			  sb.append(" Alphabet size: ").append(alphabetSize);
-			  sb.append(" Minimal Continuous Blocks: ").append(minBlocks);
-			  sb.append(" Noise Cancellation Threshold: ").append(noiseThreshold);
-			  consoleLogger.info(sb.toString());
-			 
-			 
-			  this.log(sb.toString());
-		  }
-		  rawAllIntervals = new ArrayList<RuleInterval>();
-		  long beginTime = System.currentTimeMillis();
-			 // beginTime  =  System.nanoTime();
-			  System.out.println("begin time: "+beginTime);
-		  buildModel();
-		 
-		 
-		  
-		  drawRawTrajectories();
-		  
-		  allDiscordDistances = new HashMap<String,Double>();
-		  TrajDiscords.getAllDiscords();
-		  
-		  
-          allMapToPreviousR0.add(mapToPreviousR0);
-          
-          
-		//  runSequitur();
 		
-		  
-          
-            
-          //     replace rules with rules' ids and clusters' ids
-            
-           
-		  
-		  
-          iteration = 0;
-          
-        /*  System.out.println("before:");
-          for (int d = 0; d<words.size(); d++)
-        	  System.out.print(words.get(d)+ " ");
-          System.out.println();
-          */
-          
-          /*
-           * run the algorithm
-           */
-         /*
-          while(hasNewCluster){
-        	  
-	  		  int lastIteration = iteration;
-	  		  hasNewCluster = false;
-	  		
-        	  System.out.println("Iteration: "+iteration);
-        	  
-        //  if(hasNewCluster)
-        	  
-        	  runSequitur(iteration);
-        	  iteration = iteration + 1;
-        	 // this.minLink = this.minLink*2;
-        	  //this.minLink = minLink*(iteration+1);
-        	  this.isLastIteration = true;
-        	   drawOnMap();
-           	System.out.println("total anomalies: "+anomalyRoutes.size());
-
-      }
-      
-          
-          this.isLastIteration = true;
-         
-       //   drawOnMap();
-          
-        //  drawOnMap();
-         //	System.out.println("total anomalies: "+anomalyRoutes.size());
-	  
-	  //end while
-		  
-         
-		  System.out.println("Sorted Map.size = "+ sortedRuleMap.size()+ "sortedCounter = "+sortedCounter);
-	
-	//	  AnomalyDetection();
-  
-		  
-		  
-		  
-		  this.log("processed data, painting on map");
-		  consoleLogger.info("process finished");
-		  setChanged();
-
-		
-		 
-
-
-		
-		 
-		  this.accumulatDistance = sortByValue(this.accumulatDistance);
-		  int rank =1;
-		  
-		  for(Map.Entry<Integer, Double> entry: this.accumulatDistance.entrySet()){
-			  int trajId = 0-entry.getKey()-1000;
-			  int rankInDiscord = TrajDiscords.allDiscords.get(16).findDiscordByTrajId(trajId);
-			  System.out.println("Rank in anomaly: " + rank+" Rank in discords: "+ rankInDiscord + " Trajctory: "+trajId +" Accumulated anomaly distance = "+entry.getValue());
-			  rank++;
-		  }
-		  
-
-		  System.out.println("running time: "+runTime);
-		  System.out.println("finalInteravals: "+finalIntervals.size());
-		  ArrayList<Integer> frequency = new ArrayList<Integer>();
-		 */ 	
-
-		  /*
-		  for (int i=0;i<ruleIntervals.size();i++)
-			  frequency.add(ruleIntervals.get(i).size());
-			  
-		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, this.chartData, ruleIntervals));///, mapToOriginRules));//, frequency ));
-		  */
-	  //evaluateResult();
 	  }
+	  private void computeHitsGroundTruthConfusionMatrix() {
+		  	setTrueAnomalyString();
+			int tt1 = 0; //  # of discords hit by anomaly
+			int tt2 = 0;//   # of anomalies hit by discord
+			int tf = 0;
+			int ft = 0;
+			int ff = 0;
+			for(int i = 0; i<allResampledTrueAnomalyString.size(); i++ ){
+				String trueAnomalyString = allResampledTrueAnomalyString.get(i);
+				boolean hited = false;
+				for(int j = 0; j<allAnomalies.size();j++){
+					ArrayList<String> anomaly = new ArrayList<String>();
+					String  a = allAnomalies.get(j);
+					anomaly.add(a);
+					
+					while(j<allAnomalies.size()-1&&Tools.parseTrajId(allAnomalies.get(j+1))[0]==Tools.parseTrajId(a)[0]){
+						j++;
+					anomaly.add(allAnomalies.get(j));
+					}
+					if(isHit(anomaly,trueAnomalyString))
+						{	
+			//				System.out.println(anomaly+" hits discord "+discord);
+							tt1++;
+							hited = true;
+							break;
+						}
+				}
+				if(!hited)
+					{
+			//		System.out.println(" failed discord: "+discord);	
+					tf++;
+					}
+			}
+			for(int i = 0; i<allAnomalies.size(); i++ ){
+				String anomaly = allAnomalies.get(i);
+				boolean hited = false;
+				for(int j = 0; j<allResampledTrueAnomalyString.size();j++){
+					ArrayList<String> discord = new ArrayList<String>();
+					String  d = allResampledTrueAnomalyString.get(j);
+					discord.add(d);
+					while(j<allResampledTrueAnomalyString.size()-1&&Tools.parseTrajId(allResampledTrueAnomalyString.get(j+1))[0]==Tools.parseTrajId(d)[0]){
+						j++;
+					discord.add(allResampledTrueAnomalyString.get(j));
+					}
+					if(isHit(discord,anomaly))
+						{
+				//			System.out.println(discord+" hits "+anomaly);
+							tt1++;
+							hited = true;
+							break;
+						}
+				}
+				if(!hited&&Tools.parseTrajId(anomaly)[2]>minBlocks)
+					{
+			//		System.out.println(" failed anomaly: "+anomaly);
+						ft++;
+					}
+			}
+			double tt = (tt1+tt2)/2.0;
+			double precision = tt/(tt+ft);
+			double recall = tt/(tt+tf);
+			double f1 = 2*tt/(2*tt+tf+ft);
+			double fmeasure = 2* (precision*recall)/(precision+recall);
+			this.heuristicF1Overlap = f1;
+			
+			System.out.println("Resampled Hits Confusion Matris:");
+			System.out.println("D/A\t True\t False");
+			System.out.println("T\t"+tt+"\t"+tf);
+			System.out.println("F\t"+ft+"\t"+ff);
+			System.out.println("precision = "+precision );
+			System.out.println("recall = "+recall );
+			System.out.println("f1 = "+f1 );
+			System.out.println("fmeasure = "+fmeasure );
+			
+				
+			}
+
 private void computeHitsConfusionMatrix() {
 	int tt1 = 0; //  # of discords hit by anomaly
 	int tt2 = 0;//   # of anomalies hit by discord
@@ -896,7 +802,80 @@ private boolean isHit(ArrayList<String> x, String y) {
 	*/
 	
 }
-
+private void computeDummyConfusionMatrix(){
+	int tt = 0;
+	int tf = 0;
+	int ft = 0;
+	int ff = 0;
+	for(int traj = 0; traj<isLongAnomaly.size(); traj++){
+		System.out.println(traj +" : "+isLongAnomaly.get(traj));
+		for(int s = 0; s<isLongAnomaly.get(traj).size();s++){
+			boolean isdiscord = (anomalyGroundTruth.get(traj).get(s)==1);
+			boolean isanomaly = isLongAnomaly.get(traj).get(s);
+			
+			if(isdiscord==true&&isanomaly==true)
+				tt++;
+			if(isdiscord==true&&isanomaly==false)
+				tf++;
+			if(isdiscord==false&&isanomaly==true)
+				ft++;
+			if(isdiscord==false&&isanomaly==false)
+				ff++;
+		}
+	}
+	System.out.println("Dummy Confusion Matrix:");
+	System.out.println("D/A\t True\t False");
+	System.out.println("T\t"+tt+"\t"+tf);
+	System.out.println("F\t"+ft+"\t"+ff);
+	double accuracy = ((double)tt+ff)/(tt+ff+tf+ft);
+	double precision = (double)tt/(tt+ft);
+	double recall = (double)tt/(tt+tf);
+	double f1 = 2*(double)tt/(2*tt+tf+ft);
+	double fmeasure = 2* (precision*recall)/(precision+recall);
+	this.heuristicF1Point = f1;
+	System.out.println("accuracy = "+accuracy );
+	System.out.println("precision = "+precision );
+	System.out.println("recall = "+recall );
+	System.out.println("f1 = "+f1 );
+	System.out.println("fmeasure = "+fmeasure );
+}
+private void computeResampledConfusionMatrix(){
+	int tt = 0;
+	int tf = 0;
+	int ft = 0;
+	int ff = 0;
+	for(int traj = 0; traj<isLongAnomaly.size(); traj++){
+		System.out.println(traj +" : "+isLongAnomaly.get(traj));
+		for(int s = 0; s<isLongAnomaly.get(traj).size();s++){
+			boolean istrueanomaly = isTrueAnomaly.get(traj).get(s);
+			boolean isanomaly = isLongAnomaly.get(traj).get(s);
+			
+			if(istrueanomaly==true&&isanomaly==true)
+				tt++;
+			if(istrueanomaly==true&&isanomaly==false)
+				tf++;
+			if(istrueanomaly==false&&isanomaly==true)
+				ft++;
+			if(istrueanomaly==false&&isanomaly==false)
+				ff++;
+		}
+	}
+	System.out.println("Resampled Anomaly Confusion Matrix:");
+	System.out.println("D/A\t True\t False");
+	System.out.println("T\t"+tt+"\t"+tf);
+	System.out.println("F\t"+ft+"\t"+ff);
+	double accuracy = ((double)tt+ff)/(tt+ff+tf+ft);
+	double precision = (double)tt/(tt+ft);
+	double recall = (double)tt/(tt+tf);
+	double f1 = 2*(double)tt/(2*tt+tf+ft);
+	double fmeasure = 2* (precision*recall)/(precision+recall);
+	this.heuristicF1Point = f1;
+	System.out.println("accuracy = "+accuracy );
+	System.out.println("precision = "+precision );
+	System.out.println("recall = "+recall );
+	System.out.println("f1 = "+f1 );
+	System.out.println("fmeasure = "+fmeasure );
+}
 private void computePointConfusionMatrix() {
 	int tt = 0;
 	int tf = 0;
@@ -1206,6 +1185,63 @@ private void findAllMotifSax(){
 		  }
 	  }
 }	
+	
+	//helper method to set allTrueAnomalyString according to is TrueAnomaly;
+	public static void setTrueAnomalyString()	
+	{
+		allResampledTrueAnomalyString = new ArrayList<String>();
+	for(int traj = 0; traj<isTrueAnomaly.size();traj++){
+		
+		  int pos = 0;
+		  int endPos = 0;
+		  int startPos = pos;
+		  while(pos<isTrueAnomaly.get(traj).size()){
+			  if(isTrueAnomaly.get(traj).get(pos))    // is the start position of anomaly
+			  {
+				  startPos = pos;
+				  int prePos =pos;
+				  Route singleDiscord = new Route();
+				  double x = oldtrajX.get(traj).get(pos);
+				  double y = oldtrajY.get(traj).get(pos);
+				  singleDiscord.addLocation(x, y);
+				  pos++;
+				  while(pos<isTrueAnomaly.get(traj).size()&&isTrueAnomaly.get(traj).get(pos)){
+					 /*
+					  if(euDist(oldtrajX.get(traj).get(pos),oldtrajY.get(traj).get(pos),x,y)>distCut*10){
+						  System.out.println(rawtrajX.get(traj));
+						  System.out.println(oldtrajX.get(traj));
+						  System.out.println(rawtrajY.get(traj));
+						  System.out.println(oldtrajY.get(traj));
+						  
+						  throw new IllegalArgumentException("traj = "+traj+"    pos = "+ pos+"    dist = "+euDist(oldtrajX.get(traj).get(pos),oldtrajY.get(traj).get(pos),x,y)+"prevous pos/distCut: "+distCut);
+					  }
+					  */
+					  x =  oldtrajX.get(traj).get(pos);
+					  y = oldtrajY.get(traj).get(pos);
+					  singleDiscord.addLocation(x, y);
+					  
+					  prePos = pos;
+					  pos++;
+				  }
+				 
+				  if(singleDiscord.getLats().size()>=3)//(int)(minBlocks*SequiturModel.minLink))
+				  {
+					  
+					  Integer l = singleDiscord.getLats().size();
+				  String resampledTrueAnomalyString = "T"+traj+"S"+startPos+"L"+l;
+				  	  allResampledTrueAnomalyString.add(resampledTrueAnomalyString);
+//					  allDiscords.add(DiscordString);
+//					  discordRoutes.add(singleDiscord);
+					  
+					  
+			//		  System.out.println("Anomalous Trajectory: "+traj+"-"+startPos+"-"+pos);
+				  }
+			  }
+			  else
+				  pos++;
+		  }
+	  }
+}
 public static void DrawDiscordOnly()	
 	{
 	for(int traj = 0; traj<isDiscord.size();traj++){
@@ -1297,9 +1333,11 @@ public static void DrawDiscordOnly()
 						  if(singleAnomaly.getLats().size()>=3)//(int)(minBlocks*SequiturModel.minLink))
 						  {
 							  Integer l = singleAnomaly.getLats().size();
+							  System.out.println("DEBUG::::::::::::::: l = "+l);
 							  for(int i = 0; i<l;i++){
 								  isLongAnomaly.get(traj).set(prePos-i, true);
 							  }
+						//	  System.out.println("DEBUG: isLongAnomalySetTrue!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
 							//  if(l>=minBlocks*0.5)
 								  anomalyRoutes.add(singleAnomaly);
 							  String anomalyString = "T"+traj+"S"+startPos+"L"+l;
@@ -2154,7 +2192,7 @@ private void paa2saxseqs() {
 			}
 			
 			
-			System.out.println("distCut = "+distCut);
+			
 			/*
 			for(int j = 0; j<oldtrajX.size(); j++)
 			  {
@@ -2176,6 +2214,7 @@ private void paa2saxseqs() {
 		  travelDistance = new ArrayList<Double>();
 		  isAnomaly = new ArrayList<ArrayList<Boolean>>();
 		  isLongAnomaly = new ArrayList<ArrayList<Boolean>>();
+		  isTrueAnomaly = new ArrayList<ArrayList<Boolean>>();
 		  isDiscord = new ArrayList<ArrayList<Boolean>>();
 		  allTimeline = new ArrayList<ArrayList<Double>>();
 		  ArrayList<ArrayList<Double>> rawTimeResample = new ArrayList<ArrayList<Double>>(); //  present reTime in ArrayList
@@ -2232,17 +2271,34 @@ private void paa2saxseqs() {
 				oldtrajX.add(new ArrayList<Double>());
 				oldtrajY.add(new ArrayList<Double>());
 				isAnomaly.add(new ArrayList<Boolean>());
+				isTrueAnomaly.add(new ArrayList<Boolean>());
 				isLongAnomaly.add(new ArrayList<Boolean>());
 				isDiscord.add(new ArrayList<Boolean>());
 				int j = oldtrajX.size()-1;
 				oldtrajX.get(j).add(rawtrajX.get(i).get(0));
 				oldtrajY.get(j).add(rawtrajY.get(i).get(0));
+			boolean currentIsAnomaly;	
+			if(anomalyGroundTruth.get(j).get(0)==0){
+				currentIsAnomaly = false;
+				isTrueAnomaly.get(j).add(false);
+			}
+			else{
+				currentIsAnomaly = true;
+				isTrueAnomaly.get(j).add(true);
+			}
 				double time = 0;
 				int index = 1;
 				timeResample.get(j).add(time);
 	//			System.out.println("i===================================================================================="+i);
 				while(time<rawTimeResample.get(i).get(rawTimeResample.get(i).size()-1)){
-					
+					if(anomalyGroundTruth.get(j).get(index-1)==0){
+						currentIsAnomaly = false;
+						
+					}
+					else{
+						currentIsAnomaly = true;
+						
+					}
 					while(time<=rawTimeResample.get(i).get(index)){
 						
 						if(time+distCut<=rawTimeResample.get(i).get(index)){
@@ -2271,6 +2327,7 @@ private void paa2saxseqs() {
 
 						oldtrajX.get(j).add(latitude);
 						oldtrajY.get(j).add(longitude);
+						isTrueAnomaly.get(j).add(currentIsAnomaly);
 						}
 						else 
 							{
@@ -2279,6 +2336,7 @@ private void paa2saxseqs() {
 								timeResample.get(j).add(time);
 								oldtrajX.get(j).add(rawtrajX.get(i).get(index));
 								oldtrajY.get(j).add(rawtrajY.get(i).get(index));
+								isTrueAnomaly.get(j).add(currentIsAnomaly);
 							//	break;
 							}
 					//	timeLine.add(time);
