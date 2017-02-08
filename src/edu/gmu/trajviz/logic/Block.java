@@ -1,6 +1,7 @@
 package edu.gmu.trajviz.logic;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.PriorityQueue;
 import java.util.Stack;
@@ -114,16 +115,63 @@ public class Block {
 				//	 int[] sub2 = Tools.parseTrajId(subseq2);
 				//	 if(sub1[0]!=sub2[0]){
 					 if(!Tools.isTrivialMatch(subseq1, subseq2)){					 
-						 RoutePair pair = new RoutePair(subseq1,subseq2,r);
+						 RoutePair pair = new RoutePair(subseq1,subseq2);
+					 
+					if(pair.dist<r){
 						
-						 if(pair.dist<=r){
-							
+						 if(residualSet.contains(subseq1))
+							 {
+							// SequiturModel.count_works++;
+						//	 System.out.println("before remove residualSet = "+residualSet);
 							 residualSet.remove(subseq1);
-							 residualSet.remove(subseq2);
+						//	 System.out.println("after remove residualSet = "+residualSet);
 							 setisAnomalyFalse(subseq1);
-							 setisAnomalyFalse(subseq2);
+							 }
+						 else
+							;//	SequiturModel.not_works++;
+						 if(residualSet.contains(subseq2))
+							 {
+							 //	SequiturModel.count_works++;
+							 	residualSet.remove(subseq2);
+							 	setisAnomalyFalse(subseq2);
+							 }
+							 else
+									;//SequiturModel.not_works++;
+						 
+						 
+						 
+						 
+						 
+						 
+						 
+						 
+						 pair = nextPair(pair);
+						 pair = nextExistResidualPair(pair);
+					 
+						 while(pair!=null&&pair.dist<=r){
+						
+							
+							if( blocks.findBlockById(SequiturModel.subSeqBlockMap.get(pair.r1)).residualSet.remove(pair.r1))
+								SequiturModel.count_works++;
+							else
+								SequiturModel.not_works++;
+							if( blocks.findBlockById(SequiturModel.subSeqBlockMap.get(pair.r2)).residualSet.remove(pair.r2))
+								SequiturModel.count_works++;
+							else
+								SequiturModel.not_works++;
+							
+							
+							 setisAnomalyFalse(pair.r1);
+							 setisAnomalyFalse(pair.r2);
+							 pair = nextPair(pair);
+							 
+							 pair = nextExistResidualPair(pair);
+							 
 							 
 						 }
+						break; 
+					  }
+					  
 				 }
 				 
 				 }
@@ -149,6 +197,57 @@ public class Block {
 		 */
 		}
 	}
+	/*
+	 *  // check if next one has eliminated from residual set
+	 *  if both in the pair is eliminated advance to next pair with at least one in the residual set. 
+	 */
+	private RoutePair nextExistResidualPair(RoutePair pair) {
+		if(pair==null)
+			return null;
+		int length = pair.length;
+		
+		int i1 = pair.t1[1];
+		int i2 = pair.t2[1];
+		if(!SequiturModel.isAnomaly.get(pair.t1[0]).get(i1)&&!SequiturModel.isAnomaly.get(pair.t2[0]).get(i2)){
+		while(!SequiturModel.isAnomaly.get(pair.t1[0]).get(i1)&&!SequiturModel.isAnomaly.get(pair.t2[0]).get(i2))
+		{
+			
+				i1++;
+				i2++;
+				if(i1+length>=SequiturModel.isAnomaly.get(pair.t1[0]).size()||i2+length>=SequiturModel.isAnomaly.get(pair.t2[0]).size())
+					return null;
+		}
+		
+		int[] t1 = {pair.t1[0],i1,length};
+		int[] t2 = {pair.t2[0],i2,length};
+		RoutePair next = new RoutePair(t1,t2);
+		return next;
+		}
+		else
+			return pair;
+	}
+	private RoutePair nextPair(RoutePair pair) {
+		if(pair==null){
+			return null;
+		}
+		if(pair.hasNextPair()){
+			int[] n1 = {pair.t1[0],pair.t1[1]+1,pair.t1[2]};
+			int[] n2 = {pair.t2[0],pair.t2[1]+1,pair.t2[2]};
+		
+		
+	//	System.out.println("n1 = "+Arrays.toString(n1));
+	//	System.out.println("n2 = "+Arrays.toString(n2));
+		double xhead = SequiturModel.oldtrajX.get(pair.t1[0]).get(pair.t1[1])-SequiturModel.oldtrajX.get(pair.t2[0]).get(pair.t2[1]);
+		double yhead = SequiturModel.oldtrajY.get(pair.t1[0]).get(pair.t1[1])-SequiturModel.oldtrajY.get(pair.t2[0]).get(pair.t2[1]);
+		double xtail = SequiturModel.oldtrajX.get(n1[0]).get(n1[1]+n1[2])-SequiturModel.oldtrajX.get(n2[0]).get(n2[1]+n2[2]);
+		double ytail = SequiturModel.oldtrajY.get(n1[0]).get(n1[1]+n1[2])-SequiturModel.oldtrajY.get(n2[0]).get(n2[1]+n2[2]);
+		double dist = pair.dist-(xhead*xhead+yhead*yhead)+(xtail*xtail+ytail*ytail);
+		RoutePair next = new RoutePair(n1,n2,dist);
+		return next;
+		}
+		else
+			return null;
+	}
 	public void checkNearby(){
 		double r = SequiturModel.R;
 		 for(int index = 0; index<nearbyBlocks.size()&&residualSet.size()>0;index++){
@@ -163,7 +262,7 @@ public class Block {
 				//		 int[] sub2 = Tools.parseTrajId(subseq2);
 			//			 if(sub1[0]!=sub2[0]){
 						 if(!Tools.isTrivialMatch(subseq1, subseq2)){					 
-							 RoutePair pair = new RoutePair(subseq1,subseq2,r);
+							 RoutePair pair = new RoutePair(subseq1,subseq2);
 							
 							 if(pair.dist<=r){
 								
@@ -172,7 +271,7 @@ public class Block {
 								 removeCandidates.push(j);
 								 setisAnomalyFalse(subseq1);
 								 setisAnomalyFalse(subseq2);
-								 SequiturModel.count_works = SequiturModel.count_works+1;
+								// SequiturModel.count_works = SequiturModel.count_works+1;
 							 }
 					 }
 						 
@@ -324,7 +423,7 @@ public class Block {
 					  
 					  String subseq2 = SequiturModel.allSubseq.get(id).get(j);
 					  if(Tools.parseTrajId(subseq1)[0]!=Tools.parseTrajId(subseq2)[0]){
-					  RoutePair pair = new RoutePair(subseq1,subseq2,r);
+					  RoutePair pair = new RoutePair(subseq1,subseq2);
 					  if(pair.dist<=r){
 					 // if(!pair.isTrivial&&pair.dist<=R){
 					//	  System.out.println(R +" Pair: "+pair);
@@ -416,6 +515,7 @@ public class Block {
 		//		System.out.println("set_center_subseqId = "+subseqId);
 				SequiturModel.allSubseq.get(id).add(subseqId);
 				residualSet.add(subseqId);
+				SequiturModel.subSeqBlockMap.put(subseqId, id);
 			}
 		}
 	

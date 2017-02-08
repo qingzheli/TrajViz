@@ -336,7 +336,7 @@ public class SequiturView implements Observer, ActionListener{
 		    minBlocksLabel = new JLabel("Minimal Continous Blocks:");
 		    minBlocksField = new JTextField(String.valueOf(this.controller.getSession().getMinBlocks()));
 		    
-		    noiseThresholdLabel = new JLabel("Noise Cancelation Threshold:");
+		    noiseThresholdLabel = new JLabel("Resampling Rate:");
 		    noiseThresholdField = new JTextField(String.valueOf(this.controller.getSession().getNoisePointThreshold()));
 
 

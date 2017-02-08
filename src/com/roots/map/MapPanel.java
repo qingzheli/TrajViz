@@ -267,7 +267,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
           setLayout(new MapLayout());
           setOpaque(true);
           setBackground(new Color(0xc0, 0xc0, 0xc0));
-       //   add(overlayPanel);
+      //    add(overlayPanel);
           add(controlPanel);
         addMouseListener(mouseListener);
         addMouseMotionListener(mouseListener);

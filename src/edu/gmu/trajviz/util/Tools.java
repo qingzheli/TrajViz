@@ -47,7 +47,7 @@ public class Tools {
 		for(int i = 0; i<r1.getLats().size(); i++){
 			if(dist>r)
 				{
-					dist = Double.MAX_VALUE;
+					dist = r+r;
 		//			System.out.println("pruning power============== "+(0.0+i)/r1.getLats().size());
 					return dist;
 				}

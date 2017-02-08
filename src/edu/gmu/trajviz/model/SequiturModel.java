@@ -56,7 +56,7 @@ public class SequiturModel extends Observable {
 	 * 
 	 */
 //	public static ArrayList<String> allTrueAnomalyString;
-	public static int count_works = 0; 
+	public static int count_works,not_works;  
 	public static FileWriter frcsv;
 	public static FileWriter frhead;
 	public String dataset;
@@ -64,9 +64,9 @@ public class SequiturModel extends Observable {
 	public double heuristicF1Overlap;
 	public long bruteForceTime;
 	public long heuristicTime;
-	public static final Double OVERLAP_DEGREE = 0.8;
+	public static final Double OVERLAP_DEGREE = 0.3;
 	private static final int STEP = 2;
-	private static final int DEFAULT_TIME_GAP = 6;//180;
+	private static final int DEFAULT_TIME_GAP = 3;//180;
 //	private static final int DEFAULT_TIME_GAP = 180;
 //	private static final int DEFAULT_TIME_GAP = 3;
 	public static int top1EuDistanceCalled;
@@ -129,7 +129,7 @@ public class SequiturModel extends Observable {
 //	private static final int NOISYELIMINATIONTHRESHOLD = 5;
 	public static int alphabetSize;
 	public static double minLink;
-	private int noiseThreshold;
+	private static int resolution;
 	private static GrammarRules rules;
 	public static HashMap<String, ArrayList<String>> allPostions;
 	public static ArrayList<GrammarRules> allRules;
@@ -205,6 +205,7 @@ public class SequiturModel extends Observable {
 	public static int minBlocks; 
 	private static Logger consoleLogger;
 	private Map<Integer, Double> accumulatDistance;
+	public static HashMap<String, Integer> subSeqBlockMap;
 	public static HashMap<String,Double> allDiscordDistances;
 	  private static Level LOGGING_LEVEL = Level.DEBUG;
 	public static ArrayList<Double> travelDistance;
@@ -447,14 +448,81 @@ public class SequiturModel extends Observable {
 	  
 	  
 	  public synchronized void processData(double minLink, int alphabetSize, int minBlocks, int noiseThreshold)throws IOException{
+		  this.resolution = noiseThreshold;
+		  initializeVariables();
+		  
+		  String head = "MinLink, AlphabetSize,MinBlock,ResampleRate, HeuristicF1Point, HeuristicF1Overlap, HeuristicTime, BruteForceTime\n";
+		  frhead.append(head);
+		//  this.currentClusters = new HashMap<String,Cluster>();
+		  this.lat = new ArrayList<Double>();
+		  this.lon = new ArrayList<Double>();
+		  StringBuffer sb = new StringBuffer();
+		  if (null == this.latOri ||null == this.lonOri|| this.latOri.size()==0 || this.lonOri.size()==0 ){
+			  this.log("unable to \"Process data\" - no data were loaded...");
+		  }
+		  else{
+			  consoleLogger.info("setting up GI with params: ");
+			  sb.append(" algorithm: Sequitur");
+			  sb.append(" MinLink: ").append(minLink);
+			  sb.append(" Alphabet size: ").append(alphabetSize);
+			  sb.append(" Minimal Continuous Blocks: ").append(minBlocks);
+			  sb.append(" Noise Cancellation Threshold: ").append(noiseThreshold);
+			  consoleLogger.info(sb.toString());
+			 
+			 
+			  this.log(sb.toString());
+		  }
+		  buildModel();
+		  runSequitur();
+		  long time = System.currentTimeMillis()/1000;
+		  System.out.println("distCut = "+distCut);
+			double r = SequiturModel.distCut*minBlocks*minLink;
+			System.out.println("r================="+r);
+			  SequiturModel.R = r*r;  	
+		  int minLength = minBlocks;
+		  int maxLength = minLength;
+		 
+		  System.out.println("Dataset = "+this.fileNameOnly);
+		  System.out.println("MinLink = "+minLink+", AlphabetSize = "+this.alphabetSize+", slidingWindow = "+this.minBlocks+ ", resampling rate = "+this.resolution);
+		  System.out.println("findAllMotif time: "+this.heuristicTime);  
+		  System.out.println("drawMotifsax time: "+(System.currentTimeMillis()-time));
+		  
+
+		//  System.out.println("R = "+SequiturModel.R);
+		  time = System.currentTimeMillis();
+		//  TrajDiscords.getThresholdDiscordsEvaluation((int)(minBlocks));
+		  this.bruteForceTime = (System.currentTimeMillis()-time);
+		  System.out.println("getThresholdDiscordsEvaluation time: "+this.bruteForceTime);
+		  System.out.println("distCut = "+distCut);
+		//	computeDummyConfusionMatrix();
+		  computeResampledConfusionMatrix();
+		  computeHitsGroundTruthConfusionMatrix();
+		  computePointConfusionMatrix();
+		  computeHitsConfusionMatrix();
+		  System.out.println("allAnomalies = "+allAnomalies);
+		  System.out.println("allDiscords  = "+allDiscords);
+		  frcsv.append(this.minLink+","+this.alphabetSize+","+this.minBlocks+","+this.resolution+","+this.heuristicF1Overlap+","+this.heuristicF1Point+","+this.heuristicTime+","+this.bruteForceTime);
+		  frcsv.close();
+		  frhead.close();
+		  System.out.println("Count works = "+count_works);
+		  System.out.println("Not works = "+not_works);
+		  System.out.println("Done!");
+		  setChanged();
+		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
+		
+	  }
+	  private void initializeVariables() throws IOException {
 		  sortedCounter = 0;
+		  count_works = 0;
+		  not_works = 0;
+		  subSeqBlockMap = new HashMap<String, Integer>();
 		  this.allTrajClusters = new HashMap<Integer, ArrayList<Cluster>>();
 		  this.allMotifs = new HashMap<Integer, ArrayList<Cluster>>();
 		  this.reTime = new ArrayList<Double>();
 		  this.isLastIteration = false;
 		  this.minLink = minLink;
 		  this.minBlocks = minBlocks;
-		  this.noiseThreshold = noiseThreshold;
+		  
 		  this.alphabetSize = alphabetSize;
 		  this.allRules = new ArrayList<GrammarRules>();
 		  this.allFilters = new ArrayList<ArrayList<Integer>>();
@@ -482,129 +550,9 @@ public class SequiturModel extends Observable {
 		  this.heuristicTime = 0;
 		  
 		  
-		  String head = "MinLink, AlphabetSize,MinBlock,ResampleRate, HeuristicF1Point, HeuristicF1Overlap, HeuristicTime, BruteForceTime\n";
-		  frhead.append(head);
-		//  this.currentClusters = new HashMap<String,Cluster>();
-		  this.lat = new ArrayList<Double>();
-		  this.lon = new ArrayList<Double>();
-		  StringBuffer sb = new StringBuffer();
-		  if (null == this.latOri ||null == this.lonOri|| this.latOri.size()==0 || this.lonOri.size()==0 ){
-			  this.log("unable to \"Process data\" - no data were loaded...");
-		  }
-		  else{
-			  consoleLogger.info("setting up GI with params: ");
-			  sb.append(" algorithm: Sequitur");
-			  sb.append(" MinLink: ").append(minLink);
-			  sb.append(" Alphabet size: ").append(alphabetSize);
-			  sb.append(" Minimal Continuous Blocks: ").append(minBlocks);
-			  sb.append(" Noise Cancellation Threshold: ").append(noiseThreshold);
-			  consoleLogger.info(sb.toString());
-			 
-			 
-			  this.log(sb.toString());
-		  }
-	//	  buildModel();
-		//  drawRawTrajectories();
-		  long time = System.currentTimeMillis()/1000;
-		  leftPanelRaw();
-		  System.out.println("leftPanelRaw time: "+(System.currentTimeMillis()/1000-time));
-		   time = System.currentTimeMillis();
-		  oldtrajX = rawtrajX;
-		  oldtrajY = rawtrajY;
-	//	  dummyResampling();
-		  resampling();
-		  System.out.println("distCut = "+distCut);
-			double r = SequiturModel.distCut*minBlocks*minLink;
-			System.out.println("r================="+r);
-			  SequiturModel.R = r*r;  
-		//  oldtrajX = rawtrajX;
-		//  oldtrajY = rawtrajY;
-		  System.out.println("resampling time: "+(System.currentTimeMillis()-time));
-	
-		 // buildModel();
-		  int minLength = minBlocks;
-		  int maxLength = minLength;
-		//  int maxLength= longest3Traj[2];
-		  
-		 
-		//  rs = R*R;
-		//  int maxLength = minLength;
-		//  System.out.println(longest3Traj[2]);
-		//  System.out.println("minLength:maxLength = "+minLength+":"+maxLength);
-		
-		  time = System.currentTimeMillis();
-		  
-		  findAllMotifSax();
-		  this.heuristicTime = System.currentTimeMillis()-time;
+	}
 
-		  System.out.println("Dataset = "+this.fileNameOnly);
-		  System.out.println("MinLink = "+minLink+", AlphabetSize = "+this.alphabetSize+", slidingWindow = "+this.minBlocks+ ", resampling rate = "+this.noiseThreshold);
-		  System.out.println("findAllMotif time: "+this.heuristicTime);
-		   
-		 
-		//  findMotifs(minLength,maxLength);
-		//  findBestMotifs(minLength,maxLength);
-		//  findHierarchicalMotifs(minLength, maxLength);
-		//  findAllMotifs(minLength,maxLength);
-		//  drawMotifs(minLength,maxLength);
-		  time = System.currentTimeMillis();
-		  
-		 // drawMotifsax();
-		  drawAnomalyOnly();
-		  System.out.println("drawMotifsax time: "+(System.currentTimeMillis()-time));
-		  
-		  
-		/*  
-		  sortedAnomalyMap = new TreeMap<Integer, ArrayList<String>>(Collections.reverseOrder());
-		  Iterator it = anomalyMap.entrySet().iterator();
-		
-		  while(it.hasNext()){
-			  Entry<Integer,ArrayList<String>> entry = (Entry<Integer, ArrayList<String>>) it.next();
-			  sortedAnomalyMap.put(entry.getKey(), entry.getValue());
-		  }
-		  
-		  
-	//	  System.out.println("allMotifs.size = "+allMotifs.size());
-//		  System.out.println("AnomalyMap = "+anomalyMap);
-	//	  System.out.println("SortedAnomalyMap = "+sortedAnomalyMap);
-		  
-		  it = sortedAnomalyMap.entrySet().iterator();
-		  while(it.hasNext()){
-			  Entry<Integer,ArrayList<String>> entry = (Entry<Integer, ArrayList<String>>) it.next();
-			  System.out.println(entry.getKey()+","+entry.getValue());
-		  }
-		  */
-		//  System.out.println("silcoefMap: "+Evaluation.silCoefMap(allMotifs));
-	//	  findTop1Motifs(minLength,maxLength);
-		  // evaluation silcoef 2016Apr
-		  
-		//  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
-		// TrajDiscords.getDiscordsEvaluation();
-		//  System.out.println("R = "+SequiturModel.R);
-		  time = System.currentTimeMillis();
-		//  TrajDiscords.getThresholdDiscordsEvaluation((int)(minBlocks));
-		  this.bruteForceTime = (System.currentTimeMillis()-time);
-		  System.out.println("getThresholdDiscordsEvaluation time: "+this.bruteForceTime);
-		 // DrawDiscordOnly();
-		  drawGroundTruth();
-		  System.out.println("distCut = "+distCut);
-		//	computeDummyConfusionMatrix();
-		  computeResampledConfusionMatrix();
-		  computeHitsGroundTruthConfusionMatrix();
-		  computePointConfusionMatrix();
-		  computeHitsConfusionMatrix();
-		  System.out.println("allAnomalies = "+allAnomalies);
-		  System.out.println("allDiscords  = "+allDiscords);
-		  frcsv.append(this.minLink+","+this.alphabetSize+","+this.minBlocks+","+this.noiseThreshold+","+this.heuristicF1Overlap+","+this.heuristicF1Point+","+this.heuristicTime+","+this.bruteForceTime);
-		  frcsv.close();
-		  frhead.close();
-		  System.out.println("Count works = "+count_works);
-		  System.out.println("Done!");
-		  setChanged();
-		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
-		
-	  }
-	  private void computeHitsGroundTruthConfusionMatrix() {
+	private void computeHitsGroundTruthConfusionMatrix() {
 		  	setTrueAnomalyString();
 			int tt1 = 0; //  # of discords hit by anomaly
 			int tt2 = 0;//   # of anomalies hit by discord
@@ -816,7 +764,7 @@ private void computeDummyConfusionMatrix(){
 	for(int traj = 0; traj<isLongAnomaly.size(); traj++){
 		System.out.println(traj +" : "+isLongAnomaly.get(traj));
 		for(int s = 0; s<isLongAnomaly.get(traj).size();s++){
-			boolean isdiscord = (anomalyGroundTruth.get(traj).get(s)==1);
+			boolean isdiscord = (anomalyGroundTruth.get(traj).get(s)==0);
 			boolean isanomaly = isLongAnomaly.get(traj).get(s);
 			
 			if(isdiscord==true&&isanomaly==true)
@@ -928,37 +876,18 @@ private void findAllMotifSax(){
 	}
 	*/
 	paa2saxseqs();
-	long time = System.currentTimeMillis();
 	for(int i = 0; i<blocks.blocks.size();i++){
 		blocks.blocks.get(i).setResidualSet();
 	}
-	System.out.println("setResidualSetTime = "+(System.currentTimeMillis()-time));
-	time = System.currentTimeMillis();
 	for(int i = 0; i<blocks.blocks.size(); i++){
 		//blocks.blocks.get(i).findHierarchicalMotifs();
 		blocks.blocks.get(i).findAnomaly();
 	}
-	System.out.println("findIntraBlockAnomalyTime = "+(System.currentTimeMillis()-time));
-	time = System.currentTimeMillis();
 	for(int i = 0; i<blocks.blocks.size(); i++){
 		
 		blocks.blocks.get(i).checkNearby();;
 	}
-	System.out.println("findInterBlockAnomalyTime = "+(System.currentTimeMillis()-time));
-//	System.out.println("isAnomaly[0] = "+isAnomaly.get(0));
-	/*
-	Iterator it = allTrajClusters.keySet().iterator();
-	
-	while(it.hasNext()){
-		Integer id = (Integer) it.next();
-		ArrayList<Cluster> current  = allTrajClusters.get(id);
-		*/
-	/*
-		if(current.size()>0)
-		System.out.println(id+":"+current);
-		
-	}
-	*/
+
 	
 }
 	
@@ -1154,11 +1083,12 @@ private void findAllMotifSax(){
 	public static void drawGroundTruth()	
 	{
 	for(int traj = 0; traj<anomalyGroundTruth.size();traj++){
+		System.out.println("anomalyGroundTruth: "+anomalyGroundTruth.get(traj));
 		  int pos = 0;
 		  int endPos = 0;
 		  int startPos = pos;
 		  while(pos<anomalyGroundTruth.get(traj).size()){
-			  if(anomalyGroundTruth.get(traj).get(pos)==1)    // is the start position of anomaly
+			  if(anomalyGroundTruth.get(traj).get(pos)==0||(pos+1<anomalyGroundTruth.get(traj).size()&&anomalyGroundTruth.get(traj).get(pos+1)==0))    // is the start position of anomaly
 			  {
 				  startPos = pos;
 				  int prePos =pos;
@@ -1167,7 +1097,7 @@ private void findAllMotifSax(){
 				  double y = rawtrajY.get(traj).get(pos);
 				  singleTrueAnomaly.addLocation(x, y);
 				  pos++;
-				  while(pos<anomalyGroundTruth.get(traj).size()&&anomalyGroundTruth.get(traj).get(pos)==1){
+				  while(pos<anomalyGroundTruth.get(traj).size()&&(anomalyGroundTruth.get(traj).get(pos)==0||(anomalyGroundTruth.get(traj).get(pos-1)==0))){
 					 /*
 					  if(euDist(oldtrajX.get(traj).get(pos),oldtrajY.get(traj).get(pos),x,y)>distCut*10){
 						  System.out.println(rawtrajX.get(traj));
@@ -1614,7 +1544,7 @@ public static void DrawDiscordOnly()
 		  
 		
 	}
-	
+	/*
 	private void findHierarchicalMotifs(int minLength,int maxLength) {
 		mergablePair = new HashMap<Integer,PriorityQueue<RoutePair>>();
 		clusterMaps = new HashMap<Integer, HashMap<String, Cluster>>();
@@ -1655,9 +1585,8 @@ public static void DrawDiscordOnly()
 		  }
 		  
 		  
-		  /*
-		   *  start hierarchical clustering
-		   */
+		  // start hierarchical clustering
+		
 		  for(int len = minLength; len<=maxLength; len= len+minLength){
 			  PriorityQueue<RoutePair> pq = mergablePair.get(len);
 			  HashMap<String, Cluster> findCluster = clusterMaps.get(len);
@@ -1705,12 +1634,7 @@ public static void DrawDiscordOnly()
 						 if(c2.getRoutes().size()<1){
 							 allTrajClusters.get(len).remove(c2);
 						 }
-						 /*
-						 if(c1!=null)
-							 System.out.println("After  Merege C1: "+c1.trajIds);
-						 if(c2!=null)
-						 System.out.println("After  Merege C2: "+c2.trajIds);
-						 */
+						
 					 }
 				  }
 				  
@@ -1721,6 +1645,7 @@ public static void DrawDiscordOnly()
 		  
 		  
 	}
+	*/
 	
 /*
 	private void findBestMotifs(int minLength,int maxLength) {
@@ -1745,6 +1670,7 @@ public static void DrawDiscordOnly()
 		
 	}
 	*/
+	/*
 	private void findTop1Motifs(int minLength,int maxLength) {
 		top1EuDistanceCalled = 0;
 		int len = minLength;
@@ -1802,21 +1728,10 @@ public static void DrawDiscordOnly()
 		  System.out.println("bestMotifCount = "+bestMotifCount);
 		  System.out.println("bestMotifLocation = "+bestMotifLocation);
 		  System.out.println("motifMatches = "+motifMatches);
-		  /*
-		   Collections.sort(allTrajClusters.get(len));
-		 for(int i=0; i<allTrajClusters.get(len).size(); i++){
-		//	 System.out.println(allTrajClusters.get(len).get(i));
-			 Cluster resultCluster = allTrajClusters.get(len).get(i);
-			 int[] subtraj = Tools.parseTrajId(bestMotifLocation);
-			 if(resultCluster.findTraj(subtraj)){
-				 System.out.println("result Cluster: Rank = "+(allTrajClusters.get(len).size()-i));
-				 System.out.println("Size = "+resultCluster.getSize());
-				 break;
-			 }
-		 }
-		 */
 		
-	}
+		
+	}*/
+
 	private void findMotifs(int minLength,int maxLength) {
 		
 		  for(int len = minLength; len<=maxLength; len = minLength +len){
@@ -2063,30 +1978,12 @@ private void paa2saxseqs() {
 		 
 		 		
 	}
-	private void buildModel() {
-		
+	private void buildModel() {		
 		routes = new ArrayList< ArrayList<Route>>();
-	
-		//  paaLat = new ArrayList<Double>();
-		//  paaLon = new ArrayList<Double>();
-		//  ArrayList<Double> latBuffer=new ArrayList<Double>();
-		//  ArrayList<Double> lonBuffer=new ArrayList<Double>();
-		  double avgLat;
-		  double avgLon;
-
-		   // System.out.println("Should not see this msg.");
-		  
-		  
-		  
-		  
-		  
-
-	//	  System.out.println("oriLon" + lon);
-		 
-		  
-		  blocks = new Blocks(alphabetSize,latMin,latMax,lonMin,lonMax);
-		  double latCut = blocks.latCut;
-		  double lonCut = blocks.lonCut;
+		blocks = new Blocks(alphabetSize,latMin,latMax,lonMin,lonMax);
+		double latCut = blocks.latCut;
+		double lonCut = blocks.lonCut;
+		resampling();
 		 // ncLat = new ArrayList<Double>();
 		 // ncLon = new ArrayList<Double>();
 		 // resample();
@@ -2117,7 +2014,7 @@ private void paa2saxseqs() {
 			//  blocks.addPoint2Block(loc); this should not work here because the point will change if it is a noisy point.
 			  Integer id = new Integer(blocks.findBlockIdForPoint(loc));
 			  
-			  if(isNoise(id,i,noiseThreshold)){
+			  if(isNoise(id,i,resolution)){
 				 // lat.set(i, lat.get(i-1));
 				  ncLat.set(i, ncLat.get(i-1));
 				 // lon.set(i, lon.get(i-1));
@@ -2271,10 +2168,10 @@ private void paa2saxseqs() {
 	//		double distCut=amountDist/(alphabetSize*1000);
 		//	double distCut=amountDist/(alphabetSize*rawtrajX.size());
 		//	double distCut=amountDist/(totalPoints*alphabetSize);
-			distCut = diagnalDistance/this.noiseThreshold;
+			distCut = diagnalDistance/this.resolution;
 			int maxPoints = (int) (longestDist/distCut);
 			System.out.println("MaxPoint = "+maxPoints);
-			if(maxPoints>5000){
+			if(maxPoints>10000){
 				throw new IllegalArgumentException("maxPoints is too large: "+maxPoints);
 			}
 			if(maxPoints<10){
@@ -2298,7 +2195,7 @@ private void paa2saxseqs() {
 				oldtrajX.get(j).add(rawtrajX.get(i).get(0));
 				oldtrajY.get(j).add(rawtrajY.get(i).get(0));
 			boolean currentIsAnomaly;	
-			if(anomalyGroundTruth.get(j).get(0)==0){
+			if(anomalyGroundTruth.get(j).get(0)!=0){
 				currentIsAnomaly = false;
 				isTrueAnomaly.get(j).add(false);
 			}
@@ -2311,13 +2208,14 @@ private void paa2saxseqs() {
 				timeResample.get(j).add(time);
 	//			System.out.println("i===================================================================================="+i);
 				while(time<rawTimeResample.get(i).get(rawTimeResample.get(i).size()-1)){
-					if(index-1<anomalyGroundTruth.get(j).size())
-					if(anomalyGroundTruth.get(j).get(index-1)==0){
-						currentIsAnomaly = false;
+					//if(index<anomalyGroundTruth.get(j).size())
+					//if(anomalyGroundTruth.get(j).get(index-1)!=0){
+					if(anomalyGroundTruth.get(j).get(index-1)==0||anomalyGroundTruth.get(j).get(index)==0){
+						currentIsAnomaly = true;
 						
 					}
 					else{
-						currentIsAnomaly = true;
+						currentIsAnomaly = false;
 						
 					}
 					while(time<=rawTimeResample.get(i).get(index)){
@@ -2604,8 +2502,8 @@ private void paa2saxseqs() {
 	  		  	
 	}
 
-	private void runSequitur(int iteration) {
-			chartData = new MotifChartData(this.dataFileName, lat, lon, 1, alphabetSize); //PAA is always 1.
+	private void runSequitur() {
+			  chartData = new MotifChartData(this.dataFileName, lat, lon, 1, alphabetSize); //PAA is always 1.
 			  clusters = new ArrayList<HashSet<Integer>>();
 			  filter = new ArrayList<Integer>();
 			  clusterMap = new HashMap<Integer,Integer>();
@@ -2633,152 +2531,6 @@ private void paa2saxseqs() {
 		          
 		          
 		          consoleLogger.debug("mapping rule intervals on timeseries ...");
-		          GrammarRuleRecord rule0 = rules.get(0);
-		          
-		          //String rule0 = rules.get(0).getRuleString();
-		          int length3 = countSpaces(rule0.getRuleString());
-		        		  
-		          r0 = rule0.getRuleString().split(" ");
-		          r0Recover = rule0.getRuleString().split(" ");
-		          System.out.println("R0 = "+r0);
-		          int length4 = r0.length;
-		          if (length3!=length4)
-	       		  throw new IndexOutOfBoundsException(length3+":"+length4);
-		        /* print all rule details
-		         */
-		          setR0Occ();
-		        //  SequiturFactory.updateRuleIntervals(rules, saxFrequencyData, lat.size());   //Both update intervals and intervals in R0
-		          for(int i=0;i<rules.size();i++){
-		        	  System.out.println("Rule number: "+rules.getRuleRecord(i).getRuleNumber()+" Fre in R0: "+rules.get(i).frequencyInR0()+" LEVEL: "+rules.get(i).getRuleLevel()+" "+rules.get(i)+" StringOccurence: "+rules.getRuleRecord(i).occurrencesToString()+"OccurenceInR0: "+rules.get(i).r0OccurrencesToString()+" Rule String: "+rules.getRuleRecord(i).getExpandedRuleString()+" Rule Positions: "+rules.getRuleRecord(i).getRuleIntervals());
-		          }
-		        allRules.add(rules);
-		       /*  */
-		         if(this.isLastIteration)
-				  {
-		        	 mergeTerminals();
-				     clusterRules();
-		             replaceBack();
-				  }
-		       //  if(this.alphabetSize<=100)
-		         else
-		          {
-		        //	 mergeTerminals();
-		        	 clusterRules();
-		        	 //finalCluster();
-		        	 //replaceBack();
-		          }
-		          
-		          
-		        
-		        	  
-		          
-		          mapToPreviousR0();
-		          allR0.add(r0);
-		          
-		        	  System.out.print("mapToOriginalTS: ");
-		        	  ArrayList<Integer> previousMapToOriginalTS = mapToOriginalTS;
-		        	 // printArrayList(previousMapToOriginalTS);
-		        	  /*new ArrayList<Integer>();
-		        	  */
-		        	  for (int i = 0; i<mapToOriginalTS.size();i++)
-		        	  	{
-		        		 // previousMapToOriginalTS.add(mapToOriginalTS.get(i));
-		        	  	  System.out.print( mapToOriginalTS.get(i) + " ");
-		        	  	}
-		             System.out.println();
-		             
-		              mapToOriginalTS = new ArrayList<Integer>();
-		              for(int i = 0; i<r0.length;i++){
-		            	          
-		              System.out.print(r0[i]+" ");
-		              }
-		              System.out.println();
-					  trimedTrack = new ArrayList<NumerosityReductionMapEntry>();
-				  /*
-				   * Replace Rules' Ids with Clusters' Ids
-				   */
-					  System.out.println("r0.length: "+r0.length);
-		          for (int i = 0; i<r0.length;i++){
-		        	  NumerosityReductionMapEntry<Integer, String> entry;
-		        	  if(r0[i]==null)
-		        		  {
-		        		  	
-		        		 // 	Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
-        		  		//	mapToOriginalTS.add(pos);
-        	  		//		System.out.println("BlockID: " +r0[i]+" : "+pos);//mapTrimed2Original.get(mapToPreviousR0.get(i)));
-
-        		  		//	entry = new NumerosityReductionMapEntry<Integer, String>(pos, null);
-        		  			//trimedTrack.add(entry);
-		        		//  	continue;
-		        		  }
-		        	  else{
-		        	//  System.out.println("r0_"+i+"="+r0[i] );
-		        	  if (r0[i].charAt(0)=='R')
-		        		  {
-		        		  //	if(i==0)
-		        		  	//	System.out.println("r0[i] = "+r0[i]);
-		        		  	Integer ruleNumber = Integer.parseInt(r0[i].substring(1));
-		        		  	String currentRule = "I"+iteration+"r"+ruleNumber;
-		        		  	sortedRuleMap.put(currentRule, rules.get(ruleNumber));
-		        		  //	System.out.println("sortedRuleMap.size() = " + sortedRuleMap.size()+" "+currentRule+" : "+rules.get(ruleNumber)+" "+sortedRuleMap);
-		        		  	sortedCounter++;
-		        		//  	int cursor = rules.get(ruleNumber).getCursor(); 
-	
-		        		  	if (clusterMap.containsKey(filterMap.get(ruleNumber))){
-		        		  			hasNewCluster = true;
-		        		  			String s = "I" + (iteration) + "C" + clusterMap.get(filterMap.get(ruleNumber));
-		        		  			r0[i] = s;
-		        		  			Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
-		        		  			mapToOriginalTS.add(pos);
-		        	  		//		System.out.println("BlockID: " +r0[i]+" : "+pos);//mapTrimed2Original.get(mapToPreviousR0.get(i)));
-	
-		        		  			entry = new NumerosityReductionMapEntry<Integer, String>(pos, s);
-		        		  			trimedTrack.add(entry);
-		        		  		
-		        		  	}
-		        		  	else{
-		        		  			String s = "I" + (iteration) + "r"+ruleNumber;
-		        		  			r0[i] = s;
-		        		  			Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
-		        		  			mapToOriginalTS.add(pos);
-	
-		        		  		//	System.out.println("RuleID: " +r0[i]+" : "+pos);
-	
-		        		  			entry = new NumerosityReductionMapEntry<Integer, String>(pos, s);
-		        	  				trimedTrack.add(entry);
-			
-		        		  	
-		        		  	}
-		        		  		
-		        			
-		        		  	
-		        		  }
-		        	  else
-		        		  
-		        	  {
-				  		
-		        		   
-		        		  	Integer pos = getPositionsInTS(mapToPreviousR0,previousMapToOriginalTS,i);
-				  			mapToOriginalTS.add(pos);
-	
-			  				entry = new NumerosityReductionMapEntry<Integer, String>(pos, r0[i]);
-			  			//	System.out.println("BlockID: " +r0[i]+" : "+pos);//mapTrimed2Original.get(mapToPreviousR0.get(i)));
-			  				trimedTrack.add(entry);
-	
-		        	  }
-		          }
-		          }
-		          
-		          /*
-		          System.out.println("after:");
-		          for (int d = 0; d<words.size(); d++)
-		        	  System.out.print(words.get(d)+ " ");
-		          System.out.println();
-		          */
-		                
-		          
-		          System.out.println();
-		          allMapToPreviousR0.add(mapToPreviousR0);
 		          
 		         
 		          
@@ -3929,11 +3681,11 @@ System.out.println("]");
 	//	  String evalHead = "DataName,PaaSize,AlphabetSize,MinimalContinuousBlocks,NoiseCancellationThreshold\n";
 		  
 		  try{
-		  File evalFile = new File("./evaluation/"+"evaluate_"+(int)(minLink*1000)+"_"+alphabetSize+"_"+minBlocks+"_"+noiseThreshold+"_"+lat.size()+"_"+fileNameOnly);
+		  File evalFile = new File("./evaluation/"+"evaluate_"+(int)(minLink*1000)+"_"+alphabetSize+"_"+minBlocks+"_"+resolution+"_"+lat.size()+"_"+fileNameOnly);
 		  FileWriter fr = new FileWriter(evalFile);
 		  String sb1; // = new StringBuffer();
 		  //sb1.append(fileNameOnly+",");
-		  sb1 = (fileNameOnly+","+minLink+","+alphabetSize+","+minBlocks+","+noiseThreshold+","+runTime+","+avgIntraDistance+","+avgIntraDistanceStdDev+","+ minInterDistance+","+avgSilhouetteCoefficient+","+routes.size()+","+lat.size()+','+totalSubTrajectory+","+coverCount+","+immergableRuleCount+"\n");
+		  sb1 = (fileNameOnly+","+minLink+","+alphabetSize+","+minBlocks+","+resolution+","+runTime+","+avgIntraDistance+","+avgIntraDistanceStdDev+","+ minInterDistance+","+avgSilhouetteCoefficient+","+routes.size()+","+lat.size()+','+totalSubTrajectory+","+coverCount+","+immergableRuleCount+"\n");
 		  fr.append(sb1);
 		  System.out.println(EVALUATION_HEAD);
 		  System.out.println(sb1);
