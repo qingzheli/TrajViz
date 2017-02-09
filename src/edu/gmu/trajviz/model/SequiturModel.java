@@ -111,14 +111,13 @@ public class SequiturModel extends Observable {
 	private static ArrayList<ArrayList<Route>> routes;  
 	private static ArrayList<Route> rawRoutes;  
 	private static ArrayList<Route> anomalyRoutes;
+	public ArrayList<Double> latOri = new ArrayList<Double>();
+	public ArrayList<Double> lonOri = new ArrayList<Double>();
 	public ArrayList<Double> lat;
-	public static ArrayList<Double> ncLat = new ArrayList<Double>();
-	public static ArrayList<Double> ncLon = new ArrayList<Double>();
-	//public ArrayList<Double> paaLat;
-	//public ArrayList<Double> paaLon;
 	public ArrayList<Double> lon;
-	public ArrayList<Double> latOri;
-	public ArrayList<Double> lonOri;
+	public double r;
+	public static ArrayList<Double> rescaleX = new ArrayList<Double>();
+	public static ArrayList<Double> rescaleY = new ArrayList<Double>();
 	private MotifChartData chartData;
 	private ArrayList<ArrayList<RuleInterval>> ruleIntervals;
 	private ArrayList<RuleInterval> rawAllIntervals;
@@ -446,7 +445,7 @@ public class SequiturModel extends Observable {
 		  for (int i = 0; i<rawAllIntervals.size();i++)
 			  System.out.println("Trajectory "+i+":" + rawAllIntervals.get(i));
 			  */
-		  drawRawTrajectories();
+	//	  drawRawTrajectories();
 
 		  
 		  
@@ -557,42 +556,18 @@ public class SequiturModel extends Observable {
 	  }
 	  
 	  private void buildModel() {
+		  
 		 routes = new ArrayList< ArrayList<Route>>();
-		//  paaLat = new ArrayList<Double>();
-		//  paaLon = new ArrayList<Double>();
-		//  ArrayList<Double> latBuffer=new ArrayList<Double>();
-		//  ArrayList<Double> lonBuffer=new ArrayList<Double>();
+		
 		  double avgLat;
 		  double avgLon;
-		  /*
-		   * use the centroid(paaLat,paaLon) to represent the data
-		   */
-		//  System.out.println("paaSize: "+paaSize);
-		 /*
-		  if(paaSize==1)
-		  {
-			  paaLat = lat;
-			  paaLon = lon;
-			  
-		  }
-		  else
-		  */
-		   // System.out.println("Should not see this msg.");
-		  
-		  
-		  
-		  
-		  
-
-	//	  System.out.println("oriLon" + lon);
-		 
-		  
+				  
 		  blocks = new Blocks(alphabetSize,latMin,latMax,lonMin,lonMax);
 		  double latCut = blocks.latCut;
 		  double lonCut = blocks.lonCut;
-		  ncLat = new ArrayList<Double>();
-		  ncLon = new ArrayList<Double>();
-		  resample(latCut,lonCut);
+		  rescaleX = new ArrayList<Double>();
+		  rescaleY = new ArrayList<Double>();
+		  resample();
 		//  lat = latOri;
 		 // lon = lonOri;
 		  
@@ -614,16 +589,16 @@ public class SequiturModel extends Observable {
 		  mapToOriginalTS = new ArrayList<Integer>();
 		  int startPoint = 0;
 		  int endPoint = 0;
-		  for (int i = 0; i<ncLat.size();i++){
-			  Location loc = new Location(ncLat.get(i),ncLon.get(i));
+		  for (int i = 0; i<rescaleX.size();i++){
+			  Location loc = new Location(rescaleX.get(i),rescaleY.get(i));
 			//  blocks.addPoint2Block(loc); this should not work here because the point will change if it is a noisy point.
 			  Integer id = new Integer(blocks.findBlockIdForPoint(loc));
 			  
 			  if(isNoise(id,i,noiseThreshold)){
 				 // lat.set(i, lat.get(i-1));
-				  ncLat.set(i, ncLat.get(i-1));
+				  rescaleX.set(i, rescaleX.get(i-1));
 				 // lon.set(i, lon.get(i-1));
-				  ncLon.set(i, ncLon.get(i-1));
+				  rescaleY.set(i, rescaleY.get(i-1));
 				  id = previousId;
 			  }
 			  
@@ -673,120 +648,14 @@ public class SequiturModel extends Observable {
 		  
 		 		
 	}
-
-	/*
-	 * resample latitude and longitude when two points skip blocks.
-	 */
-	private void resample(double latCut, double lonCut) {
-		int i = 1;
-		double latPre = latOri.get(0);
-		double lonPre = lonOri.get(0);
-		lat.add(latPre);
-		lon.add(lonPre);
-		ncLat.add(latPre);
-		ncLon.add(lonPre);
-		boolean firstPoint = true;
-		while(i<latOri.size())
-		{
-			if(status.get(i)==1000)
-				breakPoint = lat.size();
-			
-			
-			if(latOri.get(i)<-180)
-				{
-					lat.add(latOri.get(i));
-					lon.add(lonOri.get(i));
-					ncLat.add(latOri.get(i));
-					ncLon.add(lonOri.get(i));
-					i++;
-					firstPoint = true;
-				}
-			else{
-				if(firstPoint){
-					lat.add(latOri.get(i));
-					lon.add(lonOri.get(i));
-					ncLat.add(latOri.get(i));
-					ncLon.add(lonOri.get(i));
-					i++;
-					firstPoint = false;
-				}
-				else{
-				double latStep = Math.abs(latOri.get(i)-latOri.get(i-1));
-				double lonStep = Math.abs(lonOri.get(i)-lonOri.get(i-1));
-				
-				if(latStep>latCut||lonStep>lonCut){
-					int skip = Math.max((int)Math.round(latStep/latCut),(int)Math.round(lonStep/lonCut));
-					double latstep = (latOri.get(i)-latOri.get(i-1))/skip;
-					double lonstep = (lonOri.get(i)-lonOri.get(i-1))/skip;
-					
-					/* disable resample
-					for (int j = 0; j<skip; j++){
-						lat.add((latOri.get(i-1)+latstep*(j+1)));
-						lon.add((lonOri.get(i-1)+lonstep*(j+1)));
-						ncLat.add((latOri.get(i-1)+latstep*(j+1)));
-						ncLon.add((lonOri.get(i-1)+lonstep*(j+1)));
-						//  System.out.println(lat.get(i+j)+" , "+lon.get(i+j));
-
-					}
-					*/
-					lat.add(latOri.get(i));
-					lon.add(lonOri.get(i));
-					ncLat.add(latOri.get(i));
-					ncLon.add(lonOri.get(i));
-					i++;
-				}
-				else
-					{
-					lat.add(latOri.get(i));
-					lon.add(lonOri.get(i));
-					ncLat.add(latOri.get(i));
-					ncLon.add(lonOri.get(i));
-					i++;
-					}
-				}
-			}
-			
-		}
-		
-	}
-
-	private void drawRawTrajectories() {
-		
-		
-		
-	  			
-	  		for (int k=0;k<rawAllIntervals.size();k++)
-	  				  {
-	  					  Route singleRoute = new Route();
-	  					  int startPos = rawAllIntervals.get(k).getStartPos();
-	  						int endPos = rawAllIntervals.get(k).getEndPos();
-	  						/*
-	  						for(int index=startPos; index<=endPos;index++)
-	  							isCovered[index]=true;
-	  							*/
-	  		//				System.out.println("startPos: "+startPos);
-	  		//				System.out.println("endPos: " +endPos);
-	  						
-	  					//	System.out.print("track#: "+counter+":       ");
-	  						for (int j = startPos; j<=endPos; j++){
-	  							
-	  							Location loca = new Location(lat.get(j),lon.get(j));
-	  				
-	  							singleRoute.addLocation(lat.get(j), lon.get(j));
-	  								
-	  						
-	  							
-	  						}
-	  						rawRoutes.add(singleRoute);
-	  						
-	  				  }
-	  		//		  System.out.println("position size: "+positions.size());
-	  			//	  System.out.println("route size: "+route.size());
-	  				
-	  				  //  if(route.size()>2)
 	
-	  		  	
+	/*
+	 * resample original ts with the same speed.
+	 */
+	  private  void resample() {
+		 
 	}
+	
 
 	private void runSequitur(int iteration) {
 			chartData = new MotifChartData(this.dataFileName, lat, lon, 1, alphabetSize); //PAA is always 1.
@@ -2705,14 +2574,14 @@ System.out.println("]");
   						
   					//	System.out.print("track#: "+counter+":       ");
   						
-  						Location loca = new Location(ncLat.get(startPos),ncLon.get(startPos));
+  						Location loca = new Location(rescaleX.get(startPos),rescaleY.get(startPos));
   						//Location endLoc = new Location(lat.get(startPos),lon.get(startPos));
   						
   						for (int j = startPos; j<=endPos; j++){
   							Location previousLoc =loca;
-  							loca = new Location(ncLat.get(j),ncLon.get(j));
+  							loca = new Location(rescaleX.get(j),rescaleY.get(j));
   							distance = distance + blocks.distance(blocks.findBlockIdForPoint(previousLoc), blocks.findBlockIdForPoint(loca)); 
-  							singleRoute.addLocation(ncLat.get(j), ncLon.get(j));
+  							singleRoute.addLocation(rescaleX.get(j), rescaleY.get(j));
   								
   						
   							
