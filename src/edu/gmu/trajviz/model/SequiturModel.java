@@ -69,6 +69,29 @@ public class SequiturModel extends Observable {
 	private static final int DEFAULT_TIME_GAP = 3;//180;
 //	private static final int DEFAULT_TIME_GAP = 180;
 //	private static final int DEFAULT_TIME_GAP = 3;
+	
+//=======================20170209=========================
+	public static double r;
+	public ArrayList<Double> rescaleX;
+	public ArrayList<Double> rescaleY;
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
+	
 	public static int top1EuDistanceCalled;
 	public static int allEuDistanceCalled;
 	public static ArrayList<ArrayList<Double>> rawtrajX,rawtrajY,oldtrajX, oldtrajY, trajX, trajY,allTimeline;
@@ -129,7 +152,7 @@ public class SequiturModel extends Observable {
 //	private static final int NOISYELIMINATIONTHRESHOLD = 5;
 	public static int alphabetSize;
 	public static double minLink;
-	private static int resolution;
+	private static int resampleRate;
 	private static GrammarRules rules;
 	public static HashMap<String, ArrayList<String>> allPostions;
 	public static ArrayList<GrammarRules> allRules;
@@ -379,10 +402,8 @@ public class SequiturModel extends Observable {
 		  }
 		  
 		
-			  this.latOri = new ArrayList<Double>();
-			  this.lonOri = new ArrayList<Double>();
-			  this.lat = new ArrayList<Double>();
-			  this.lon = new ArrayList<Double>();
+			  
+			
 			  
 		latMax = Double.valueOf(data.get(0));
 		lonMax = Double.valueOf(data1.get(0));
@@ -392,8 +413,6 @@ public class SequiturModel extends Observable {
 			  double temp_latitude = Double.valueOf(data.get(i));
 			  double temp_longitude = Double.valueOf(data1.get(i));
 			//  System.out.println("i = "+i+": "+temp_latitude+","+temp_longitude);
-			  this.latOri.add(temp_latitude);
-			  this.lonOri.add(temp_longitude);
 			//  this.lat.add(temp_latitude);
 			//  this.lon.add(temp_longitude);
 			  if((temp_latitude>=-90)&&temp_latitude>latMax)
@@ -414,6 +433,9 @@ public class SequiturModel extends Observable {
 			//test loaded points
 		//	  System.out.println(this.lat.get(i)+", "+this.lon.get(i)+","+data.get(i)+", "+data1.get(i));
 		  }
+		  latOri = data;
+		  lonOri = data1;
+		  
 		  data = new ArrayList<>();
 		  data1 = new ArrayList<>();
 		  lat_center = (latMax+latMin)/2;
@@ -448,14 +470,10 @@ public class SequiturModel extends Observable {
 	  
 	  
 	  public synchronized void processData(double minLink, int alphabetSize, int minBlocks, int noiseThreshold)throws IOException{
-		  this.resolution = noiseThreshold;
+		  this.resampleRate = noiseThreshold;
+		  R = Tools.pointEuDist(latMin, lonMin, latMax, lonMax)/minBlocks;
 		  initializeVariables();
-		  
-		  String head = "MinLink, AlphabetSize,MinBlock,ResampleRate, HeuristicF1Point, HeuristicF1Overlap, HeuristicTime, BruteForceTime\n";
-		  frhead.append(head);
-		//  this.currentClusters = new HashMap<String,Cluster>();
-		  this.lat = new ArrayList<Double>();
-		  this.lon = new ArrayList<Double>();
+		 
 		  StringBuffer sb = new StringBuffer();
 		  if (null == this.latOri ||null == this.lonOri|| this.latOri.size()==0 || this.lonOri.size()==0 ){
 			  this.log("unable to \"Process data\" - no data were loaded...");
@@ -473,6 +491,9 @@ public class SequiturModel extends Observable {
 			  this.log(sb.toString());
 		  }
 		  buildModel();
+		  
+		  
+		  /*
 		  runSequitur();
 		  long time = System.currentTimeMillis()/1000;
 		  System.out.println("distCut = "+distCut);
@@ -507,6 +528,7 @@ public class SequiturModel extends Observable {
 		  System.out.println("Count works = "+count_works);
 		  System.out.println("Not works = "+not_works);
 		  System.out.println("Done!");
+		  */
 		  setChanged();
 		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
 		
@@ -1981,23 +2003,12 @@ private void paa2saxseqs() {
 	private void buildModel() {		
 		routes = new ArrayList< ArrayList<Route>>();
 		blocks = new Blocks(alphabetSize,latMin,latMax,lonMin,lonMax);
+		r = Tools.pointEuDist(latMin, lonMin, latMax, lonMax)/resampleRate;
+		System.out.println("r_dynamic = "+r);
 		double latCut = blocks.latCut;
 		double lonCut = blocks.lonCut;
-		resampling();
-		 // ncLat = new ArrayList<Double>();
-		 // ncLon = new ArrayList<Double>();
-		 // resample();
-		//  lat = latOri;
-		 // lon = lonOri;
-		  
-		  isCovered= new boolean[lat.size()];
-		  ruleCovered = new boolean[lat.size()];
-		  for(int i=0;i<lat.size();i++){
-			  isCovered[i] = true;
-			 // System.out.println(lat.get(i)+" , "+lon.get(i));
-			
-			  
-		  }
+		resample();
+		/*
 		  words = new ArrayList<String>();
 		  // add all points into blocks.
 		  Integer previousId=(Integer)(-1);
@@ -2014,7 +2025,7 @@ private void paa2saxseqs() {
 			//  blocks.addPoint2Block(loc); this should not work here because the point will change if it is a noisy point.
 			  Integer id = new Integer(blocks.findBlockIdForPoint(loc));
 			  
-			  if(isNoise(id,i,resolution)){
+			  if(isNoise(id,i,resampleRate)){
 				 // lat.set(i, lat.get(i-1));
 				  ncLat.set(i, ncLat.get(i-1));
 				 // lon.set(i, lon.get(i-1));
@@ -2168,7 +2179,7 @@ private void paa2saxseqs() {
 	//		double distCut=amountDist/(alphabetSize*1000);
 		//	double distCut=amountDist/(alphabetSize*rawtrajX.size());
 		//	double distCut=amountDist/(totalPoints*alphabetSize);
-			distCut = diagnalDistance/this.resolution;
+			distCut = diagnalDistance/this.resampleRate;
 			int maxPoints = (int) (longestDist/distCut);
 			System.out.println("MaxPoint = "+maxPoints);
 			if(maxPoints>10000){
@@ -2302,152 +2313,145 @@ private void paa2saxseqs() {
 			  */
 			
       }
-	/*
+	/* 20170213
 	 * resample original ts with the same speed.
 	 */
 	  private  void resample() {
-		  oldtrajX = new ArrayList<ArrayList<Double>>();
-		  oldtrajY = new ArrayList<ArrayList<Double>>();
-		  oldtrajX.add(new ArrayList<Double>());
-		  oldtrajY.add(new ArrayList<Double>());
-		  timeLine = new ArrayList<Double>();
-			double amountDist = 0;  
-			reTime.add(0.0);
-			int i = 1;
-			while(i<latOri.size())
-		//	for(int i = 1; i< latOri.size(); i++)
-			{	if((latOri.get(i)<=-1000)||(lonOri.get(i)<=-1000))
-				{
-					reTime.add(latOri.get(i));
-					if(i<latOri.size()-1)
-						reTime.add(reTime.get(reTime.size()-2)+0.000001);
-					
-					i=i+2;
+		  rescaleX = new ArrayList<Double>();
+		  rescaleY = new ArrayList<Double>();
+	//	  rescaleX.add(latOri.get(0));
+	//	  rescaleY.add(lonOri.get(0));
+		//  System.out.println(latOri.subList(0, 100));
+		//  System.out.println(lonOri.subList(0, 100));
+		  double x=Double.MAX_VALUE;
+		  double y=Double.MAX_VALUE;
+		  for(int j = 1; j<latOri.size(); j++){
+			 if(latOri.get(j)<=-1000){    // if the current point is the trajectory id
+				 
+				 rescaleX.add(latOri.get(j));
+				 rescaleY.add(lonOri.get(j));
+				/*
+				 if(j+1<latOri.size()){  // add the start point to rescaled trajectory
+					rescaleX.add(latOri.get(j+1));
+					rescaleY.add(lonOri.get(j+1));
 				}
-				else
-				{
-					amountDist = amountDist+Math.sqrt(squareDist(latOri.get(i-1),lonOri.get(i-1),latOri.get(i),latOri.get(i)));
-				 	reTime.add(amountDist);
-				 	i++;
-				}
-			}
-			System.out.println(reTime);
-			double distCut=amountDist/(alphabetSize*1000);
-			System.out.println("distCut = "+distCut);
-			double currentPos = reTime.get(0);
-			double time = 0;
-			int index = 1;
-			lat.add(latOri.get(0));
-			lon.add(lonOri.get(0));
-			timeLine.add(0.0);
-			double reTimeS = 0;
-			double reTimeE = 0;
-			while(time<=reTime.get(reTime.size()-2)){
+				*/
+				x = Double.MAX_VALUE;
+				y = Double.MAX_VALUE;
+				j++;
+				 continue;  
+			 }
+			 
+			 
+			 double x0 = latOri.get(j-1);
+			 double y0 = lonOri.get(j-1);
+			 double x1 = latOri.get(j);
+			 double y1 = lonOri.get(j);
+			 double l;
+			 if(x!=Double.MAX_VALUE){   // adjust the x0, y0
+				 double dist=Tools.pointEuDist(x, y, x1, y1);
 				
-				if(reTime.get(index)>-1000){
-					time = time+distCut;
-				
-				while(time<=reTime.get(index))
-				{
+				 if(dist<r)   //Figure 4 condition
+					 continue;
+				 if(x1==x0){  // handling a = infinity case
+					 //x'==x0; so (x'-x)^2+(y'-y)^2 = r*r  <=> (x0-x)^2+(y'-y)^2 = r*r;
+					 double A = 1;
+					 double B = -2*y;
+					 double C = (x0-x)*(x0-x)+y*y-r*r;
+					 double b4ac=Math.sqrt(B*B-4*A*C);
+					 double root1 = (-B+b4ac)/(2*A);   
+					 double root2 = (-B-b4ac)/(2*A);
+					 if(root1>=Math.min(y0, y1)&&root1<=Math.max(y0,y1)){
+						 y0 = root1;
+					 }
+					 else if(root2>=Math.min(y0, y1)&&root2<=Math.max(y0,y1)){
+						 y0 = root2;
+					 }
+					 else{
+						 double test_dist = Tools.pointEuDist(x, y, x0, y0);
+						 
+						 System.out.println("r = "+r);
+						 System.out.println("dist = "+dist);
+						 System.out.println("test_dist = "+test_dist);
+						 System.out.println("x = "+x);
+						 System.out.println("y = "+y);
+						 
+						 System.out.println("A:B:C = "+A+" "+B+" "+C);
+						 System.out.println("B^2-4AC = "+(B*B-4*A*C));
+//						 System.out.println("sqrt_bb4ac = "+sqrt_bb4ac);
+						System.out.println(" y computation error::::::::  y0="+y0+"    y1="+y1+"   root1="+root1+"   root2="+ root2);
 					
-					double ratio = (time-reTime.get(index-1))/(reTime.get(index)-reTime.get(index-1));
-					double latitude = latOri.get(index-1)+(latOri.get(index)-latOri.get(index-1))*ratio;
-					double longitude = lonOri.get(index-1)+(lonOri.get(index)-lonOri.get(index-1))*ratio;
-					oldtrajX.get(oldtrajX.size()-1).add(latitude);
-					oldtrajY.get(oldtrajY.size()-1).add(longitude);
-					lat.add(latitude);
-					lon.add(longitude);
-					timeLine.add(time);
-					
-					time = time +distCut;
-					
-				}
-				index++;
-				}
-				else{
-					oldtrajX.add(new ArrayList<Double>());
-					oldtrajY.add(new ArrayList<Double>());
-					lat.add(reTime.get(index));
-					lon.add(reTime.get(index));
-					timeLine.add(reTime.get(index));
-					index++;
-				}
-				
-			}
-			lat.add(reTime.get(reTime.size()-1));
-			lon.add(reTime.get(reTime.size()-1));
-			timeLine.add(reTime.get(reTime.size()-1));
-			ArrayList<Double> actLat = new ArrayList<Double>();
-			ArrayList<Double> actLon = new ArrayList<Double>();
-			for(int j =0; j<latOri.size(); j++){
-			//	if(latOri.get(j)>-1000)
-				{
-					actLat.add(latOri.get(j));
-					actLon.add(lonOri.get(j));
-					System.out.println(reTime.get(j)+","+latOri.get(j)+","+lonOri.get(j));
-				}
-			}
-			ArrayList<Double> lat1 = new ArrayList<Double>();
-			ArrayList<Double> lon1 = new ArrayList<Double>();
-			for(int j =0; j<lat.size(); j++){
-			//	if(lat.get(j)>-1000)
-				{
-					lat1.add(lat.get(j));
-					lon1.add(lon.get(j));
-					System.out.println(lat1.size()-1+","+timeLine.get(j)+","+lat.get(j)+","+lon.get(j));
-					
-				}
-			}
-			/*
-			for(int j = 0; j<oldtrajX.size(); j++)
-			  {
-				  System.out.println(oldtrajX.get(j).size()+"points. "+j+"X:"+oldtrajX.get(j));
-				  System.out.println(j+"rawX:"+rawtrajX.get(j));
-				  System.out.println(j+"Y:"+oldtrajY.get(j));
-				  System.out.println(j+"rawY:"+rawtrajY.get(j));
-			  }		
-			  */
-	}
-	  
-	  
-	  
-	/*  
-	private void resample(double latCut, double lonCut) {
-		double amountDist = 0;  
-		reTime.add(0.0);
-		for(int i = 1; i< latOri.size(); i++)
-		{	if((latOri.get(i)<=-1000)||(lonOri.get(i)<=-1000))
-				reTime.add(latOri.get(i));
-			else
-			{
-				amountDist = amountDist+Math.sqrt(squareDist(latOri.get(i-1),lonOri.get(i-1),latOri.get(i),latOri.get(i)));
-			 	reTime.add(amountDist);
-			}
-		}
-		double distCut=amountDist/(this.alphabetSize*1000);
-		double currentPos = reTime.get(0);
-		double time = 0;
-		int index = 1;
-		this.lat.add(latOri.get(0));
-		this.lon.add(lonOri.get(0));
-		double reTimeS = 0;
-		double reTimeE = 0;
-		while(time<=reTime.get(reTime.size()-2)){
-			time = time+distCut;
-			while(time<=reTime.get(index))
-			{
-				double ratio = (time-reTimeS)/(reTime.get(index)-reTime.get(index-1));
-				double x = latOri.get(index-1)+(latOri.get(index)-latOri.get(index-1))*ratio;
-				double y = lonOri.get(index-1)+(lonOri.get(index)-lonOri.get(index-1))*ratio;
-				
-			}
-			index++;
-		}
+					 }
+					 
+				 }
+				 else{
+				 double a = (y1-y0)/(x1-x0);
+				 double b = y0-a*x0;
+				 // y' = ax_1'+b;
+				 //Math.sqrt((x-x')^2+(y-y')^2) = r;
+				 // solve the above equations about x' and y'
+				 double A = 1+a*a;
+				 double B = 2*a*b-2*x-2*a*y;
+				 double C = x*x+y*y+b*b-2*y*b-r*r;
 		
+				 double sqrt_bb4ac = Math.sqrt(B*B-4*A*C);
 		
+				 double root1 = (sqrt_bb4ac-B)/(2*A);
+				 double root2 = (-sqrt_bb4ac-B)/(2*A);
+				 if(root1>=Math.min(x0, x1)&&root1<=Math.max(x0,x1)){
+					 x0 = root1;
+				 }
+				 else if(root2>=Math.min(x0, x1)&&root2<=Math.max(x0,x1)){
+					 x0 = root2;
+				 }
+				 else{
+					 
+					 double test_dist = Tools.pointEuDist(x, y, x0, y0);
+					 
+					 System.out.println("r = "+r);
+					 System.out.println("dist = "+dist);
+					 System.out.println("test_dist = "+test_dist);
+					 System.out.println("x = "+x);
+					 System.out.println("y = "+y);
+					 
+					 System.out.println("A:B:C = "+A+" "+B+" "+C);
+					 System.out.println("B^2-4AC = "+(B*B-4*A*C));
+//					 System.out.println("sqrt_bb4ac = "+sqrt_bb4ac);
+					System.out.println("computation error::::::::  x0="+x0+"    x1="+x1+"   root1="+root1+"   root2="+ root2);
+				 }
+				 y0 = a*x0+b;
+				 }
+			 }
+			 x = x0;
+			 y = y0;
+			 rescaleX.add(x0);
+			 rescaleY.add(y0);
+			 
+				 l = Tools.pointEuDist(x0, y0, x1, y1);
+			 for(int i=1; i*r<l; i++){
+				 x = i*r*(x1-x0)/l+x0;
+				 y = i*r*(y1-y0)/l+y0;
+				 rescaleX.add(x);
+				 rescaleY.add(y);
+			 }
+			  
+			  
+		  }
+		  
+		  System.out.println("latOri = "+latOri);//.subList(0, 1000));
+		  System.out.println("lonOri = "+lonOri);//.subList(0, 1000));
+		  System.out.println("r = "+r);
+		  System.out.println("rescaleX = "+rescaleX);//.subList(0, 1000));
+		  System.out.println("rescaleY = "+rescaleY);//.subList(0, 1000));
+		  
+		  
+		  
+		  
+		  
+		  
 		
 	}
-	*/
+
 
 	public static double squareDist(double lat1, double lon1, double lat2, double lon2) {
 		return ((lat1-lat2)*(lat1 -lat2)+(lon1-lon2)*(lon1-lon2));
@@ -3681,11 +3685,11 @@ System.out.println("]");
 	//	  String evalHead = "DataName,PaaSize,AlphabetSize,MinimalContinuousBlocks,NoiseCancellationThreshold\n";
 		  
 		  try{
-		  File evalFile = new File("./evaluation/"+"evaluate_"+(int)(minLink*1000)+"_"+alphabetSize+"_"+minBlocks+"_"+resolution+"_"+lat.size()+"_"+fileNameOnly);
+		  File evalFile = new File("./evaluation/"+"evaluate_"+(int)(minLink*1000)+"_"+alphabetSize+"_"+minBlocks+"_"+resampleRate+"_"+lat.size()+"_"+fileNameOnly);
 		  FileWriter fr = new FileWriter(evalFile);
 		  String sb1; // = new StringBuffer();
 		  //sb1.append(fileNameOnly+",");
-		  sb1 = (fileNameOnly+","+minLink+","+alphabetSize+","+minBlocks+","+resolution+","+runTime+","+avgIntraDistance+","+avgIntraDistanceStdDev+","+ minInterDistance+","+avgSilhouetteCoefficient+","+routes.size()+","+lat.size()+','+totalSubTrajectory+","+coverCount+","+immergableRuleCount+"\n");
+		  sb1 = (fileNameOnly+","+minLink+","+alphabetSize+","+minBlocks+","+resampleRate+","+runTime+","+avgIntraDistance+","+avgIntraDistanceStdDev+","+ minInterDistance+","+avgSilhouetteCoefficient+","+routes.size()+","+lat.size()+','+totalSubTrajectory+","+coverCount+","+immergableRuleCount+"\n");
 		  fr.append(sb1);
 		  System.out.println(EVALUATION_HEAD);
 		  System.out.println(sb1);
