@@ -66,8 +66,8 @@ public class Block {
 		points = new ArrayList<Location>();
 		centers = new ArrayList<Center>();
 		residualSet = new ArrayList<String>();
-		SequiturModel.allSubseq.put(id, new ArrayList<String>());
-	//	setNearbyBlocks();
+	//	SequiturModel.allSubseq.put(id, new ArrayList<String>());
+	
 		
 	}
 	public void addPoint(Location point){

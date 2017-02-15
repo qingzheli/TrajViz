@@ -66,7 +66,7 @@ public final class SequiturFactory {
 	  SAXRecords saxFrequencyData = new SAXRecords();
 	 
 	  for (int i = 0; i<entry.size(); i++){
-		  System.out.println("entry[ "+i+"]    value: "+entry.get(i).getValue().toString()+"   key: "+ (Integer)entry.get(i).getKey());
+		//  System.out.println("entry[ "+i+"]    value: "+entry.get(i).getValue().toString()+"   key: "+ (Integer)entry.get(i).getKey());
 		  saxFrequencyData.add(entry.get(i).getValue().toString(), (Integer)entry.get(i).getKey());
 	  }
 	  return saxFrequencyData;

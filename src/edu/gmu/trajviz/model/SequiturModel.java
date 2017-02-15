@@ -66,8 +66,8 @@ public class SequiturModel extends Observable {
 	public long heuristicTime;
 	public static final Double OVERLAP_DEGREE = 0.3;
 	private static final int STEP = 2;
-	private static final int DEFAULT_TIME_GAP = 3;//180;
-//	private static final int DEFAULT_TIME_GAP = 180;
+//	private static final int DEFAULT_TIME_GAP = 3;//180;
+	private static final int DEFAULT_TIME_GAP = 180;
 //	private static final int DEFAULT_TIME_GAP = 3;
 	
 //=======================20170209=========================
@@ -223,7 +223,7 @@ public class SequiturModel extends Observable {
 	public ArrayList<NumerosityReductionMapEntry> trimedTrack;
 	// index is the rule# after filtering, Integer value is the actual rule number
 //	private ArrayList<Integer> filteredRuleMap = new ArrayList<Integer>(); 
-	private ArrayList<String> words;
+	private ArrayList<Integer> words;
 	public Blocks blocks, eBlocks;
 	public static int minBlocks; 
 	private static Logger consoleLogger;
@@ -471,6 +471,10 @@ public class SequiturModel extends Observable {
 	  
 	  public synchronized void processData(double minLink, int alphabetSize, int minBlocks, int noiseThreshold)throws IOException{
 		  this.resampleRate = noiseThreshold;
+		  this.minLink = minLink;
+		  this.minBlocks = minBlocks;
+		  
+		  this.alphabetSize = alphabetSize;
 		  R = Tools.pointEuDist(latMin, lonMin, latMax, lonMax)/minBlocks;
 		  initializeVariables();
 		 
@@ -484,7 +488,7 @@ public class SequiturModel extends Observable {
 			  sb.append(" MinLink: ").append(minLink);
 			  sb.append(" Alphabet size: ").append(alphabetSize);
 			  sb.append(" Minimal Continuous Blocks: ").append(minBlocks);
-			  sb.append(" Noise Cancellation Threshold: ").append(noiseThreshold);
+			  sb.append(" Resampling Rate: ").append(noiseThreshold);
 			  consoleLogger.info(sb.toString());
 			 
 			 
@@ -492,9 +496,11 @@ public class SequiturModel extends Observable {
 		  }
 		  buildModel();
 		  
+		  runSequitur();
+		  
+		  query();
 		  
 		  /*
-		  runSequitur();
 		  long time = System.currentTimeMillis()/1000;
 		  System.out.println("distCut = "+distCut);
 			double r = SequiturModel.distCut*minBlocks*minLink;
@@ -533,7 +539,22 @@ public class SequiturModel extends Observable {
 		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
 		
 	  }
-	  private void initializeVariables() throws IOException {
+	  
+	  
+	/*
+	 * 2017 Query  
+	 */
+	  
+	private void query() {
+		for(int i = 0; i<rules.size(); i++){
+			GrammarRuleRecord rule = rules.get(i);
+			System.out.println(rule);
+			System.out.println(rule.getR0Intervals());
+			System.out.println(rule.getRuleIntervals());
+		}
+	}
+
+	private void initializeVariables() throws IOException {
 		  sortedCounter = 0;
 		  count_works = 0;
 		  not_works = 0;
@@ -542,10 +563,7 @@ public class SequiturModel extends Observable {
 		  this.allMotifs = new HashMap<Integer, ArrayList<Cluster>>();
 		  this.reTime = new ArrayList<Double>();
 		  this.isLastIteration = false;
-		  this.minLink = minLink;
-		  this.minBlocks = minBlocks;
-		  
-		  this.alphabetSize = alphabetSize;
+		 
 		  this.allRules = new ArrayList<GrammarRules>();
 		  this.allFilters = new ArrayList<ArrayList<Integer>>();
 		  this.allClusters = new ArrayList<ArrayList<HashSet<Integer>>>();
@@ -1901,7 +1919,7 @@ private void paa2saxseqs() {
 		  double latCut = blocks.latCut;
 		  double lonCut = blocks.lonCut;
 		
-		  words = new ArrayList<String>();
+		  words = new ArrayList<Integer>();
 		  
 	
 		  
@@ -2002,14 +2020,18 @@ private void paa2saxseqs() {
 	}
 	private void buildModel() {		
 		routes = new ArrayList< ArrayList<Route>>();
+		System.out.println("BBBBBBBBBBBBBBBBBBBBBBBBBbb  latMin = "+latMin+"   lonMin = "+lonMin +"   latMax = "+latMax+"  lonMax = "+lonMax );
 		blocks = new Blocks(alphabetSize,latMin,latMax,lonMin,lonMax);
 		r = Tools.pointEuDist(latMin, lonMin, latMax, lonMax)/resampleRate;
 		System.out.println("r_dynamic = "+r);
-		double latCut = blocks.latCut;
-		double lonCut = blocks.lonCut;
+		
 		resample();
-		/*
-		  words = new ArrayList<String>();
+		descritization();
+		
+}
+		 		
+	private void descritization() {
+		  words = new ArrayList<Integer>();
 		  // add all points into blocks.
 		  Integer previousId=(Integer)(-1);
 		
@@ -2020,28 +2042,22 @@ private void paa2saxseqs() {
 		  int startPoint = 0;
 		  int endPoint = 0;
 		  
-		  for (int i = 0; i<ncLat.size();i++){
-			  Location loc = new Location(ncLat.get(i),ncLon.get(i));
-			//  blocks.addPoint2Block(loc); this should not work here because the point will change if it is a noisy point.
-			  Integer id = new Integer(blocks.findBlockIdForPoint(loc));
-			  
-			  if(isNoise(id,i,resampleRate)){
-				 // lat.set(i, lat.get(i-1));
-				  ncLat.set(i, ncLat.get(i-1));
-				 // lon.set(i, lon.get(i-1));
-				  ncLon.set(i, ncLon.get(i-1));
-				  id = previousId;
+		  /*
+		   * Numerosity Reduction
+		   */
+		  for (int i = 0; i<rescaleX.size();i++){
+			  Integer id;
+			  if(rescaleX.get(i)<=-1000){
+				  id = rescaleX.get(i).intValue();
 			  }
-			  
-			  if(id<-1000){
-				  endPoint = i-1;
-				  rawAllIntervals.add(new RuleInterval(startPoint, endPoint));
-				  startPoint = i+1;
+			  else{
+				  Location loc = new Location(rescaleX.get(i),rescaleY.get(i));
+				  id = new Integer(blocks.findBlockIdForPoint(loc));
 			  }
-		  }
-		/*
 			 
-			words.add(id.toString());
+			words.add(id);
+		 
+		  
 			
 		//	  System.out.println("previousId, id:  "+previousId+",   "+id+"        i:   "+i+"   Lat,Lon: "+paaLat.get(i)+","+paaLon.get(i));
 			  Integer trimedIndex = 0;
@@ -2061,25 +2077,19 @@ private void paa2saxseqs() {
 			  
 			  				  
 		  }
-		  */
+		  
+		  /*
+		  System.out.println("words = "+words);
+		  
 		  System.out.print("mapTrimed2Original: ");
-	//	  printArrayList(mapTrimed2Original);		  
-		  /*
-		   * Following is put the cleaned location data into block again
-		   */
-		  /*
-		  for(int i=0; i<20;i++)
-		  System.out.println("Orignal String: " + words.get(i));
-		  */
-		 // System.out.println("StringTrimedTrack:  "+trimedTrack);
-	/*
 		  for(int i=0; i<trimedTrack.size();i++){
-			  System.out.println(i+" : "+trimedTrack.get(i).getValue()+" ");
+			  System.out.print(i+" : "+trimedTrack.get(i).getKey()+":"+trimedTrack.get(i).getValue()+"\t");
 		  }
-		  */
+		  
 		  System.out.println();
-		 
-		 		
+		  */
+	
+
 	}
     private void dummyResampling(){
     	R = minLink;
@@ -2353,7 +2363,7 @@ private void paa2saxseqs() {
 				
 				 if(dist<r)   //Figure 4 condition
 					 continue;
-				 if(x1==x0){  // handling a = infinity case
+				 if(Math.abs(x1-x0)<0.000001){  // handling a = infinity case
 					 //x'==x0; so (x'-x)^2+(y'-y)^2 = r*r  <=> (x0-x)^2+(y'-y)^2 = r*r;
 					 double A = 1;
 					 double B = -2*y;
@@ -2371,8 +2381,8 @@ private void paa2saxseqs() {
 						 double test_dist = Tools.pointEuDist(x, y, x0, y0);
 						 
 						 System.out.println("r = "+r);
-						 System.out.println("dist = "+dist);
-						 System.out.println("test_dist = "+test_dist);
+						 System.out.println("x_y1_dist = "+dist);
+						 System.out.println("x_y0_test_dist = "+test_dist);
 						 System.out.println("x = "+x);
 						 System.out.println("y = "+y);
 						 
@@ -2398,10 +2408,10 @@ private void paa2saxseqs() {
 		
 				 double root1 = (sqrt_bb4ac-B)/(2*A);
 				 double root2 = (-sqrt_bb4ac-B)/(2*A);
-				 if(root1>=Math.min(x0, x1)&&root1<=Math.max(x0,x1)){
+				 if(root1-Math.min(x0, x1)>-0.000001&&root1-Math.max(x0,x1)<0.000001){
 					 x0 = root1;
 				 }
-				 else if(root2>=Math.min(x0, x1)&&root2<=Math.max(x0,x1)){
+				 else if(root2-Math.min(x0, x1)>-0.000001&&root2-Math.max(x0,x1)<0.000001){
 					 x0 = root2;
 				 }
 				 else{
@@ -2428,7 +2438,7 @@ private void paa2saxseqs() {
 			 rescaleY.add(y0);
 			 
 				 l = Tools.pointEuDist(x0, y0, x1, y1);
-			 for(int i=1; i*r<l; i++){
+			 for(int i=1; i*r<=l+0.00001; i++){
 				 x = i*r*(x1-x0)/l+x0;
 				 y = i*r*(y1-y0)/l+y0;
 				 rescaleX.add(x);
@@ -2438,11 +2448,11 @@ private void paa2saxseqs() {
 			  
 		  }
 		  
-		  System.out.println("latOri = "+latOri);//.subList(0, 1000));
-		  System.out.println("lonOri = "+lonOri);//.subList(0, 1000));
+		  System.out.println("latOri = "+latOri.subList(0, 1000));
+		  System.out.println("lonOri = "+lonOri.subList(0, 1000));
 		  System.out.println("r = "+r);
-		  System.out.println("rescaleX = "+rescaleX);//.subList(0, 1000));
-		  System.out.println("rescaleY = "+rescaleY);//.subList(0, 1000));
+		  System.out.println("rescaleX = "+rescaleX.subList(0, 1000));
+		  System.out.println("rescaleY = "+rescaleY.subList(0, 1000));
 		  
 		  
 		  
@@ -2508,10 +2518,10 @@ private void paa2saxseqs() {
 
 	private void runSequitur() {
 			  chartData = new MotifChartData(this.dataFileName, lat, lon, 1, alphabetSize); //PAA is always 1.
-			  clusters = new ArrayList<HashSet<Integer>>();
+		
 			  filter = new ArrayList<Integer>();
-			  clusterMap = new HashMap<Integer,Integer>();
-			  mapToPreviousR0 = new ArrayList<Integer>();
+		
+			
 			  rules = new GrammarRules();
 				try{
 				  SAXRecords saxFrequencyData = null;
@@ -2553,18 +2563,18 @@ private void paa2saxseqs() {
 				  this.log("error while processing data "+StackTrace.toString(e));
 				  e.printStackTrace();
 			  }
-			//  allMapToOriginalTS.add(mapToOriginalTS);
+			  
 			  		
-		}
+	}
 
 	
 	 
 	  
-	  /*
+		  /*    	20170228
 		   * Generate All Motifs and record them on files respectively.
 		   */
 	/*
-		private void drawOnMap() {
+		private void plotOnMap() {
 			 // Generate All Motifs and record them on files respectively.
 			 // String header = "type,x,y";
 	//		  System.out.println("Total rules:"+chartData.getRulesNumber());
@@ -2587,7 +2597,7 @@ private void paa2saxseqs() {
 			    			{ruleIntervals.add(chartData.getRulePositionsByRuleNum(filter.get(i)));
 			    			HashSet<Integer> set = new HashSet<Integer>();
 			    			set.add(filter.get(i));
-			    			mapToOriginRules.add(set);
+			    			mapOriginRules.add(set);
 			    			totalRuleCount++;
 			    			immergableRuleCount++;
 			    			}
@@ -2747,7 +2757,7 @@ private void paa2saxseqs() {
 				  System.out.println("cover rate: " +(double)coverCount/isCovered.length);
 			 
 		}
-	*/
+	
 	/*
 		private void finalCluster() {
 			//currentClusters = new HashMap<String, Cluster>();
