@@ -66,8 +66,8 @@ public class SequiturModel extends Observable {
 	public long heuristicTime;
 	public static final Double OVERLAP_DEGREE = 0.3;
 	private static final int STEP = 2;
-	private static final int DEFAULT_TIME_GAP = 10;//180;
-//	private static final int DEFAULT_TIME_GAP = 180;
+//	private static final int DEFAULT_TIME_GAP = 10;//180;
+	private static final int DEFAULT_TIME_GAP = 180;
 //	private static final int DEFAULT_TIME_GAP = 3;
 	
 //=======================20170209=========================
@@ -550,19 +550,24 @@ public class SequiturModel extends Observable {
 	private void postProcessing() {
 		for(int i = 0; i<rules.size(); i++){
 			GrammarRuleRecord rule = rules.get(i);
-			if(rule.getActualRuleYield()>=minBlocks){
 			System.out.println(rule);
 			System.out.println("actualRuleYield :"+rule.getActualRuleYield());
-			System.out.println(rule.getR0Intervals()); // not working
-			System.out.println(rule.getRuleIntervals());
+			;
+			if(rule.getActualRuleYield()>=minBlocks){
 			
-			RuleInterval ruleInterval = rule.getRuleIntervals().get(0);   // get the 1st rule interval first
-			queryInterval(ruleInterval) ;
+			
+			query(rule) ;
 			}
 		}
 	}
 
-	private void queryInterval(RuleInterval ruleInterval) {
+	private void query(GrammarRuleRecord rule) {
+		System.out.println(rule);
+		System.out.println("actualRuleYield :"+rule.getActualRuleYield());
+		System.out.println(rule.getR0Intervals()); // not working
+		System.out.println(rule.getRuleIntervals());
+		
+		RuleInterval ruleInterval = rule.getRuleIntervals().get(0);   // get the 1st rule interval first
 		int length = ruleInterval.getLength();
 		int start = ruleInterval.getStartPos();
 		int end = ruleInterval.getEndPos();
@@ -570,7 +575,7 @@ public class SequiturModel extends Observable {
 		
 		
 		
-	//	System.out.println(queryRoute);
+		System.out.println(queryRoute);
 	}
 
 	private void initializeVariables() throws IOException {
@@ -1910,7 +1915,10 @@ private void paa2saxseqs() {
 
 	// Draw raw trajectory on left map
 	private void leftPanelRaw(){
+		System.out.println("rawtrajX.size = "+rawtrajX.size());
 		for (int i =0; i<rawtrajX.size();i++){
+			if(rawtrajX.get(i).size()==0||rawtrajX.get(i).size()==0)
+			System.out.println(rawtrajX.get(i));
 			Route singleRoute = new Route(rawtrajX.get(i),rawtrajY.get(i));
 		/*
 			for(int j = 0; j<rawtrajX.get(i).size(); j++){
@@ -1923,10 +1931,26 @@ private void paa2saxseqs() {
 		}
 		int start = 0;
 		for(int i = 0; i<rescaleX.size();i++){
-			if(rescaleX.get(i)<=-1000){
+		//	System.out.println("i = "+i+"  x = "+rescaleX.get(i));
+			if(rescaleX.get(i)<=-1000&&i-start>1){
+				/*
+				if(rescaleY.get(i-1)<-500)
+				System.out.println("start = "+ start+"i = "+i+ "rescaleY.get(i-1) = "+rescaleY.get(i-1));
+				*/
+				
+				List<Double> subX = rescaleX.subList(start, i);
+			//	System.out.println("start = "+ start+"i = "+i+ "sublistX = "+subX);
+				
+				
 				Route singleRoute = new Route(rescaleX.subList(start, i),rescaleY.subList(start, i));
 				rescaleRoutes.add(singleRoute);
-				start = i+1;
+				int j = i+1;
+				while(j+1<rescaleX.size()&&(rescaleX.get(j)<-1000||rescaleX.get(j+1)<-1000))
+					j++;
+				
+				start = j;
+				i = j;
+				//System.out.println("nextstart = "+ start);
 			}
 		}
 	}
@@ -1989,7 +2013,7 @@ private void paa2saxseqs() {
 				 // GrammarRules rules1 = sequiturGrammar.toGRD();
 				 // System.out.println("rules size: "+ rules1.size());			 
 		          rules = sequiturGrammar.toGrammarRulesData();
-		      //    rules.setParsedString();
+		        //  rules.setParsedString();
 		          realRuleSize = rules.size();
 		     //     allRules.add(rules);
 		          System.out.println("real rules size: "+ realRuleSize);
