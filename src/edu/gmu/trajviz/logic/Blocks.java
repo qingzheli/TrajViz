@@ -70,6 +70,9 @@ public class Blocks {
 		blocks.get(findBlockIdForPoint(point)).addPoint(point);
 		
 	}
+	public void addPoint2Block(Location point, Integer id){
+		blocks.get(id).addPoint(point);
+	}
 	public void addCenter2Block(Center center) {
 		Location point = new Location(center.x,center.y);
 		blocks.get(this.findBlockIdForPoint(point)).addCenter(center);
@@ -80,7 +83,8 @@ public class Blocks {
 		//System.out.println("latID: "+(Math.floor((point.latitude-latMin)/latCut))+" lonID: "+(Math.floor((point.longitude-lonMin)/lonCut)));
 	//	if(point.x<-90||point.y<-180)
 	//		return (int)(point.x);
-		return (int)(Math.floor((point.x-latMin)/latCut))*nLon+(int)(Math.floor((point.y-lonMin)/lonCut));
+		int id = (int)(Math.floor((point.x-latMin)/latCut))*nLon+(int)(Math.floor((point.y-lonMin)/lonCut));
+		return id;
 	}
 	public Block findBlockById(int id){
 	//	System.out.println("findBlock id = "+id);

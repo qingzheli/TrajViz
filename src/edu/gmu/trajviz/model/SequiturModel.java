@@ -66,8 +66,8 @@ public class SequiturModel extends Observable {
 	public long heuristicTime;
 	public static final Double OVERLAP_DEGREE = 0.3;
 	private static final int STEP = 2;
-//	private static final int DEFAULT_TIME_GAP = 3;//180;
-	private static final int DEFAULT_TIME_GAP = 180;
+	private static final int DEFAULT_TIME_GAP = 10;//180;
+//	private static final int DEFAULT_TIME_GAP = 180;
 //	private static final int DEFAULT_TIME_GAP = 3;
 	
 //=======================20170209=========================
@@ -191,7 +191,7 @@ public class SequiturModel extends Observable {
 	private static double lon_center;
 	//The outer arrayList includes all rules, the inner arrayList includes all route under the same rule
 	private static ArrayList<ArrayList<Route>> routes;  
-	private static ArrayList<Route> rawRoutes;  
+	private static ArrayList<Route> rawRoutes,rescaleRoutes;  
 	private static ArrayList<Route> anomalyRoutes,discordRoutes,trueAnomalyRoutes;
 	public ArrayList<Double> lat;
 
@@ -224,7 +224,7 @@ public class SequiturModel extends Observable {
 	// index is the rule# after filtering, Integer value is the actual rule number
 //	private ArrayList<Integer> filteredRuleMap = new ArrayList<Integer>(); 
 	private ArrayList<Integer> words;
-	public Blocks blocks, eBlocks;
+	public static Blocks blocks, eBlocks;
 	public static int minBlocks; 
 	private static Logger consoleLogger;
 	private Map<Integer, Double> accumulatDistance;
@@ -498,7 +498,9 @@ public class SequiturModel extends Observable {
 		  
 		  runSequitur();
 		  
-		  query();
+		  postProcessing();
+		  
+		  leftPanelRaw();
 		  
 		  /*
 		  long time = System.currentTimeMillis()/1000;
@@ -542,16 +544,33 @@ public class SequiturModel extends Observable {
 	  
 	  
 	/*
-	 * 2017 Query  
+	 * 2017 new method  
 	 */
 	  
-	private void query() {
+	private void postProcessing() {
 		for(int i = 0; i<rules.size(); i++){
 			GrammarRuleRecord rule = rules.get(i);
+			if(rule.getActualRuleYield()>=minBlocks){
 			System.out.println(rule);
-			System.out.println(rule.getR0Intervals());
+			System.out.println("actualRuleYield :"+rule.getActualRuleYield());
+			System.out.println(rule.getR0Intervals()); // not working
 			System.out.println(rule.getRuleIntervals());
+			
+			RuleInterval ruleInterval = rule.getRuleIntervals().get(0);   // get the 1st rule interval first
+			queryInterval(ruleInterval) ;
+			}
 		}
+	}
+
+	private void queryInterval(RuleInterval ruleInterval) {
+		int length = ruleInterval.getLength();
+		int start = ruleInterval.getStartPos();
+		int end = ruleInterval.getEndPos();
+		Route queryRoute = new Route(rescaleX.subList(start,end+1),rescaleY.subList(start, end+1));
+		
+		
+		
+	//	System.out.println(queryRoute);
 	}
 
 	private void initializeVariables() throws IOException {
@@ -571,6 +590,7 @@ public class SequiturModel extends Observable {
 		  this.allMapToPreviousR0 = new ArrayList<ArrayList<Integer>>();
 		  this.allMapToOriginalTS = new ArrayList<ArrayList<Integer>>();
 		  this.rawRoutes = new ArrayList<Route>();
+		  this.rescaleRoutes = new ArrayList<Route>();
 		  this.anomalyRoutes = new ArrayList<Route>();
 		  this.discordRoutes = new ArrayList<Route>();
 		  this.trueAnomalyRoutes = new ArrayList<Route>();
@@ -932,156 +952,7 @@ private void findAllMotifSax(){
 }
 	
 	 
-				/*
-	private void findAllMotifs(int min, int max) {
-		allEuDistanceCalled = 0;
-	//	allCenterX = new HashMap<Integer, ArrayList<ArrayList<Double>>>();
-	//	allCenterY = new HashMap<Integer, ArrayList<ArrayList<Double>>>();
-		allCenterPoints = new HashMap<Integer, ArrayList<ArrayList<Center>>>();
-	//	allNeighbors = new HashMap<Integer, HashMap<Center, ArrayList<Center>>>(); 
-		//establish center ts
-		for(int len = min; len<=max; len = len+min){
-			slidePoint = (int) (len*minLink);
-			R = slidePoint * distCut;
-			coverPoint = slidePoint+len;
-	//		allNeighbors.put(len, new HashMap<Center, ArrayList<Center>>());
-		//	allCenterX.put(len, new ArrayList<ArrayList<Double>>());
-		//	allCenterY.put(len, new ArrayList<ArrayList<Double>>());
-			ArrayList<ArrayList<Center>> centerArraylist = getCenterArrayList(len);
-			allCenterPoints.put(len, centerArraylist);
-			
-		//	coverPoint = slidePoint+len;
-			//	ArrayList<ArrayList<Double>> xcenters = allCenterX.get(len);
-			
-			
-				
-		// 
-			double minRatio = 100;
-			double maxRatio = 0;
-			for(int i = 0; i<allCenterPoints.get(len).size(); i++){
-				Center c1 = allCenterPoints.get(len).get(i);
-				for(int j = i+1; j<allCenterPoints.get(len).size();j++){
-					Center c2 = allCenterPoints.get(len).get(j);
-					double centerSquareEd = c1.squareDistance(c2);
-					double centerEd = Tools.euDist(c1.x, c1.y, c2.x, c2.y);
-					Route r1 = Tools.getSubroute(c1.traj, c1.s, c1.l);
-					Route r2 = Tools.getSubroute(c2.traj, c2.s, c2.l);
-					double avgEd = Tools.routeEuDist(r1, r2);
-					double ratio = centerEd/avgEd;
-					if(ratio<minRatio)
-						minRatio = ratio;
-					if(ratio>maxRatio)
-						maxRatio = ratio;
-					
-					System.out.println(i+ "= i :"+c1);
-					System.out.println(j+ "= j :"+c2);
-					System.out.println("centerED(c1,c2) = "+centerEd);
-					
-					System.out.println("AvgED(t1,t2) = "+avgEd);
-					System.out.println("centerEd/AvgEd = "+ratio);
-					
-					
-				}
-				
-			}
 
-			System.out.println("minRatio = "+minRatio);
-			System.out.println("maxRatio = "+maxRatio);
-			*/
-			/*
-			ArrayList<Center> centers = allCenterPoints.get(len);
-			HashMap<Center, ArrayList<Center>> neighbors = new HashMap<Center, ArrayList<Center>>();
-	//		double center_R = 1.5*(rs+coverPoint*coverPoint*distCut*distCut);
-//			double center_R = distCut*minLink*alphabetSize;
-			double center_R = 2*R*R;
-			// top
-			for(int i = 0; i<centers.size(); i++){
-				Center c1 = centers.get(i);
-				for(int j = i+1; j<centers.size(); j++){
-					Center c2 = centers.get(j);
-					if(c1.traj!=c2.traj){
-						double squareDistance = c1.squareDistance(c2);
-						if(squareDistance<=center_R)
-						{
-							if(c1.isClose(c2, R/this.noiseThreshold, slidePoint)){
-						/*
-								System.out.println(c1);
-								System.out.println(c1.neighborMap);
-							//	c2.isClose(c1, R, len);
-								System.out.println(c2);
-								System.out.println(c2.neighborMap);
-								
-							}
-						}
-							
-							
-							/*
-						{
-							if(!neighbors.containsKey(c1)){
-								neighbors.put(c1, new ArrayList<Center>());
-								neighbors.get(c1).add(c2);
-								}
-							else{
-								boolean isTrivial = false;
-								for(int p = 0; p<neighbors.get(c1).size(); p++){
-									if(neighbors.get(c1).get(p).traj == c2.traj){
-										if(squareDistance<c1.squareDistance(neighbors.get(c1).get(p))){
-											neighbors.get(c1).set(p, c2);
-										}
-										isTrivial = true;
-										break;
-									}
-								}
-								if(!isTrivial)
-									neighbors.get(c1).add(c2);
-							}
-							
-							if(!neighbors.containsKey(c2)){
-								neighbors.put(c2, new ArrayList<Center>());
-								neighbors.get(c2).add(c1);	
-							}
-							else{
-								boolean isTrivial = false;
-								for(int p = 0; p<neighbors.get(c2).size(); p++){
-									if(neighbors.get(c2).get(p).traj == c1.traj){
-										if(squareDistance<c2.squareDistance(neighbors.get(c2).get(p))){
-											neighbors.get(c2).set(p, c1);
-											isTrivial = true;
-										}
-										break;
-									}
-								}
-								if(!isTrivial)
-									neighbors.get(c2).add(c1);
-							}
-													
-						}
-						
-					}
-				}
-			}
-			
-			Iterator it = neighbors.keySet().iterator();
-			while(it.hasNext())
-			{	
-				Center current = (Center) it.next();
-				System.out.println(current+" size = "+neighbors.get(current).size()+neighbors.get(current));
-			}
-			System.out.println("neighbors.size() = "+neighbors.size());
-			
-			for(int i = 0; i<centers.size(); i++){
-				Center c1 = centers.get(i);
-				System.out.println(c1+" size = "+c1.neighborMap.size());
-				System.out.println(c1.neighborMap);
-			}
-		}
-		
-		System.out.println("find all motif R = "+R);
-		System.out.println("all Motif EuDistance called = "+this.allEuDistanceCalled);
-		
-		
-	}
-	*/
 
 	private ArrayList<ArrayList<Center>> getCenterArrayList(int len) {
 		ArrayList<ArrayList<Center>> allCenters = new ArrayList<ArrayList<Center>>();
@@ -1584,257 +1455,6 @@ public static void DrawDiscordOnly()
 		  
 		
 	}
-	/*
-	private void findHierarchicalMotifs(int minLength,int maxLength) {
-		mergablePair = new HashMap<Integer,PriorityQueue<RoutePair>>();
-		clusterMaps = new HashMap<Integer, HashMap<String, Cluster>>();
-		
-		allSubseq = new HashMap<Integer,ArrayList<String>>();
-		  for(int len = minLength; len<=maxLength; len = minLength +len){
-			  allTrajClusters.put(len, new  ArrayList<Cluster>());
-			  allSubseq.put(len, new ArrayList<String>());
-			  mergablePair.put(len, new PriorityQueue<RoutePair>());
-			  clusterMaps.put(len, new HashMap<String, Cluster>());
-		  }
-		  for(int i = 0; i<oldtrajX.size(); i++){
-			  for (int length = minLength; length<=maxLength; length = length+minLength){
-				  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int)(s+length*this.minLink) ){
-					  String subseqId = "T"+i+"S"+s+"L"+length;
-					  allSubseq.get(length).add(subseqId);
-				  }
-			  }
-		  }
-		  for(int len = minLength; len<=maxLength; len= len+minLength){
-			  
-			  for(int i = 0; i<allSubseq.get(len).size(); i++){
-				  R = distCut*(len)*minLink;
-				//  System.out.println("Threshold = " + R);
-				  for(int j = i+1; j<allSubseq.get(len).size();j++){
-					//  System.out.println("R" + R);
-					  RoutePair pair = new RoutePair(allSubseq.get(len).get(i),allSubseq.get(len).get(j),R);
-					  if(pair.dist<=R){
-					 // if(!pair.isTrivial&&pair.dist<=R){
-					//	  System.out.println(R +" Pair: "+pair);
-						  mergablePair.get(len).add(pair);
-					  }
-				  }
-				  
-			  }
-			 System.out.println("PQ = "+mergablePair.get(len));
-			  System.out.println("len = "+ len+ "size = "+ mergablePair.get(len).size()	 + " peak = "+mergablePair.get(len).peek() );
-		  }
-		  
-		  
-		  // start hierarchical clustering
-		
-		  for(int len = minLength; len<=maxLength; len= len+minLength){
-			  PriorityQueue<RoutePair> pq = mergablePair.get(len);
-			  HashMap<String, Cluster> findCluster = clusterMaps.get(len);
-			  while(!pq.isEmpty()){
-				  RoutePair pair = pq.poll();
-				  if(!findCluster.containsKey(pair.r1)&&!findCluster.containsKey(pair.r2)) // if neither belongs to a cluster, create new cluster
-				  {
-					Cluster cluster = new Cluster(len);
-					int[] t1 = Tools.parseTrajId(pair.r1);
-					int[] t2 = Tools.parseTrajId(pair.r2);
-					cluster.add(t1[0], t1[1]);
-					cluster.add(t2[0], t2[1]);
-				  findCluster.put(pair.r1, cluster);
-				  findCluster.put(pair.r2, cluster);
-				  allTrajClusters.get(len).add(cluster);
-				  System.out.println("Clusters "+(allTrajClusters.get(len).size()-1)+"\n"+cluster);
-				  }
-				  else if(!findCluster.containsKey(pair.r1)&&findCluster.containsKey(pair.r2)){    // if r1 is not in cluster r2 is in a cluster
-					  int[] t1 = Tools.parseTrajId(pair.r1);
-					  Cluster cluster = findCluster.get(pair.r2);
-					  cluster.add(t1[0], t1[1]);
-					  findCluster.put(pair.r1, cluster);
-					  
-				  }
-				  else if(findCluster.containsKey(pair.r1)&&!findCluster.containsKey(pair.r2)){   // if r2 is not in cluster r1 is in a cluster
-					  int[] t2 = Tools.parseTrajId(pair.r2);
-					  Cluster cluster = findCluster.get(pair.r1);
-					  cluster.add(t2[0], t2[1]);
-					  findCluster.put(pair.r2, cluster);
-					  
-				  }
-				  else  
-				  {
-					 Cluster c1 = findCluster.get(pair.r1);
-					 Cluster c2 = findCluster.get(pair.r2);
-					 if(c1!=c2){
-						// System.out.println("Before Merege C1: "+c1.trajIds);
-						// System.out.println("Before Merege C2: "+c2.trajIds); 
-						 c1.merge(c2,R,findCluster);
-						 if(c1.getRoutes().size()<1){
-							 
-							 allTrajClusters.get(len).remove(c1);
-							 
-						 }
-						 if(c2.getRoutes().size()<1){
-							 allTrajClusters.get(len).remove(c2);
-						 }
-						
-					 }
-				  }
-				  
-			  }
-			  
-			  
-		  }
-		  
-		  
-	}
-	*/
-	
-/*
-	private void findBestMotifs(int minLength,int maxLength) {
-		
-		  for(int len = minLength; len<=maxLength; len = minLength +len){
-			  allTrajClusters.put(len, new  ArrayList<Cluster>());
-		  }
-		  for (int i = 0; i<oldtrajX.size(); i++){
-			  for(int length = minLength; length<=maxLength; length =length+minLength){
-				  
-				 // for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.noiseThreshold){
-				//  for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.minBlocks/2){
-				  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length*this.minLink)){
-				//	  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length)){
-				//  for(int s = 0; s<=oldtrajX.get(i).size()-length; s++){
-					      addToBestTrajClusters(i,s,length);
-				     
-				  }
-			  }
-		  }
-		
-		
-	}
-	*/
-	/*
-	private void findTop1Motifs(int minLength,int maxLength) {
-		top1EuDistanceCalled = 0;
-		int len = minLength;
-		int bestMotifCount = 0;
-	//	motifMatches = new HashMap<String, HashSet<String>>();
-		String bestMotifLocation = null;
-		
-		
-			//  allTrajClusters.put(len, new  ArrayList<Cluster>());
-		  for (int i = 0; i<oldtrajX.size(); i++){
-	//		  for(int length = minLength; length<=maxLength; length =length+minLength){
-				  
-				 // for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.noiseThreshold){
-				//  for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.minBlocks/2){
-			  	  
-			  for(int s = 0; s<=oldtrajX.get(i).size()-len; s++){
-				//	  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length)){
-				//  for(int s = 0; s<=oldtrajX.get(i).size()-length; s++){
-				  HashMap<String, HashSet<String>> pointer = new HashMap<String, HashSet<String>>();
-				  		
-					     String current = "T"+i+"S"+s+"L"+len;
-					     int count = 0;
-					     pointer.put(current, new HashSet<String>());
-					     Route currentRoute = Tools.getSubroute(i, s, len);
-					     for(int j = 0; j<oldtrajX.size();j++){
-					    	 if(i!=j){
-					    		 for(int sj = 0; sj<=oldtrajX.get(j).size()-len; sj++){
-					    			 String name = "T"+j+"S"+sj+"L"+len;
-					    			 Route route = Tools.getSubroute(j, sj, len);
-					    			 top1EuDistanceCalled++;
-					    			 if(Tools.routeSqrEuDist(currentRoute, route,R)<=R/this.noiseThreshold){
-					    				 {
-					    					 count++;
-					    					 pointer.get(current).add(name);
-					    					 break;
-					    				 }
-					    				 
-					    			 }
-					    			 
-					    		 }
-					    	 }
-					     }
-					     if(count>bestMotifCount){
-					    	 bestMotifCount = count;
-					    	 bestMotifLocation = current;
-					    	 motifMatches = pointer;
-					     }
-				     
-		//		  }
-			  }
-			  
-		  }
-		  System.out.println("top 1 motif Eudistance called = "+this.top1EuDistanceCalled);
-		  System.out.println("find top 1 motif R = "+R);
-		  System.out.println("bestMotifCount = "+bestMotifCount);
-		  System.out.println("bestMotifLocation = "+bestMotifLocation);
-		  System.out.println("motifMatches = "+motifMatches);
-		
-		
-	}*/
-
-	private void findMotifs(int minLength,int maxLength) {
-		
-		  for(int len = minLength; len<=maxLength; len = minLength +len){
-			  allTrajClusters.put(len, new  ArrayList<Cluster>());
-		  }
-		  for (int i = 0; i<oldtrajX.size(); i++){
-			  for(int length = minLength; length<=maxLength; length =length+minLength){
-				  
-				 // for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.noiseThreshold){
-				//  for(int s = 0; s<oldtrajX.get(i).size()-length; s = s+this.minBlocks/2){
-				  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length*this.minLink)){
-				//	  for(int s = 0; s<=oldtrajX.get(i).size()-length; s = (int) (s+length)){
-				//  for(int s = 0; s<=oldtrajX.get(i).size()-length; s++){
-
-				/*
-					  ArrayList<Double> currentSubX = new ArrayList<Double>();
-				      ArrayList<Double> currentSubY = new ArrayList<Double>();
-				      
-						for (int index = 0; index<length; index++){
-							currentSubX.add(oldtrajX.get(i).get(s+length));
-							currentSubY.add(oldtrajY.get(i).get(s+length));
-						}
-					  addToAllTrajClusters(currentSubX, currentSubY);
-					  */
-				      addToAllTrajClusters(i,s,length);
-				      /*
-				      if(length==48)
-				      {
-				    	  System.out.println("Length="+length);
-				    	  throw new IllegalArgumentException();
-				      }
-				      */
-				  }
-			  }
-		  }
-		  /*
-		for( int i = 0; i<oldtrajX.size();i++){
-			
-				
-			for (int j = i+1; j<oldtrajX.size();j++){
-				int bestS1 = 0;
-				double bestDist = Math.sqrt((oldtrajX.get(i).get(0)-oldtrajX.get(j).get(0))*(oldtrajX.get(i).get(0)-oldtrajX.get(j).get(0))+(oldtrajX.get(j).get(0)-oldtrajX.get(j).get(0))*(oldtrajY.get(j).get(0)-oldtrajY.get(j).get(0)));
-				int bestS2 = 0;
-				for (int s1 = 0; s1<=oldtrajX.get(i).size()-length; s1++){    // s1 is the start position of existing trajectory
-					for (int s2 = 0; s2<oldtrajX.get(j).size()-length; s2++){
-						double dist = Math.sqrt((oldtrajX.get(i).get(s1)-oldtrajX.get(j).get(s1))*(oldtrajX.get(i).get(s1)-oldtrajX.get(j).get(s1))+(oldtrajX.get(j).get(s2)-oldtrajX.get(j).get(s2))*(oldtrajY.get(j).get(s2)-oldtrajY.get(j).get(s2)));
-	                	if(bestDist>dist){
-	                		bestDist = dist;
-	                		bestS1 = s1;
-	                		bestS2 = s2;
-	                		
-	                	}
-					}
-				}
-				if(isClose(i,j,bestS1,bestS2,length)){
-					clusterTogether(i,j,bestS1,bestS2,length);
-				}
-				
-			}
-		}*/
-		
-	}
-
 	private void addToAllTrajClusters(int trajId, int s, int length) {
 		boolean isAdded = false;
 		//ArrayList<Cluster> clusterArrayList = allTrajClusters.get(length);
@@ -2053,6 +1673,7 @@ private void paa2saxseqs() {
 			  else{
 				  Location loc = new Location(rescaleX.get(i),rescaleY.get(i));
 				  id = new Integer(blocks.findBlockIdForPoint(loc));
+				  blocks.addPoint2Block(loc, id);
 			  }
 			 
 			words.add(id);
@@ -2146,184 +1767,7 @@ private void paa2saxseqs() {
 			  */
 			  
     }
-      private void resampling(){
-    	  oldtrajX = new ArrayList<ArrayList<Double>>();
-		  oldtrajY = new ArrayList<ArrayList<Double>>();
-		  travelDistance = new ArrayList<Double>();
-		  isAnomaly = new ArrayList<ArrayList<Boolean>>();
-		  isLongAnomaly = new ArrayList<ArrayList<Boolean>>();
-		  isTrueAnomaly = new ArrayList<ArrayList<Boolean>>();
-		  isDiscord = new ArrayList<ArrayList<Boolean>>();
-		  allTimeline = new ArrayList<ArrayList<Double>>();
-		  ArrayList<ArrayList<Double>> rawTimeResample = new ArrayList<ArrayList<Double>>(); //  present reTime in ArrayList
-		  double amountDist = 0;  
-		  longest3Traj = new int[3];
-		  longest3Traj[0] = 0;
-		  longest3Traj[1] = 0;
-		  longest3Traj[2] = 0;
-		  double longestDist = 0;
-			for (int i = 0; i<rawtrajX.size(); i++){
-				rawTimeResample.add(new ArrayList<Double>());
-				rawTimeResample.get(i).add(0.0);
-				double trajDist = 0;
-				for(int j = 1; j<rawtrajX.get(i).size(); j++){
-					double dist = Math.sqrt(squareDist(rawtrajX.get(i).get(j-1),rawtrajY.get(i).get(j-1),rawtrajX.get(i).get(j),rawtrajY.get(i).get(j)));
-					double eudist = Tools.pointEuDist(rawtrajX.get(i).get(j-1),rawtrajY.get(i).get(j-1),rawtrajX.get(i).get(j),rawtrajY.get(i).get(j));
-					if(eudist!=dist){
-						throw new IllegalArgumentException(dist+" : "+
-					eudist);
-					}
-					
-					
-					trajDist = trajDist+dist;
-					rawTimeResample.get(i).add(trajDist);
-				}
-				if(trajDist>longestDist)
-					longestDist = trajDist;
-				travelDistance.add(trajDist);
-				amountDist = amountDist+trajDist;
-			//	System.out.println("amountDist = "+amountDist);
-			//	System.out.println(i+"  :rawTimeResample.get(i) = "+rawTimeResample.get(i));
-			}
-				
-	//		double distCut=amountDist/(alphabetSize*1000);
-		//	double distCut=amountDist/(alphabetSize*rawtrajX.size());
-		//	double distCut=amountDist/(totalPoints*alphabetSize);
-			distCut = diagnalDistance/this.resampleRate;
-			int maxPoints = (int) (longestDist/distCut);
-			System.out.println("MaxPoint = "+maxPoints);
-			if(maxPoints>10000){
-				throw new IllegalArgumentException("maxPoints is too large: "+maxPoints);
-			}
-			if(maxPoints<10){
-				throw new IllegalArgumentException("maxPoints is too small: "+maxPoints);
-			}
-			System.out.println("distCut = "+distCut);
-			double minDist = distCut*(minBlocks);
-			ArrayList<ArrayList<Double>> timeResample = new ArrayList<ArrayList<Double>>();
-			for(int i = 0; i<rawtrajX.size();i++){
-				if(travelDistance.get(i)>minDist){
-					
-				//allTimeline.add(new ArrayList<Double>)
-				timeResample.add(new ArrayList<Double>());
-				oldtrajX.add(new ArrayList<Double>());
-				oldtrajY.add(new ArrayList<Double>());
-				isAnomaly.add(new ArrayList<Boolean>());
-				isTrueAnomaly.add(new ArrayList<Boolean>());
-				isLongAnomaly.add(new ArrayList<Boolean>());
-				isDiscord.add(new ArrayList<Boolean>());
-				int j = oldtrajX.size()-1;
-				oldtrajX.get(j).add(rawtrajX.get(i).get(0));
-				oldtrajY.get(j).add(rawtrajY.get(i).get(0));
-			boolean currentIsAnomaly;	
-			if(anomalyGroundTruth.get(j).get(0)!=0){
-				currentIsAnomaly = false;
-				isTrueAnomaly.get(j).add(false);
-			}
-			else{
-				currentIsAnomaly = true;
-				isTrueAnomaly.get(j).add(true);
-			}
-				double time = 0;
-				int index = 1;
-				timeResample.get(j).add(time);
-	//			System.out.println("i===================================================================================="+i);
-				while(time<rawTimeResample.get(i).get(rawTimeResample.get(i).size()-1)){
-					//if(index<anomalyGroundTruth.get(j).size())
-					//if(anomalyGroundTruth.get(j).get(index-1)!=0){
-					if(anomalyGroundTruth.get(j).get(index-1)==0||anomalyGroundTruth.get(j).get(index)==0){
-						currentIsAnomaly = true;
-						
-					}
-					else{
-						currentIsAnomaly = false;
-						
-					}
-					while(time<=rawTimeResample.get(i).get(index)){
-						
-						if(time+distCut<=rawTimeResample.get(i).get(index)){
-						time = time+distCut;
-					//	System.out.println(rawTimeResample.get(i).get(index)+"=rawTimeResample.get(i)  |  time = "+time);
-						timeResample.get(j).add(time);
-						//double ratio = (time-rawTimeResample.get(i).get(index-1))/distCut;
-						double ratio = (time-rawTimeResample.get(i).get(index-1))/(rawTimeResample.get(i).get(index)-rawTimeResample.get(i).get(index-1));
-						double latitude = rawtrajX.get(i).get(index-1)+(rawtrajX.get(i).get(index)-rawtrajX.get(i).get(index-1))*ratio;//latOri.get(index-1)+(latOri.get(index)-latOri.get(index-1))*ratio;
-						double longitude = rawtrajY.get(i).get(index-1)+(rawtrajY.get(i).get(index)-rawtrajY.get(i).get(index-1))*ratio; 
-						/*
-						
-								System.out.println("ratio = "+ratio);
-								//System.out.println("resample dist = "+euDist(x,y,rawtrajX.get(i).get(index-1),rawtrajY.get(i).get(index-1)));
-								System.out.println("resample dist = "+euDist(x,y,oldtrajX.get(i).get(oldtrajX.get(i).size()-1),oldtrajY.get(i).get(oldtrajY.get(i).size()-1)));
-								System.out.println("original dist = "+euDist(rawtrajX.get(i).get(index),rawtrajY.get(i).get(index),rawtrajX.get(i).get(index-1),rawtrajY.get(i).get(index-1)));
-								System.out.println("i="+i+"  index = "+index);
-								System.out.println(x+","+y);
-								System.out.println(rawtrajX.get(i).get(index-1)+","+rawtrajY.get(i).get(index-1));
-								System.out.println(rawtrajX.get(i).get(index)+","+rawtrajY.get(i).get(index));
-								*/
-							if(Tools.pointEuDist(latitude,longitude,oldtrajX.get(j).get(oldtrajX.get(j).size()-1),oldtrajY.get(j).get(oldtrajY.get(j).size()-1))>10*distCut)
-						  {	
-								throw new IllegalArgumentException();
-							  }
-
-						oldtrajX.get(j).add(latitude);
-						oldtrajY.get(j).add(longitude);
-						isTrueAnomaly.get(j).add(currentIsAnomaly);
-						}
-						else 
-							{
-							time = time+distCut;
-							//	System.out.println(rawTimeResample.get(i).get(index)+"=rawTimeResample.get(i)  |  time = "+time);
-								timeResample.get(j).add(time);
-								oldtrajX.get(j).add(rawtrajX.get(i).get(index));
-								oldtrajY.get(j).add(rawtrajY.get(i).get(index));
-								isTrueAnomaly.get(j).add(currentIsAnomaly);
-							//	break;
-							}
-					//	timeLine.add(time);
-						
-						//time = time +distCut;
-					}
-					index++;
-				}
-				if(oldtrajX.get(j).size()>longest3Traj[0]){
-					longest3Traj[2] = longest3Traj[1];
-					longest3Traj[1] = longest3Traj[0];
-					longest3Traj[0] = oldtrajX.get(j).size();						
-				}
-				else if(oldtrajX.get(j).size()>longest3Traj[1]){
-					longest3Traj[2] = longest3Traj[1];
-					longest3Traj[1] = oldtrajX.get(j).size();
-				}
-				else if(oldtrajX.get(j).size()>longest3Traj[2]){
-					longest3Traj[2] = oldtrajX.get(j).size();
-				}
-		//		System.out.println(oldtrajX.get(i).size() +"   longest3Traj[2] = "+longest3Traj[2]);
-				for(int k = 0; k<oldtrajX.get(j).size();k++){
-					isAnomaly.get(j).add(true);
-					isLongAnomaly.get(j).add(false);
-					isDiscord.get(j).add(true);
-				}
-				}	
-			}
-			
-			
-			
-			/*
-			for(int j = 0; j<oldtrajX.size(); j++)
-			  {
-				
-				  System.out.println(oldtrajX.get(j).size()+"points. "+j+"X:"+oldtrajX.get(j));
-				  System.out.println(j+"rawX:"+rawtrajX.get(j));
-				  System.out.println(j+"Y:"+oldtrajY.get(j));
-				  System.out.println(j+"rawY:"+rawtrajY.get(j));
-				  
-				  System.out.println(oldtrajX.get(j).size()+"points. "+j+"X:");//+oldtrajX.get(j));
-				
-			  }		  
-			  */
-			
-      }
-	/* 20170213
+      /* 20170213
 	 * resample original ts with the same speed.
 	 */
 	  private  void resample() {
@@ -2448,11 +1892,12 @@ private void paa2saxseqs() {
 			  
 		  }
 		  
-		  System.out.println("latOri = "+latOri.subList(0, 1000));
-		  System.out.println("lonOri = "+lonOri.subList(0, 1000));
+		  System.out.println("latOri = "+latOri.subList(0, 100));
+		  System.out.println("lonOri = "+lonOri.subList(0, 100));
 		  System.out.println("r = "+r);
-		  System.out.println("rescaleX = "+rescaleX.subList(0, 1000));
-		  System.out.println("rescaleY = "+rescaleY.subList(0, 1000));
+		  System.out.println("original length : rescaled length = "+latOri.size()+" : "+rescaleX.size());
+		  System.out.println("rescaleX = "+rescaleX.subList(0, 100));
+		  System.out.println("rescaleY = "+rescaleY.subList(0, 100));
 		  
 		  
 		  
@@ -2463,21 +1908,30 @@ private void paa2saxseqs() {
 	}
 
 
-	public static double squareDist(double lat1, double lon1, double lat2, double lon2) {
-		return ((lat1-lat2)*(lat1 -lat2)+(lon1-lon2)*(lon1-lon2));
-	}
-	
+	// Draw raw trajectory on left map
 	private void leftPanelRaw(){
 		for (int i =0; i<rawtrajX.size();i++){
-			Route singleRoute = new Route();
+			Route singleRoute = new Route(rawtrajX.get(i),rawtrajY.get(i));
+		/*
 			for(int j = 0; j<rawtrajX.get(i).size(); j++){
 			//	Location loca = new Location(oldtrajX.get(i).get(j),oldtrajY.get(i).get(j));
 				singleRoute.addLocation(rawtrajX.get(i).get(j),rawtrajY.get(i).get(j));
 			}
+			*/
 			rawRoutes.add(singleRoute);
 			
 		}
+		int start = 0;
+		for(int i = 0; i<rescaleX.size();i++){
+			if(rescaleX.get(i)<=-1000){
+				Route singleRoute = new Route(rescaleX.subList(start, i),rescaleY.subList(start, i));
+				rescaleRoutes.add(singleRoute);
+				start = i+1;
+			}
+		}
 	}
+	
+	/*
 	private void drawRawTrajectories() {
 		System.out.println("drawRawTraj: "+rawAllIntervals.size());
 		
@@ -2488,10 +1942,7 @@ private void paa2saxseqs() {
 	  					  Route singleRoute = new Route();
 	  					  int startPos = rawAllIntervals.get(k).getStartPos();
 	  						int endPos = rawAllIntervals.get(k).getEndPos();
-	  						/*
-	  						for(int index=startPos; index<=endPos;index++)
-	  							isCovered[index]=true;
-	  							*/
+	  						
 	  		//				System.out.println("startPos: "+startPos);
 	  		//				System.out.println("endPos: " +endPos);
 	  						
@@ -2515,6 +1966,7 @@ private void paa2saxseqs() {
 	
 	  		  	
 	}
+	*/
 
 	private void runSequitur() {
 			  chartData = new MotifChartData(this.dataFileName, lat, lon, 1, alphabetSize); //PAA is always 1.
@@ -2526,7 +1978,7 @@ private void paa2saxseqs() {
 				try{
 				  SAXRecords saxFrequencyData = null;
 				  saxFrequencyData = SequiturFactory.entries2SAXRecords(trimedTrack);
-				  System.out.println("Input String Length: " + countSpaces(saxFrequencyData.getSAXString(SPACE)));
+				  System.out.println("Input String Length: " + Tools.countSpaces(saxFrequencyData.getSAXString(SPACE)));
 				  consoleLogger.trace("String: " + saxFrequencyData.getSAXString(SPACE));
 				//  System.out.println("String: "+ saxFrequencyData.getSAXString(SPACE));
 				  consoleLogger.debug("running sequitur...");
@@ -2537,7 +1989,7 @@ private void paa2saxseqs() {
 				 // GrammarRules rules1 = sequiturGrammar.toGRD();
 				 // System.out.println("rules size: "+ rules1.size());			 
 		          rules = sequiturGrammar.toGrammarRulesData();
-		          rules.setParsedString();
+		      //    rules.setParsedString();
 		          realRuleSize = rules.size();
 		     //     allRules.add(rules);
 		          System.out.println("real rules size: "+ realRuleSize);
@@ -2550,7 +2002,11 @@ private void paa2saxseqs() {
 		          
 		          consoleLogger.debug("done ...");
 		          
-		          
+		       // SequiturFactory.updateRuleIntervals(filteredRules, saxFrequencyData, lat.size());
+		    	  //        filteredRules = sequiturGrammar.toFilteredGrammarRulesData(filteredRuleMap);
+		    	  //        for(int i=0;i<filteredRules.size();i++)
+		    	  //      	  System.out.println(filteredRules.get(i));
+		    	  SequiturFactory.updateRuleIntervals(rules,saxFrequencyData,rescaleX.size());
 		          
 		          
 		          
@@ -2668,7 +2124,7 @@ private void paa2saxseqs() {
 				for (int i = 0; i<ruleIntervals.size();i++){
 			  	totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i).size();
 			  	
-				  {//(countSpaces(chartData.getRule(i).getExpandedRuleString())>minBlocks){
+				  {//(Tools.countSpaces(chartData.getRule(i).getExpandedRuleString())>minBlocks){
 				  ArrayList<RuleInterval> positions = ruleIntervals.get(i);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
 				  
 				//  ArrayList<RuleInterval> positions = chartData.getRulePositionsByRuleNum(i);	  
@@ -2763,7 +2219,7 @@ private void paa2saxseqs() {
 			//currentClusters = new HashMap<String, Cluster>();
 			for(int i = 0; i<r0.length; i++	){
 				String s = r0[i];
-				if(!isNumeric(s) && s!=null){
+				if(!Tools.isNumeric(s) && s!=null){
 					if(r0[i].charAt(0)=='R'){
 						s = "I"+iteration+"r"+r0[i].substring(1);
 						
@@ -2781,109 +2237,6 @@ private void paa2saxseqs() {
 		
 	}
 	*/
-
-		private void mapToPreviousR0() {
-			int currentIdx = 0;
-		   
-		         /*
-		          * add on mapToPreviousR0;
-		          */
-		          for(int i=0;i<r0.length;i++){
-		        	  
-		        	  if(r0[i]==null)
-		        		  {
-		        		  throw new IndexOutOfBoundsException(i+" : "+r0[i]+":"+currentIdx+" expandRule:  ");//+rules.get(currentRule).getExpandedRuleString()+" length1:length2 = "+length1+":"+length2);
-		        		  	
-		        		  }
-		        	 
-		        	  else if(r0[i].charAt(0)=='R')
-		        		  {
-		        		  	Integer currentRule = Integer.valueOf(r0[i].substring(1));
-		        		  
-		        		  
-		        		  	mapToPreviousR0.add(currentIdx);
-		        	//	  	System.out.println(i+" : "+r0[i]+":"+currentIdx+" ");
-		        		  	int length1 = rules.get(currentRule).getRuleYield();
-		        		  	int length2 = countSpaces(rules.get(currentRule).getExpandedRuleString());
-		        		   // currentIdx = currentIdx + rules.get(currentRule).getRuleYield();
-		        		  	currentIdx = currentIdx + length2;
-		        	//	  	System.out.println("CurrentIdx = "+currentIdx +" i= "+i+" : "+r0[i]+":"+currentIdx+" expandRule:  "+rules.get(currentRule).getExpandedRuleString()+" length1:length2 = "+length1+":"+length2);
-		        		  	
-		        		  	if(currentIdx>mapToOriginalTS.size()||length1!=length2)
-		        		    	
-		        		    {
-				        		  throw new IndexOutOfBoundsException(i+" : "+r0[i]+":"+currentIdx+" expandRule:  "+rules.get(currentRule).getExpandedRuleString()+" length1:length2 = "+length1+":"+length2);
-
-		        		    }
-		        		   
-		        		    
-		        		  }
-		        	  else
-		        		  {
-		        			  
-		        		  mapToPreviousR0.add(currentIdx);
-
-		        	//	  System.out.println(i+" : "+r0[i]+":"+currentIdx+" ");
-		        		  
-		        		  	currentIdx++;
-		        		  	if(currentIdx>mapToOriginalTS.size())
-		        		    	
-		        		    {
-				        //		  System.out.println(i+" : "+r0[i]+":"+currentIdx);
-
-		        		    }
-		        		  }
-		        		  
-		          }
-		          /* above
-			          * add on mapToPreviousR0;
-			          */
-		          
-		          
-		          
-		          System.out.println();
-	          		
-	}
-
-		private void replaceBack() {
-			System.out.println("filter");
-			printArrayList(filter);
-			System.out.println("filterMap: ");
-			System.out.println(filterMap);
-			for(int i = realRuleSize; i<rules.size(); i++){
-				String[] ruleString = rules.get(i).getRuleString().split(" ");
-				System.out.println("Rule "+i+" : "+rules.get(i).getRuleString()+"   filterMap: "+filterMap.get(rules.get(i).getRuleNumber()) );
-	        	  if(!clusterMap.containsKey(filterMap.get(rules.get(i).getRuleNumber()))){
-	        		
-	        		System.out.print("replace Back Rule String: [ ");
-	        		int r0Pos = rules.get(i).getR0Occurrences().get(0);
-	        		for(int j = 0; j<ruleString.length;j++){
-	        			r0[r0Pos+j] = ruleString[j];
-	        			System.out.print(ruleString[j]+" ");
-	        		}
-	        	    System.out.println("]");
-	        	  }
-	        	
-	        		  
-	          }
-			ArrayList<String> r0new = new ArrayList<String>();
-			
-			for(int i = 0; i<r0.length; i++)
-				if(r0[i]!=null)
-					{
-						r0new.add(r0[i]);
-					}
-			r0 = new String[r0new.size()];
-			
-			System.out.print("r0new: [");
-			for(int i = 0; i<r0.length; i++)
-				
-					{ 
-						r0[i] = r0new.get(i);
-						System.out.print(" "+r0[i]);
-					}
-			System.out.println("]");
-	}
 
 		private void setR0Occ() {
 			HashMap<String, Integer> hm = new HashMap<String, Integer>();
@@ -2946,7 +2299,7 @@ private void paa2saxseqs() {
 	        		  	//mapToPreviousR0.add(currentIdx);
 	        		  //	System.out.println(i+" : "+r0[i]+":"+currentIdx+" ");
 	        		  	int length1 = rules.get(currentRule).getRuleYield();
-	        		  	int length2 = countSpaces(rules.get(currentRule).getExpandedRuleString());
+	        		  	int length2 = Tools.countSpaces(rules.get(currentRule).getExpandedRuleString());
 	        		   // currentIdx = currentIdx + rules.get(currentRule).getRuleYield();
 	        		  	currentIdx = currentIdx + length2;
 	        		  	System.out.println("CurrentIdx = "+currentIdx +" i= "+i+" : "+r0[i]+":"+currentIdx+" expandRule:  "+rules.get(currentRule).getExpandedRuleString()+" length1:length2 = "+length1+":"+length2);
@@ -2996,185 +2349,7 @@ private void paa2saxseqs() {
 	          		
 	}
 
-		private void clusterRules() {
-			
-		      /*
-	         * Postprocessing merge, connect
-	         */
-			
-			/*
-			 * Warning: rules in clusters are real rules, rules in clusterMap are filter rules. 
-			 * 
-			 */
-		    
-		    
-	        /* print all rule details
-	         */
-	         
-	          for(int i=0;i<rules.size();i++){
-	        	  System.out.println("Rule number: "+rules.getRuleRecord(i).getRuleNumber()+" Fre in R0: "+rules.get(i).frequencyInR0()+" LEVEL: "+rules.get(i).getRuleLevel()+" "+rules.get(i)+" StringOccurence: "+rules.getRuleRecord(i).occurrencesToString()+"OccurenceInR0: "+rules.get(i).r0OccurrencesToString()+" Rule String: "+rules.getRuleRecord(i).getExpandedRuleString()+" Rule Positions: "+rules.getRuleRecord(i).getR0Intervals());
-	          }
-	        
-	       /*  */
-	         
-	        filterMap = new HashMap<Integer,Integer>();
-	        for (int i = 1; i<rules.size();i++){
-	        	System.out.println("Before filter: Frequency in R0: "+ rules.get(i).frequencyInR0()+"  Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
-					if ((rules.get(i).frequencyInR0()>=1&&countSpaces(RuleDistanceMatrix.parseRule(rules.get(i).getExpandedRuleString()))>=1))//||
-						//	(originalRules.get(i).frequencyInR0()>1&&originalRules.get(i).getR0Intervals().size()>2&&originalRules.get(i).getRuleYield()>=minBlocks))
-						{
-						//HashSet<Integer> set = new HashSet<Integer>();
-						System.out.println("Yield: "+rules.get(i).getRuleYield()+" string: "+rules.get(i).getExpandedRuleString());
-						filterMap.put(i, filter.size());
-						filter.add(i);
-					/*	
-						if(rules.get(i).getR0Intervals().size()<2)
-							System.out.println("Bug!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!"+i);
-						*/
-						}
-					
-				}
-	        System.out.println("filter Size = "+filter.size());
-	        allFilters.add(filter);
-	        if(filter.size()>1){
-	        //HashMap<Integer,ArrayList<Integer>> mergeRecord = new HashMap<Integer, ArrayList<Integer>>();
-	        long t1s = System.currentTimeMillis();
-	        RuleDistanceMatrix rdm;
-	        System.out.println("AlphabetSize="+this.alphabetSize);
-	        rdm = new RuleDistanceMatrix(blocks,rules, filter,minBlocks, minLink); 
-	        long t1e = System.currentTimeMillis();
-	        long buildMatrixTime = t1e-t1s;
-	        
-	  //      clusters = new ArrayList<HashSet<Integer>>(); 
-	       /*
-	        for(int i = 0; i<rdm.filter.size();i++){
-	      	 families.add(new HashSet<Integer>());
-	      	 
-	      	 
-	      	 families.get(i).add(i);
-	      	//  mergeRecord.put(i, family.add(i) );
-	        }
-	       */
-	        long t2s =System.currentTimeMillis();
-	        NumberFormat formatter = new DecimalFormat("#0.00");
-	        System.out.println("rdm.pq.size(): "+rdm.pq.size());
-	        int mergableCount = 0;
-	        while(rdm.pq.size()>0){
-	      	  PairDistance pair = rdm.pq.remove();
-	      	  int lineSize;
-	      	  int colSize;
-	      	  int totalSize;
-	      	  if(isMergable(rdm.matrix,clusters,pair.getLine(),pair.getCol(),clusterMap, minLink)){
-	      		  hasNewCluster=true;
-	      		  mergableCount++;
-	      	//	  merge(rules,rdm.filter.get(pair.getLine()),rdm.filter.get(pair.getCol()));
-	      		  if(clusterMap.containsKey(pair.getLine())||clusterMap.containsKey(pair.getCol()))
-	      		  {
-	      			  if(!clusterMap.containsKey(pair.getLine())){
-	      				  clusters.get(clusterMap.get(pair.getCol())).add(filter.get(pair.getLine()));
-	      				  clusterMap.put(pair.getLine(), clusterMap.get(pair.getCol()));
-	      			//	  System.out.println("Adding Line  to a cluster, Line:"+pair.getLine()+" Colu:"+pair.getCol()+clusters.get(clusterMap.get(pair.getCol())));
-	      				//  System.out.println("Map:"+clusterMap);
-	      				  
-	      			  }
-	      			  else if(!clusterMap.containsKey(pair.getCol())){
-	      				  clusters.get(clusterMap.get(pair.getLine())).add(filter.get(pair.getCol()));
-	      				  clusterMap.put(pair.getCol(), clusterMap.get(pair.getLine()));
-	      			//	  System.out.println("Adding Colum to a cluster,Colum:"+pair.getCol()+" Colu:"+pair.getCol()+clusters.get(clusterMap.get(pair.getLine())));
-	      			//	  System.out.println("Map:"+clusterMap);
-	      			  }
-	      			  else{
-	      				  if(!clusterMap.get(pair.getLine()).equals(clusterMap.get(pair.getCol())))
-	      				  {
-	      				//  System.out.println("Before Merge, line in cluster:"+clusterMap.get(pair.getLine())+clusters.get(clusterMap.get(pair.getLine()))+" colu in cluster:"+clusterMap.get(pair.getCol())+clusters.get(clusterMap.get(pair.getCol())));
-	      				  lineSize = clusters.get(clusterMap.get(pair.getLine())).size();
-	      				  colSize = clusters.get(clusterMap.get(pair.getCol())).size();
-	      				  clusters.get(clusterMap.get(pair.getLine())).addAll(clusters.get(clusterMap.get(pair.getCol())));
-	      				  int colCluster = clusterMap.get(pair.getCol());
-	      				  for(int v : clusters.get(clusterMap.get(pair.getCol())))
-	      					  {
-	      				//	  System.out.print("v: "+v+" ");
-	      					  clusterMap.put(filterMap.get(v), clusterMap.get(pair.getLine()));
-	      					  clusters.get(clusterMap.get(pair.getLine())).add(v);
-	      					  }
-	      				  //System.out.println();
-	      				  clusters.get(colCluster).clear();
-	      				 // System.out.println("After  Merge, Line:"+pair.getLine()+clusters.get(clusterMap.get(pair.getLine()))+" Colu:"+pair.getCol()+clusters.get(colCluster));
-	      				 // System.out.println("Map:"+clusterMap);
-	      				  totalSize = clusters.get(clusterMap.get(pair.getLine())).size();
-	      				  //if((lineSize+colSize)!=totalSize){
-	      					//  System.out.println("Error Candidate here!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!");
-	      				  //}
-	      				  }
-	      				  //else
-	      					// System.out.println("Same Cluster! "+clusterMap.get(pair.getLine())+","+clusterMap.get(pair.getCol()));
-	      			  }
-	      		  }
-	      		  else{
-	      			  HashSet<Integer> set = new HashSet<Integer>();
-	      			  set.add(filter.get(pair.getLine()));            
-	      			  set.add(filter.get(pair.getCol()));
-	      			  clusters.add(set);
-	      			  clusterMap.put(pair.getLine(), clusters.size()-1);
-	      			  clusterMap.put(pair.getCol(), clusters.size()-1);
-	      			//  System.out.println("Created a cluster: "+clusters.get(clusters.size()-1));
-	      			//  System.out.println("Map:"+clusterMap);
-	      		  }
-	      		  
-	      		  /*
-	      		  clusters.get(pair.getLine()).addAll(clusters.get(pair.getCol()));
-	      		  clusters.get(pair.getCol()).addAll(clusters.get(pair.getLine()));
-	      		  
-	      		  for(int i: families.get(pair.getCol()))
-	      			  families.get(pair.getLine()).add(i);
-	      		  for(int i: families.get(pair.getLine()))
-	      			  families.get(pair.getCol()).add(i);
-	      			  */	        		
-	      	//	  System.out.print("Merged Pair: <"+pair.getLine()+", "+pair.getCol()+"> = "+rdm.matrix[pair.getLine()][pair.getCol()]);
-	      	//	  System.out.print(" all distances: ");
-	      		  /*
-	      		  for (int i : clusters.get(clusterMap.get(pair.getLine())))
-	    				for(int j : clusters.get(clusterMap.pair.getCol()))
-	    				{
-	    				
-	    				System.out.print(formatter.format(rdm.matrix[i][j])+", ");
-	    					
-	    				}*/
-	      	//	  System.out.println();
-	      	  }
-	        }
-	        
-		  
-	        
-	        
-	        System.out.println("MergableCount: "+mergableCount);
-	        
-	        /*
-	        ArrayList<HashSet<Integer>> tempCluster = new ArrayList<HashSet<Integer>>();
-	        for(int i=0;i<clusters.size();i++)
-	        {
-	      	  if(clusters.get(i).size()>0)
-	      		  tempCluster.add(clusters.get(i));
-	        }
-	        clusters = tempCluster; // be aware!!!! hashMap did not update here, but who cares?
-	        */
-	        allClusters.add(clusters);
-	        long t2e = System.currentTimeMillis();
-	        long clusterTime = t2e -t2s;
-	    	System.out.println("build matrix: "+(double)(buildMatrixTime/1000.0));
-			  System.out.println("Clustering Time: "+(clusterTime/1000.0));
-	        /*
-	        for(int i = 0; i<clusters.size();i++){
-	      	  System.out.println("i = "+i+" : "+clusters.get(i));
-	        }
-	        */
-	       
-			  System.out.println("cluster map size = "+ clusterMap.size());
-			    System.out.println("clusterMap:   "+clusterMap);
-	        }
-	        
-		}
-private void mergeTerminals() {
+		private void mergeTerminals() {
 	int c = 0;
 	ArrayList<String> r0New = new ArrayList<String>(); 
 	while(c<r0.length){
@@ -3186,11 +2361,11 @@ private void mergeTerminals() {
 		int length = 0;
     	//	  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
 			
-	    	if(isNumeric(s)&&Integer.valueOf(s)>=0){
+	    	if(Tools.isNumeric(s)&&Integer.valueOf(s)>=0){
 	    	
 	    		int numStartPos;
 	    		int numEndPos;
-	    		if(c<1||isNumeric(r0[c-1])||r0[c-1]==null){
+	    		if(c<1||Tools.isNumeric(r0[c-1])||r0[c-1]==null){
 	    			numStartPos= mapToOriginalTS.get(c);
 	    			length = Math.min(10, getNextNonTerminal(c)-c);
 	    		
@@ -3288,7 +2463,7 @@ System.out.println("]");
 		int end = 0;
 		for(int i = 0; i<r0.length; i++){
 			
-			if(!isNumeric(r0[i])){
+			if(!Tools.isNumeric(r0[i])){
 				end = getPositionInOriginalTrimedString(i)-1;
 				if(end>0) 
 					{
@@ -3327,85 +2502,16 @@ System.out.println("]");
 	}
 
 */
-	private void drawOnMap(){
 
+	private void drawOnMap(){   //iterative sequitur
+/*
 		Comparator<Double> doubleComparator = new Comparator<Double>() {
 	        @Override public int compare(Double s1, Double s2) {
 	            return s1.compareTo(s2);
 	        }           
 	    };
-		    this.accumulatDistance = new TreeMap<Integer,Double>();
-		    double currentAmountDistance = 0.0;
-			  // Generate All Motifs and record them on files respectively.
-		    trueAnomalyCount = 0;
-		    falsePositiveCount = 0;
-		    trueNegativeCount = 0;
-		    falseNegativeCount = 0;
-			for(int i = 0; i<isCovered.length;i++)
-				{
-					isCovered[i] = true;
-					ruleCovered[i] = false;
-				}
-		  	finalIntervals = new HashMap<String, ArrayList<RuleInterval>>();
-			ruleIntervals = new ArrayList<ArrayList<RuleInterval>>();
-			anomalyIntervals = new ArrayList<RuleInterval>();
-			routes = new ArrayList<ArrayList<Route>>();
-			int anomalyCount = 0;
-			int totalRuleCount = 0;
-		  	immergableRuleCount = 0;
-		    //for (int i = 0 ; i<r0.length; i++){
-		  	int i = 0;
-		  	int cnt = 0;
-		  	int totalRuleLength = 0;
-		  	int amountR0RuleLength = 0;
-		  	int nonTerminalCounter = 0;
-		  //	int totalNonTerminal = 0;
-		  	int nullCounter =0;
-		    while (i<r0.length){
-		 //   	System.out.println("i:"+i);
-		    	
-		    	if(r0[i]==null)
-		    		{
-		    			i++;
-		    			nullCounter++;
-		    			continue;
-		    		}
-		    		
-		  		String s = r0[i];
-	    	//	  System.out.println(minBlocks+"  = getNextNonTerminal(i) = "+ i +" =  " +getNextNonTerminal(i)+" = "+r0[i]);
-
-		    	if(!isNumeric(s)){
-		    	  nonTerminalCounter++;	
-		    	  amountR0RuleLength = amountR0RuleLength + countSpaces(RuleDistanceMatrix.parseRule(s));  	
-		    	 // if(countSpaces(RuleDistanceMatrix.parseRule(s))>=minBlocks){
-			    	//  if(countSpaces(RuleDistanceMatrix.parseRule(s))>=2){
-
-		    	  if(true){
-		    	  //  	System.out.println("r0: "+i+" : "+r0[i]+" : "+RuleDistanceMatrix.parseRule(s));
-		
-		          int startPos = mapToOriginalTS.get(i-nullCounter);
-		          int endPos;
-		          if(isNumeric(r0[i+1])&&Integer.valueOf(r0[i+1])<0)
-		    	     endPos = mapToOriginalTS.get((i-nullCounter+1))-1;
-		          else
-		        	 endPos = mapToOriginalTS.get((i-nullCounter+1));
-		          
-		          
-		        //  currentAmountDistance = currentAmountDistance+allDiscordDistances.get(startPos+","+endPos);
-		          
-		          
-		          
-		    	  /*
-		          int endPos;
-		          
-		          if(i+2<mapToOriginalTS.size()&&isNumeric(r0[i+1])&&Integer.valueOf(r0[i+1])>0)
-		    	   {
-		        	  endPos = mapToOriginalTS.get((i+2))-1;
-		        	  i++;
-		    	   }
-		          else
-		        	  endPos = mapToOriginalTS.get((i+1))-1;
-		        	*/    
+	    		for(int i = 0; i<rules.size(); i++){
+	    		  int startPos = rules.get(i).
 		          RuleInterval interval = new RuleInterval(startPos,endPos);
 		    	  for (int a = startPos; a<=endPos; a++){
 		    		  ruleCovered[a] = true;
@@ -3419,34 +2525,10 @@ System.out.println("]");
 		    	  	}
 		    	  }
 		    	  i++;
-		    	  /*
-		    	   * 
-		    	   *   Don't consider subtrajectories < minBlocks as anomalies.
-		    	   * 
-		    	   */
-		    	  /*
-		    	  else{
-		    		  int unsatisfiedStartPos = mapToOriginalTS.get(i);
-			    	  int unsatisfiedEndPos;
-			    	  if(i==(r0.length-1))
-			    		  unsatisfiedEndPos = mapToOriginalTS.get(i);
-			    	  else
-			    	  {
-			    		  unsatisfiedEndPos = mapToOriginalTS.get((i+1))-1;
-			    	  }
-			    	  for(int pos = unsatisfiedStartPos; pos<=unsatisfiedEndPos; pos++)
-			    		{
-			    		  
-			    		  isCovered[pos] = false;
-				    	  anomalyCount++;
->>>>>>> refs/heads/discordsEvaluation
-			
-<<<<<<< HEAD
-=======
-			    		}
-		    	  }
-		    	  */
+		    	
+		    	  
 		    	}
+
 		    	else{
 		    		int numStartPos = mapToOriginalTS.get(i-nullCounter);
 			    	  int numEndPos;
@@ -3463,23 +2545,14 @@ System.out.println("]");
 		    		  
 		    		//  System.out.println("ii:"+i);
 		    		//  System.out.println(nextNonTerminal + "MapToOriginalTS.get(nextNonTerminal) = "+mapToOriginalTS.get(nextNonTerminal));
-		    		  if(isNumeric(r0[nextNonTerminal])) // negative
+		    		  if(Tools.isNumeric(r0[nextNonTerminal])) // negative
 		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal-nullCounter)-1;
 		    		  else
 		    			  numEndPos = mapToOriginalTS.get(nextNonTerminal-nullCounter);
 		    		  
 		    		  
 		    		  currentAmountDistance = currentAmountDistance+allDiscordDistances.get(numStartPos+","+numEndPos);
-		    		/*
-		    		  System.out.print(cnt+": [");
-		    		  cnt++;
-		    		  for (int a = i; a<=nextNonTerminal; a++)
-		    			  {
-		    			  	System.out.print(" "+parseRule(r0[a]));
-		    			  
-		    			  }
-		    		  System.out.println("]");
-		    		  */
+		    		
 		    		//  System.out.println("i_nextNon : "+i+":"+nextNonTerminal+"["+numStartPos+"-"+numEndPos);
 		    		//  numEndPos = mapToOriginalTS.get((i+minBlocks))-1;
 		    		  RuleInterval ri = new RuleInterval(numStartPos,numEndPos);
@@ -3512,7 +2585,7 @@ System.out.println("]");
 		  	while (it.hasNext()){
 		  		@SuppressWarnings("unchecked")
 				Map.Entry<String,ArrayList<RuleInterval>> pair = (Map.Entry<String,ArrayList<RuleInterval>>)it.next();
-		    	  totalRuleLength = totalRuleLength + countSpaces(RuleDistanceMatrix.parseRule(pair.getKey()));
+		    	  totalRuleLength = totalRuleLength + Tools.countSpaces(RuleDistanceMatrix.parseRule(pair.getKey()));
 
 		  		ruleIntervals.add(pair.getValue());
 		  	}
@@ -3529,10 +2602,7 @@ System.out.println("]");
 		  					  Route singleRoute = new Route();
 		  					  int startPos = positions.get(k).getStartPos();
 		  						int endPos = positions.get(k).getEndPos();
-		  						/*
-		  						for(int index=startPos; index<=endPos;index++)
-		  							isCovered[index]=true;
-		  							*/
+		  					
 		  		//				System.out.println("startPos: "+startPos);
 		  		//				System.out.println("endPos: " +endPos);
 		  						
@@ -3609,12 +2679,7 @@ System.out.println("]");
 		  					  	
 		  					  	}
 		  					  	
-		  					  }
-		  				  /*
-		  				  if(ruleCovered[i1]){
-		  					  
-		  				  }
-		  				  */
+		  			
 		  				  else
 		  					  i1++;
 		  				
@@ -3629,51 +2694,21 @@ System.out.println("]");
 		  			}
 
 		  			  drawAnomaly();
+		  			  	  
 		  			  
-		  			  
-				
+				*/
 		  }
 
 	private int getNextNonTerminal(int i) {
 		int j = i+1;
 	//	System.out.println("j: "+j);
-		while(j<r0.length&&isNumeric(r0[j])&&Integer.valueOf(r0[j])>=0)
+		while(j<r0.length&&Tools.isNumeric(r0[j])&&Integer.valueOf(r0[j])>=0)
 		{
 			j++;
 			
 		}
 		
 		return j;
-	}
-
-	private boolean isNumberAhead( int i) {
-		
-		for (int j = i; j<r0.length&&j<(i+minBlocks);j++)
-			{
-				if(!isNumeric(r0[j])||Integer.valueOf(r0[j])<0)
-			
-				return false;
-			}
-		
-		System.out.print("r0_"+i+"_"+(i+minBlocks-1)+": [");
-		for (int j = i; j<r0.length&&j<(i+minBlocks);j++)
-		{
-			System.out.print(r0[j]+" ");
-		}
-		System.out.println("]");
-		
-		return true;
-	}
-
-	private Integer getPositionsInTS(ArrayList<Integer> mapToPreviousR0,ArrayList<Integer> previousMapToOriginalTS, int index) {
-		
-	//	if(previousMapToOriginalTS.get(mapToPreviousR0.get(index))==108)
-		/*
-				System.out.println("index = "+index+"    r0"+r0[index]);
-				System.out.println(" mapToPreviousR0.get(index) ="+mapToPreviousR0.get(index));
-				System.out.println("  previousMapToOriginalTS.get(mapToPreviousR0.get(index))  ="+previousMapToOriginalTS.get(mapToPreviousR0.get(index)));
-	   */
-		return previousMapToOriginalTS.get(mapToPreviousR0.get(index));
 	}
 
 	/*
@@ -3825,7 +2860,7 @@ System.out.println("]");
 			for (int i = 0; i<ruleIntervals.size();i++){
 		  	totalSubTrajectory = totalSubTrajectory + ruleIntervals.get(i).size();
 		  	
-			  {//(countSpaces(chartData.getRule(i).getExpandedRuleString())>minBlocks){
+			  {//(Tools.countSpaces(chartData.getRule(i).getExpandedRuleString())>minBlocks){
 			  ArrayList<RuleInterval> positions = ruleIntervals.get(i);//chartData.getRulePositionsByRuleNum(filteredRuleMap.get(i));
 			  
 			//  ArrayList<RuleInterval> positions = chartData.getRulePositionsByRuleNum(i);	  
@@ -4024,7 +3059,7 @@ System.out.println("]");
 		//	System.out.println();
 		//	System.out.println("sum of pairwise distance: "+sums);
 		//	System.out.println("pairSize = "+pairwiseDistances.size());
-			double avgDistance = avg(pairwiseDistances);
+			double avgDistance = Tools.avg(pairwiseDistances);
 			allDistances.add(avgDistance);
 			
 			Double stdDev = (Double)dev(pairwiseDistances);
@@ -4043,7 +3078,7 @@ System.out.println("]");
 			ArrayList<Double> pairwiseInterDistances = new ArrayList<Double>();
 			for(int j=0; j<allRules.size();j++){
 				if(i!=j)
-				 pairwiseInterDistances.add(avg(getSimilaritiesInterRules(allRules.get(i),allRules.get(j))));
+				 pairwiseInterDistances.add(Tools.avg(getSimilaritiesInterRules(allRules.get(i),allRules.get(j))));
 			
 			}
 			if(pairwiseInterDistances.size()>0)
@@ -4051,14 +3086,14 @@ System.out.println("]");
 
 		}
 		
-//		System.out.println("average distances among all motifs: "+avg(allDistances));
-	//	System.out.println("average standard deviation among all motifs: "+avg(allStdDev));
-		//sb.append(avg(allDistances)+","+avg(allStdDev)+"\n");
+//		System.out.println("average distances among all motifs: "+Tools.avg(allDistances));
+	//	System.out.println("average standard deviation among all motifs: "+Tools.avg(allStdDev));
+		//sb.append(Tools.avg(allDistances)+","+Tools.avg(allStdDev)+"\n");
 		
 		//return sb.toString();
-		result[0] = avg(allDistances);  // avg intra distances
-		result[1] = avg(allStdDev);  // avg std. dev. intra distances
-		result[2] = avg(allMinimalInterDistances);  // avg minimal inter distances
+		result[0] = Tools.avg(allDistances);  // avg intra distances
+		result[1] = Tools.avg(allStdDev);  // avg std. dev. intra distances
+		result[2] = Tools.avg(allMinimalInterDistances);  // avg minimal inter distances
 		ArrayList<Double> silhouetteCoefficients = new ArrayList<Double>();
 		for (int i = 0; i<routes.size(); i++)
 		{
@@ -4080,7 +3115,7 @@ System.out.println("]");
 	//		System.out.println("compare: "+allDistances.get(i)+"/"+allMinimalInterDistances.get(i)+" = "+sc);
 			silhouetteCoefficients.add(sc);
 		}
-		result[3] = avg(silhouetteCoefficients);
+		result[3] = Tools.avg(silhouetteCoefficients);
 		return result;
 	  }
 
@@ -4106,14 +3141,14 @@ System.out.println("]");
 		ArrayList<Double> pairwiseInterDistances = new ArrayList<Double>(); 
 		for(int i = 0; i<rule1.size(); i++)
 			for (int j=0;j<rule2.size();j++){
-				pairwiseInterDistances.add(avgDTWDistance(eBlocks, rule1.get(i),rule2.get(j)));
+				pairwiseInterDistances.add(Tools.avgDTWDistance(eBlocks, rule1.get(i),rule2.get(j)));
 			}
 		
 		return pairwiseInterDistances;
 	}
 
 	private double dev(ArrayList<Double> pairwiseDistances) {
-		double avg = avg(pairwiseDistances);
+		double avg = Tools.avg(pairwiseDistances);
 		double sum = 0;
 		for (int i=0; i<pairwiseDistances.size(); i++)
 			sum = sum + (pairwiseDistances.get(i)-avg)*(pairwiseDistances.get(i)-avg);
@@ -4125,141 +3160,21 @@ System.out.println("]");
 		for(int i = 0; i<allTracks.size();i++){
 			for(int j=i+1;j<allTracks.size();j++){
 			//	System.out.println("i="+i+" j="+j);
-				double similarity = avgDTWDistance(eBlocks, allTracks.get(i),allTracks.get(j));
+				double similarity = Tools.avgDTWDistance(eBlocks, allTracks.get(i),allTracks.get(j));
 				pairwiseDistance.add(similarity);
 			}
 		}
 		return pairwiseDistance;
 	}
 
-	private double avgDTWDistance(Blocks blocks, ArrayList<Integer> s,
-			ArrayList<Integer> t) {
-		
-	//	System.out.print("s::::::::::size:"+s.size());
-		/*
-		for(int i=0; i<s.size();i++)
-			System.out.print(" "+s.get(i));
-			*/
-	//	System.out.println();
-	//	System.out.print("t::::::::::size:"+t.size()+"   ");
-		/*
-		for(int i=0; i<t.size();i++)
-			System.out.print(" "+t.get(i));
-			*/
-	//	System.out.println();
-		int n = s.size();
-		int m = t.size();
-		double[][] DTW = new double[n+1][m+1];
-		double cost = 0;
-		for(int i=0;i<n;i++)
-			DTW[i+1][0]=Double.MAX_VALUE;
-		for(int i=0;i<m;i++)
-			DTW[0][i+1] = Double.MAX_VALUE;
-		DTW[0][0] = 0;
-		for (int i=0;i<n;i++){
-			for(int j=0;j<m;j++){
-				cost = blocks.distance(s.get(i),t.get(j));
-			//	System.out.println("cost_"+i+","+j+": "+cost);
-				DTW[i+1][j+1]=cost+minimum(DTW[i][j+1],		// insertion
-										   DTW[i+1][j], 	// deletion
-										   DTW[i][j]);	// match
-			}
-		}
-	//	System.out.println("DTW:::::"+DTW[n][m]);
-		int step = 1;
-		int x = n;
-		int y = m;
-		while(!((x==1)&&(y==1))){
-			step = step + 1;
-			switch(min(DTW[x-1][y-1],DTW[x-1][y],DTW[x][y-1])){
-			case 1: x--; y--; break;
-			case 2: x--; break;
-			case 3: y--; break;
-			default: System.out.println("Error!!!!");
-			}
-			
-		}
-	//	System.out.println("step: "+step);
-		double avg = DTW[n][m]/step;
-	//	System.out.println("avgDTW:::::"+avg);
-		return avg;
-	}
+	
+	
 
-	private int min(double d, double e, double f) {
-		if(d<=e&&d<=f)
-			return 1;
-		if(e<=d&&e<=f)
-			return 2;
-		if(f<=e&&f<=d)
-			return 3;
-		return 0;
-	}
-
-	private double minimum(double a, double b, double c) {
-		return Math.min(Math.min(a, b), Math.min(b, c));
-	}
 
 	
 
-	private boolean isNoise(Integer id, int i,int noiseThreshold) {
-		  if(i<1)
-			  return false;
-		  if(id.intValue()<0)
-	  		{
-	  		//System.out.println("id: "+id);
-	  		return false;
-	  		}
-		  if((i+noiseThreshold)>lat.size())
-			  return false;
-		  for(int j = 1; j<noiseThreshold;j++)
-		  {	Location loc = new Location(lat.get(i+j),lon.get(i+j));
-		  	//blocks.addPoint2Block(loc);
-		  	Integer currentId = new Integer(blocks.findBlockIdForPoint(loc));
-		  	
-		  	if(!currentId.equals(id))
-		  		{
-		  	//	System.out.println("id   currentId:  "+id+"       "+currentId);	
-		  		return true;
-		  		}
-		  }
-		return false;
-	}
-	
-	 /* 
 
-	private String getTrimedIds(
-			ArrayList<NumerosityReductionMapEntry> track) {
-		
-	//	  String ans;
-		  StringBuffer sb = new StringBuffer();
-			for (int i = 0; i<track.size();i++){
-				sb.append(track.get(i).getValue());
-				sb.append(" ");
-				
-			}
-			return sb.toString();
-	}
-	*/
 
-/*
- * Compute the avg. value of the given ArrayList
- */
-	private Double avg(ArrayList<Double> list){
-		Double sum= new Double(0);
-		for (int i = 0; i< list.size(); i++){
-			if(Double.isNaN(list.get(i)))
-				throw new NullPointerException();
-			sum = sum + list.get(i);
-	//		System.out.print(list.get(i)+" ");
-		}
-	//	System.out.println();
-		
-	//	System.out.println("sum = "+sum+" avg = "+sum/list.size());
-		if(list.size()>0)
-		return sum/list.size();
-		else
-			return -88888.0;
-	}
 	@SuppressWarnings("rawtypes")
 	public ArrayList<Integer> getTrimedPositions(
 			ArrayList<NumerosityReductionMapEntry> track) {
@@ -4275,6 +3190,11 @@ System.out.println("]");
     public static ArrayList<Route> getRawTrajectory(){
     	System.out.println("getrawTrajectory: "+rawRoutes.size());
     	return rawRoutes; 
+    }
+    //2017 new
+    public static ArrayList<Route> getRescaleTrajectory(){
+    	System.out.println("getrawTrajectory: "+rescaleRoutes.size());
+    	return rescaleRoutes; 
     }
     public static ArrayList<Route> getAnomaly(){
     	return anomalyRoutes; 
@@ -4330,15 +3250,7 @@ System.out.println("]");
   		  	
 }
 
-	public static String map2String(HashMap map){
-		  String string = new String();
-		  Iterator it = map.entrySet().iterator();
-		  while(it.hasNext()){
-			  
-			  string.concat(it.next().toString());
-		  }
-		  return string;
-	  }
+	
 		  
 	  /**
 	   * Performs logging messages distribution.
@@ -4356,85 +3268,8 @@ System.out.println("]");
 	   * @param str The string.
 	   * @return The number of spaces.
 	   */
-	  public static int countSpaces(String str) {
-	    int counter = 0;
-	    
-	    for (int i = 0; i < str.length(); i++) {
-	      if (str.charAt(i) == ' ') {
-	        counter++;
-	      }
-	    }
-	//    System.out.println("string: "+str+"   length = "+counter);
-	    return counter;
-	  }
-	  public static boolean isNumeric(String str)  
-	  {  
-		  if(str == null)
-			  return false;
-	    try  
-	    {  
-	      double d = Double.parseDouble(str);  
-	    }  
-	    catch(NumberFormatException nfe)  
-	    {  
-	      return false;  
-	    }  
-	    return true;  
-	  }
+	 
 
-	public static String parseRule(String string) {
-		StringBuffer sb = new StringBuffer();
-		//System.out.println("string: "+string);
-		ArrayList<String> sa = new ArrayList<String>();
-		String[] stringArray = string.split(" ");
-		for (String s:stringArray){
-			if (s.charAt(0)=='I')
-			{
-				if(s.contains("r")){
-					int rIndex = s.indexOf("r");
-					Integer iteration = Integer.valueOf(s.substring(1, rIndex));
-					Integer rule = Integer.valueOf(s.substring(rIndex+1));
-				//	System.out.println("s: "+s+" iteration: "+iteration+" rule: "+rule);
-					String subRule = parseRule(allRules.get(iteration).get(rule).getExpandedRuleString());
-					sa.add(subRule);
-			//		System.out.println(s+" = "+subRule );
-					
-				}
-				else if(s.contains("C")){
-					int cIndex = s.indexOf("C");
-					Integer iteration = Integer.valueOf(s.substring(1, cIndex));
-					Integer cluster = Integer.valueOf(s.substring(cIndex+1));
-				//	System.out.println("s: "+s+" iteration: "+iteration+" cluster: "+cluster);
-					Integer ruleInCluster = (Integer)allClusters.get(iteration).get(cluster).toArray()[0];
-					String subRule = parseRule(allRules.get(iteration).get(ruleInCluster).getExpandedRuleString());
-					sa.add(subRule);
-				//	System.out.println(s+" = "+subRule );
-	
-				}
-			}
-			else if (s.charAt(0)=='R'){
-				throw new IllegalArgumentException("expect 'I' encounter 'R'");
-			//	int idx = Integer.valueOf( s.substring(1));
-				//return rules.get(idx).getExpandedRuleString();
-			}
-			
-			else	//Base Case
-			{
-				Integer test = Integer.valueOf(s);
-				sa.add(s);
-		//		System.out.println("s: "+ s);
-			}
-		}
-		for (int i = 0; i<sa.size()-1;i++){
-			sb.append(sa.get(i));
-			sb.append(" ");
-		}
-		if(sa.size()>0)
-		   sb.append(sa.get(sa.size()-1));
-		//System.out.println("sb: "+sb.toString());
-		String ans = sb.toString();
-		return ans;
-	}
 	public static int getTrajectory(int endPos) {
 		int i = endPos;
 		Double traj;
@@ -4443,27 +3278,7 @@ System.out.println("]");
 		traj = -1000-ncLat.get(i);
 		return traj.intValue();
 	}
-	public static <K, V extends Comparable<? super V>> Map<K, V> 
-    sortByValue( Map<K, V> map )
-{
-    List<Map.Entry<K, V>> list =
-        new LinkedList<>( map.entrySet() );
-    Collections.sort( list, new Comparator<Map.Entry<K, V>>()
-    {
-        @Override
-        public int compare( Map.Entry<K, V> o1, Map.Entry<K, V> o2 )
-        {
-            return (o2.getValue()).compareTo( o1.getValue() );
-        }
-    } );
-
-    Map<K, V> result = new LinkedHashMap<>();
-    for (Map.Entry<K, V> entry : list)
-    {
-        result.put( entry.getKey(), entry.getValue() );
-    }
-    return result;
-}
+	
 
 	public static Instance trajToInstance(Integer traj) {
 		// TODO Auto-generated method stub

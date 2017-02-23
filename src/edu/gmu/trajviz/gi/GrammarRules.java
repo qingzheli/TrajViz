@@ -41,18 +41,5 @@ public class GrammarRules implements Iterable<GrammarRuleRecord> {
   public int size() {
     return this.rules.size();
   }
-// add 2 method by qz
-public void merge(int i, int j) {
-	// TODO Auto-generated method stub
-	
-}
-private void remove(int id){
-	
-}
-
-public void setParsedString() {
-	for(int i = 0; i<rules.size();i++)
-		rules.get(i).setParsedStringAndRuleYield();
-}
 
 }

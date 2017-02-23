@@ -1,5 +1,10 @@
 package edu.gmu.trajviz.util;
 
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+
+import edu.gmu.trajviz.logic.Blocks;
 import edu.gmu.trajviz.logic.Route;
 import edu.gmu.trajviz.model.Center;
 import edu.gmu.trajviz.model.SequiturModel;
@@ -158,6 +163,127 @@ public class Tools {
 		}
 		return route;
 	}
-	
-	
+	public static String map2String(HashMap map){
+		  String string = new String();
+		  Iterator it = map.entrySet().iterator();
+		  while(it.hasNext()){
+			  
+			  string.concat(it.next().toString());
+		  }
+		  return string;
+	  }
+	 public static int countSpaces(String str) {
+		    int counter = 0;
+		    
+		    for (int i = 0; i < str.length(); i++) {
+		      if (str.charAt(i) == ' ') {
+		        counter++;
+		      }
+		    }
+		//    System.out.println("string: "+str+"   length = "+counter);
+		    return counter;
+		  }
+	 
+	 public static boolean isNumeric(String str)  
+		  {  
+			  if(str == null)
+				  return false;
+		    try  
+		    {  
+		      double d = Double.parseDouble(str);  
+		    }  
+		    catch(NumberFormatException nfe)  
+		    {  
+		      return false;  
+		    }  
+		    return true;  
+		  }
+	 /*
+	  * Compute the avg. value of the given ArrayList
+	  */
+	 	public static Double avg(ArrayList<Double> list){
+	 		Double sum= new Double(0);
+	 		for (int i = 0; i< list.size(); i++){
+	 			if(Double.isNaN(list.get(i)))
+	 				throw new NullPointerException();
+	 			sum = sum + list.get(i);
+	 	//		System.out.print(list.get(i)+" ");
+	 		}
+	 	//	System.out.println();
+	 		
+	 	//	System.out.println("sum = "+sum+" avg = "+sum/list.size());
+	 		if(list.size()>0)
+	 		return sum/list.size();
+	 		else
+	 			return -88888.0;
+	 	}
+	 	
+	 	
+	 	public static double avgDTWDistance(Blocks blocks, ArrayList<Integer> s,
+				ArrayList<Integer> t) {
+			
+		//	System.out.print("s::::::::::size:"+s.size());
+			/*
+			for(int i=0; i<s.size();i++)
+				System.out.print(" "+s.get(i));
+				*/
+		//	System.out.println();
+		//	System.out.print("t::::::::::size:"+t.size()+"   ");
+			/*
+			for(int i=0; i<t.size();i++)
+				System.out.print(" "+t.get(i));
+				*/
+		//	System.out.println();
+			int n = s.size();
+			int m = t.size();
+			double[][] DTW = new double[n+1][m+1];
+			double cost = 0;
+			for(int i=0;i<n;i++)
+				DTW[i+1][0]=Double.MAX_VALUE;
+			for(int i=0;i<m;i++)
+				DTW[0][i+1] = Double.MAX_VALUE;
+			DTW[0][0] = 0;
+			for (int i=0;i<n;i++){
+				for(int j=0;j<m;j++){
+					cost = blocks.distance(s.get(i),t.get(j));
+				//	System.out.println("cost_"+i+","+j+": "+cost);
+					DTW[i+1][j+1]=cost+min3Double(DTW[i][j+1],		// insertion
+											   DTW[i+1][j], 	// deletion
+											   DTW[i][j]);	// match
+				}
+			}
+		//	System.out.println("DTW:::::"+DTW[n][m]);
+			int step = 1;
+			int x = n;
+			int y = m;
+			while(!((x==1)&&(y==1))){
+				step = step + 1;
+				switch(minPositionDouble(DTW[x-1][y-1],DTW[x-1][y],DTW[x][y-1])){
+				case 1: x--; y--; break;
+				case 2: x--; break;
+				case 3: y--; break;
+				default: System.out.println("Error!!!!");
+				}
+				
+			}
+		//	System.out.println("step: "+step);
+			double avg = DTW[n][m]/step;
+		//	System.out.println("avgDTW:::::"+avg);
+			return avg;
+		}
+	 	public static double min3Double(double a, double b, double c) {
+	 	      return Math.min(Math.min(a, b), c);
+	 	  }
+	 	public static int min3Int(int a, int b, int c) {
+	 	      return Math.min(Math.min(a, b), c);
+	 	  }
+	 	public static int minPositionDouble(double d, double e, double f) {
+			if(d<=e&&d<=f)
+				return 1;
+			if(e<=d&&e<=f)
+				return 2;
+			if(f<=e&&f<=d)
+				return 3;
+			return 0;
+		}
 }

@@ -5,6 +5,7 @@ import java.util.Arrays;
 import edu.gmu.trajviz.gi.sequitur.SAXRule;
 import edu.gmu.trajviz.logic.RuleInterval;
 import edu.gmu.trajviz.model.SequiturModel;
+import edu.gmu.trajviz.util.Tools;
 
 /**
  * Data container for SAX rules. Provides an abstraction which is used for transferring grammars
@@ -98,7 +99,7 @@ public class GrammarRuleRecord {
 	  this.r0Intervals = new ArrayList<RuleInterval>();
 	  this.r0Intervals.add(ri);
 	  this.fR0 = 1;
-	  this.ruleYield = SequiturModel.countSpaces(expandedRuleString);
+	  this.ruleYield = Tools.countSpaces(expandedRuleString);
 	  cursor = 0;
   }
   public GrammarRuleRecord(int ruleNumber, String ruleString, String expandedRuleString, Integer posR0){
@@ -114,7 +115,7 @@ public class GrammarRuleRecord {
 	  this.r0Intervals = new ArrayList<RuleInterval>();
 	 // this.r0Intervals.add(ri);
 	  this.fR0 = 1;
-	  this.ruleYield = SequiturModel.countSpaces(expandedRuleString);
+	  this.ruleYield = Tools.countSpaces(expandedRuleString);
 	  cursor = 0;
   }
   
@@ -342,11 +343,13 @@ public void setMinLength() {
 	// TODO Auto-generated method stub
 	
 }
+/*
 public void setParsedStringAndRuleYield() {
 	this.actualRuleString = SequiturModel.parseRule((this.getExpandedRuleString()))+" ";
 	this.actualRuleYield = SequiturModel.countSpaces(actualRuleString);
 //	System.out.println("actualRuleString: "+this.actualRuleString + ": "+this.actualRuleYield);
 }
+*/
 public String getParsedString(){
 	return this.actualRuleString;
 }

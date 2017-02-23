@@ -134,7 +134,7 @@ public static void updateRuleIntervals(GrammarRules rules,
 		SAXRecords saxFrequencyData, int originalLength ) {
 	ArrayList<Integer> saxWordsIndexes = new ArrayList<Integer>(saxFrequencyData.getAllIndices());
 	//ArrayList<Integer> indexesInR0 = new ArrayList<Integer>(saxFrequencyData.getAllIndices());
-//	System.out.println("saxwordsIndexes: "+saxWordsIndexes);
+	//System.out.println("saxwordsIndexes: "+saxWordsIndexes);
 	for (GrammarRuleRecord ruleContainer : rules) {
 	//	System.out.println("minmaxLenth: "+ruleContainer.minMaxLengthAsString());
 	//	System.out.println("ruleIntervals: "+ruleContainer.getRuleIntervals());
@@ -144,9 +144,9 @@ public static void updateRuleIntervals(GrammarRules rules,
 	      // array of all words of this rule expanded form
 	      // String[] expandedRuleSplit = ruleContainer.getExpandedRuleString().trim().split(" ");
 	     
-	      int expandedRuleLength = recursiveCountSpaces(ruleContainer.getExpandedRuleString());
+	      int expandedRuleLength = countSpaces(ruleContainer.getExpandedRuleString());
 	//      System.out.println("getExStr: "+ruleContainer.getExpandedRuleString());
-     
+	//      System.out.println("expandedRuleLength = "+expandedRuleLength);
 	      // the auxiliary array that keeps lengths of all rule occurrences
 	      int[] lengths = new int[ruleContainer.getOccurrences().size()];
 	      int[] r0Lengths = new int [ruleContainer.getR0Occurrences().size()];
@@ -173,15 +173,16 @@ public static void updateRuleIntervals(GrammarRules rules,
 	        int startPos = saxWordsIndexes.get(currentIndex);
 	        int endPos;
 	        
-	        
+        	endPos = saxWordsIndexes.get(currentIndex+expandedRuleLength)-1;
 	        
 	        /* modified here to adapt multiple runs  -qz on 11022015
 	         * */
+	        /*
 	        if (currentIndex+expandedRuleLength>=saxWordsIndexes.size())
 	        	endPos = originalLength-1;
 	        else
 	        	endPos = saxWordsIndexes.get(currentIndex+expandedRuleLength)-1;
-	        	
+	        	*/
 	        	
 	        
 	        
@@ -200,7 +201,7 @@ public static void updateRuleIntervals(GrammarRules rules,
 	        }
 */
 	        resultIntervals.add(new RuleInterval(startPos, endPos));
-
+	     // System.out.println("startPos:endPos "+startPos+" : "+endPos);
 	        lengths[lengthCounter] = endPos - startPos;
 	        lengthCounter++;
 	      }
@@ -263,12 +264,7 @@ public static void updateRuleIntervals(GrammarRules rules,
 
 }
 
-private static int recursiveCountSpaces(String expandedRuleString) {
-	
-	
-	
-	return 0;
-}
+
 
 private String parseRule(String string) {
 	StringBuffer sb = new StringBuffer();
