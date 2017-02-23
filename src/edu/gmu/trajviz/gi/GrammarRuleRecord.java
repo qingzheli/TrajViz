@@ -1,6 +1,7 @@
 package edu.gmu.trajviz.gi;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Scanner;
 
 import edu.gmu.trajviz.gi.sequitur.SAXRule;
 import edu.gmu.trajviz.logic.RuleInterval;
@@ -24,9 +25,10 @@ public class GrammarRuleRecord {
 
   /* The expanded rule string, this contains previous symbols. */
   private String expandedRuleString;
+  private ArrayList<String> expandedRuleStringList;
   
   /* The expanded rule string, this contains only terminal symbols. */
-  private String actualRuleString;
+//  private String actualRuleString;
   
   
   /* The indexes at which the rule occurs in the discretized time series. */
@@ -66,7 +68,7 @@ public class GrammarRuleRecord {
   private int ruleYield;
   
   /* The rule yield - how many terminals it produces in extended form. */
-  private int actualRuleYield;
+ // private int actualRuleYield;
   /*-qz
    * Frequency in R0
    */
@@ -87,10 +89,11 @@ public class GrammarRuleRecord {
    * artificial constructor
    */
   public GrammarRuleRecord(int ruleNumber, String ruleString, String expandedRuleString, Integer posR0, Integer startPos, Integer endPos){
+	  expandedRuleStringList = new ArrayList<String>();
 	  this.ruleNumber = ruleNumber;
 	  this.ruleString = ruleString;
 	  this.expandedRuleString = expandedRuleString;
-	  this.actualRuleString = expandedRuleString;
+//	  this.actualRuleString = expandedRuleString;
 	  this.tsR0OccurenceIndexes = new ArrayList<Integer>();
 	  this.tsR0OccurenceIndexes.add(posR0);
 	  this.ruleIntervals = new ArrayList<RuleInterval>();
@@ -103,10 +106,11 @@ public class GrammarRuleRecord {
 	  cursor = 0;
   }
   public GrammarRuleRecord(int ruleNumber, String ruleString, String expandedRuleString, Integer posR0){
+	  expandedRuleStringList = new ArrayList<String>();
 	  this.ruleNumber = ruleNumber;
 	  this.ruleString = ruleString;
 	  this.expandedRuleString = expandedRuleString;
-	  this.actualRuleString = expandedRuleString;
+//	  this.actualRuleString = expandedRuleString;
 	  this.tsR0OccurenceIndexes = new ArrayList<Integer>();
 	  this.tsR0OccurenceIndexes.add(posR0);
 	  this.ruleIntervals = new ArrayList<RuleInterval>();
@@ -217,6 +221,10 @@ public class GrammarRuleRecord {
    * @param expandedRuleString expanded textual representation of the rule
    */
   public void setExpandedRuleString(String expandedRuleString) {
+	  Scanner scan = new Scanner(expandedRuleString);
+	  expandedRuleStringList  =  new ArrayList<String>();
+	  while(scan.hasNext())
+		  expandedRuleStringList.add(scan.next());
     this.expandedRuleString = expandedRuleString;
   }
 
@@ -332,7 +340,7 @@ public void setR0Intervals(ArrayList<RuleInterval> r0Intervals){
   
 
   public String toString() {
-    return "R" + this.ruleNumber + " -> " + this.ruleString + " -> " + this.actualRuleString;
+    return "R" + this.ruleNumber + " -> " + this.ruleString + " -> " + this.expandedRuleString;
   }
 
   public int getRuleNumber() {
@@ -351,10 +359,17 @@ public void setParsedStringAndRuleYield() {
 }
 */
 public String getParsedString(){
-	return this.actualRuleString;
+	return this.expandedRuleString;
 }
 public int getActualRuleYield(){
-	return this.actualRuleYield;
+	return this.ruleYield;
+}
+/*
+ * 2017 new method
+ * 
+ */
+public ArrayList<String> getRuleStringList(){
+	return expandedRuleStringList;
 }
 
 }

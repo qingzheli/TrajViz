@@ -41,8 +41,5 @@ public class GrammarRules implements Iterable<GrammarRuleRecord> {
   public int size() {
     return this.rules.size();
   }
-  public void setParsedString() {
-		for(int i = 0; i<rules.size();i++)
-			rules.get(i).setParsedStringAndRuleYield();
-	}
+  
 }

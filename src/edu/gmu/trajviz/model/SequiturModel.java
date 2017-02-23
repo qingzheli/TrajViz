@@ -550,9 +550,11 @@ public class SequiturModel extends Observable {
 	private void postProcessing() {
 		for(int i = 0; i<rules.size(); i++){
 			GrammarRuleRecord rule = rules.get(i);
+			/*
 			System.out.println(rule);
-			System.out.println("actualRuleYield :"+rule.getActualRuleYield());
-			;
+			System.out.println("expandedRuleString :"+rule.getExpandedRuleString());
+			System.out.println("Rule String list:"+ rule.getRuleStringList());
+		    */
 			if(rule.getActualRuleYield()>=minBlocks){
 			
 			
@@ -562,10 +564,13 @@ public class SequiturModel extends Observable {
 	}
 
 	private void query(GrammarRuleRecord rule) {
+		/*
 		System.out.println(rule);
 		System.out.println("actualRuleYield :"+rule.getActualRuleYield());
 		System.out.println(rule.getR0Intervals()); // not working
 		System.out.println(rule.getRuleIntervals());
+		*/
+		Integer startBlock = Integer.parseInt(rule.getRuleStringList().get(0));
 		
 		RuleInterval ruleInterval = rule.getRuleIntervals().get(0);   // get the 1st rule interval first
 		int length = ruleInterval.getLength();
