@@ -274,8 +274,8 @@ private String parseRule(String string) {
 	for (String s:stringArray){
 		if (s.charAt(0)=='I')
 		{
-			if(s.contains("r")){
-				int rIndex = s.indexOf("r");
+			if(s.contains("stepDist")){
+				int rIndex = s.indexOf("stepDist");
 				Integer iteration = Integer.valueOf(s.substring(1, rIndex));
 				Integer rule = Integer.valueOf(s.substring(rIndex+1));
 				System.out.println("s: "+s+" iteration: "+iteration+" rule: "+rule);

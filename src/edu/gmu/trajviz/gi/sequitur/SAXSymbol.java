@@ -217,7 +217,7 @@ public abstract class SAXSymbol {
    */
   public void substitute(SAXRule r) {
     // System.out.println("[sequitur debug] *substitute* " + this.value + " with rule "
-    // + r.asDebugLine());
+    // + stepDist.asDebugLine());
     // clean up this place and the next
 
     // here we keep the original position in the input string

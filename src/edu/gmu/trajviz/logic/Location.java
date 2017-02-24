@@ -1,8 +1,8 @@
 package edu.gmu.trajviz.logic;
 
 public class Location {
-	double x;
-	double y;
+	private double x;
+	private double y;
 	public Location(double lat, double lon)
 	{
 		x = lat;
@@ -13,6 +13,12 @@ public class Location {
 	{
 		x = (double)lat;
 		y = (double)lon;
+	}
+	public double getX(){
+		return x;
+	}
+	public double getY(){
+		return y;
 	}
 	
 }

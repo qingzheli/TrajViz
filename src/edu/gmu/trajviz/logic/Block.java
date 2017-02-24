@@ -9,6 +9,7 @@ import java.util.Stack;
 import edu.gmu.trajviz.model.Center;
 import edu.gmu.trajviz.model.RoutePair;
 import edu.gmu.trajviz.model.SequiturModel;
+import edu.gmu.trajviz.sax.datastructures.Interval;
 import edu.gmu.trajviz.util.Tools;
 
 public class Block {
@@ -16,23 +17,26 @@ public class Block {
 	public int id;
 	public int latId;
 	public int lonId;
-	public double latBlockMin;
-	public double lonBlockMin;
-	public double latBlockMax;
-	public double lonBlockMax;
-	public Block n; //north
-	public Block e; //east
-	public Block w; //west
-	public Block s;
-	public Block ne;
-	public Block nw;
-	public Block se;
-	public Block sw;
-	public ArrayList<Block> nearbyBlocks;
+	public double latBlockSouthBound;
+	public double lonBlockWestBound;
+	public double latBlockNorthBound;
+	public double lonBlockEastBound;
+	public Block n; //0. north
+	public Block e; //1. east
+	public Block w; //2. west
+	public Block s; //3. south
+	public Block ne;//4
+	public Block nw;//5
+	public Block se;//6
+	public Block sw;//7
+	public Block[] nearbyBlocks;
 	public ArrayList<Location> points;
 	public ArrayList<Center> centers;
 	public ArrayList<String> residualSet;
 	public int size;  // a huge area divided into size*size blocks
+	//2017 new
+	private ArrayList<Interval> intervals;
+	
 	public Block(){
 		// just an empty block;
 		id = 0;
@@ -42,6 +46,8 @@ public class Block {
 		points = new ArrayList<Location>();
 		centers = new ArrayList<Center>();
 		residualSet = new ArrayList<String>();
+		intervals = new ArrayList<Interval>();
+		nearbyBlocks = new Block[8];
 			
 	}
 	/* doesn't use for now
@@ -59,13 +65,16 @@ public class Block {
 		this.size = size;
 		this.latId = id/size;
 		this.lonId = id%size;
-		latBlockMin = latMin + this.latId*latCut;
-		latBlockMax = latBlockMin + latCut;
-		lonBlockMin = lonMin + this.lonId*lonCut;
-		lonBlockMax = lonBlockMin + lonCut;
+		latBlockSouthBound = latMin + this.latId*latCut;
+		latBlockNorthBound = latBlockSouthBound + latCut;
+		lonBlockWestBound = lonMin + this.lonId*lonCut;
+		lonBlockEastBound = lonBlockWestBound + lonCut;
 		points = new ArrayList<Location>();
 		centers = new ArrayList<Center>();
 		residualSet = new ArrayList<String>();
+		intervals = new ArrayList<Interval>();
+		nearbyBlocks = new Block[8];
+
 	//	SequiturModel.allSubseq.put(id, new ArrayList<String>());
 	
 		
@@ -88,11 +97,11 @@ public class Block {
 			
 		
 		double r = SequiturModel.R;
-	//	System.out.println("r = "+r);
+	//	System.out.println("stepDist = "+stepDist);
 		
 	//	SequiturModel.allSubseq.put(id, new ArrayList<String>());
 		 
-	//	int step = (int)(len*SequiturModel.minLink);
+	//	int step = (int)(len*SequiturModel.maxPointErrorDistance);
 	/*	int len = SequiturModel.minBlocks;
 		ArrayList<String> residualSet = new ArrayList<String>();
 		for(int i = 0; i<centers.size(); i++){
@@ -250,8 +259,8 @@ public class Block {
 	}
 	public void checkNearby(){
 		double r = SequiturModel.R;
-		 for(int index = 0; index<nearbyBlocks.size()&&residualSet.size()>0;index++){
-			 Block nearbyBlock = nearbyBlocks.get(index);
+		 for(int index = 0; index<nearbyBlocks.length&&residualSet.size()>0;index++){
+			 Block nearbyBlock = nearbyBlocks[index];
 			 for(int i = 0; i<SequiturModel.allSubseq.get(nearbyBlock.id).size()&&residualSet.size()>0; i++){
 				 String subseq1 = SequiturModel.allSubseq.get(nearbyBlock.id).get(i);
 				 
@@ -284,8 +293,8 @@ public class Block {
 			 }
 		 }
 	}
-	public ArrayList<Block> setNearbyBlocks() {
-		nearbyBlocks = new ArrayList<Block>();
+	public Block[] setNearbyBlocks() {
+		nearbyBlocks = new Block[8];
 		int nid = id-size,sid =id+size,wid = id-1,eid = id+1,neid = id-size+1,nwid = id-size-1,seid = id+size+1,swid = id+size-1;
 		if(latId==0)
 		{
@@ -308,54 +317,64 @@ public class Block {
 			seid = -1;
 			neid = -1;
 		}
+		/*
+  * public Block n; //0. north
+	public Block e; //1. east
+	public Block w; //2. west
+	public Block s; //3. south
+	public Block ne;//4
+	public Block nw;//5
+	public Block se;//6
+	public Block sw;//7
+		 */
 	//	System.out.println("id = "+id);
 		if(eid !=-1){
 			// eid = id+1;
 			
 			 e = blocks.findBlockById(eid);
-			 nearbyBlocks.add(e);
+			 nearbyBlocks[1]=e;
 		//	 centers.addAll(e.centers);
 			 if(nid!=-1){
 			//	neid = id - size+1;
 				ne = blocks.findBlockById(neid);
-				nearbyBlocks.add(ne);
+				nearbyBlocks[4]=ne;
 		//		centers.addAll(ne.centers);
 			 }
 			 if(sid!=-1){
 			 //	seid = id+size+1;
 				se = blocks.findBlockById(seid);
-				nearbyBlocks.add(se);
+				nearbyBlocks[6] = se;
 		//		centers.addAll(se.centers);
 			 }
 		}
 		if(wid != -1){
 		//	wid = id - 1;
 			w = blocks.findBlockById(wid);
-			nearbyBlocks.add(w);
+			nearbyBlocks[2]=w;
 		//	centers.addAll(w.centers);
 			if(nid!=-1){
 			//	nwid = id-size-1;
 				nw = blocks.findBlockById(nwid);
-				nearbyBlocks.add(nw);
+				nearbyBlocks[5]=nw;
 	//			centers.addAll(nw.centers);
 			}
 			if(sid!=-1){
 			//	swid = id+size-1;
 				sw = blocks.findBlockById(swid);
-				nearbyBlocks.add(sw);
+				nearbyBlocks[7]=sw;
 	//			centers.addAll(sw.centers);
 			}
 		}
 		if(nid!=-1){
 		//	nid = id-size;
 			n = blocks.findBlockById(nid);
-			nearbyBlocks.add(n);
+			nearbyBlocks[0]=n;
 	//		centers.addAll(n.centers);
 		}
 		if(sid!=-1){
 		//	sid = id + size;
 			s = blocks.findBlockById(sid);
-			nearbyBlocks.add(s);
+			nearbyBlocks[3]=s;
 	//		centers.addAll(s.centers);
 		}
 	//	blocks.printBlockMap();
@@ -396,7 +415,7 @@ public class Block {
 		//iterator all centers subtract subseqId
 		double r = SequiturModel.R;
 		int len = SequiturModel.minBlocks; 
-		int step = (int)(len*SequiturModel.minLink);
+		int step = (int)(len*SequiturModel.maxPointErrorDistance);
 		/*
 		if(centers.size()>0){
 			len = centers.get(0).e-centers.get(0).s+1;
@@ -523,6 +542,40 @@ public class Block {
 				
 	}
 	public String toString(){
-		return id+"("+latId+","+lonId+") ";
+		return id+"("+latId+","+lonId+"): latBlockNorthBound =  "+latBlockNorthBound +"  latBlockSouthBound = "+latBlockSouthBound +"  lonBlockWestBound = "+lonBlockWestBound+"  lonBlockEastBound = "+lonBlockEastBound;
 	}
+	
+	public void addIntervals(Integer startIdx, int endIdx) {
+		intervals.add(new Interval(startIdx,endIdx));
+	}
+	public ArrayList<Interval> getIntervals(){
+		return intervals;
+	}
+	public double getLowerBoundNeighbourDist(int i, Double double1, Double double2) {
+		
+		return 0;
+	}
+	public double[] getLowerBoundDistance2Neighbor(double lat, double lon) {
+		/* public Block n; //0. north
+			public Block e; //1. east
+			public Block w; //2. west
+			public Block s; //3. south
+			public Block ne;//4
+			public Block nw;//5
+			public Block se;//6
+			public Block sw;//7
+				 */
+		double[] dist = new double[8];
+		dist[0] = Math.abs(latBlockNorthBound-lat);
+		dist[1] = Math.abs(lonBlockEastBound-lon);
+		dist[2] = Math.abs(lonBlockWestBound-lon);
+		dist[3] = Math.abs(latBlockSouthBound-lat);
+		dist[4] = Math.abs(Tools.pointEuDist(latBlockNorthBound, lonBlockEastBound, lat, lon));
+		dist[5] = Math.abs(Tools.pointEuDist(latBlockNorthBound, lonBlockWestBound, lat, lon));
+		dist[6] = Math.abs(Tools.pointEuDist(latBlockSouthBound, lonBlockEastBound, lat, lon));
+		dist[7] = Math.abs(Tools.pointEuDist(latBlockSouthBound, lonBlockWestBound, lat, lon));
+		return dist;
+	}
+	
+	
 }

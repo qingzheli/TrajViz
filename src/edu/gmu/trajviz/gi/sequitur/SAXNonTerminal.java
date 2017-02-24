@@ -66,7 +66,7 @@ public class SAXNonTerminal extends SAXSymbol implements Cloneable {
     //
     // However, we might need to "forget", I am not sure
     //
-    // r.indexes.remove(this.originalPosition);
+    // stepDist.indexes.remove(this.originalPosition);
   }
 
   /**

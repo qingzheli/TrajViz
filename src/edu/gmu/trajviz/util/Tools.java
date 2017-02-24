@@ -5,6 +5,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import edu.gmu.trajviz.logic.Blocks;
+import edu.gmu.trajviz.logic.Location;
 import edu.gmu.trajviz.logic.Route;
 import edu.gmu.trajviz.model.Center;
 import edu.gmu.trajviz.model.SequiturModel;
@@ -285,5 +286,9 @@ public class Tools {
 			if(f<=e&&f<=d)
 				return 3;
 			return 0;
+		}
+
+		public static double locationDist(Location l1, Location l2) {
+			return pointEuDist(l1.getX(),l1.getY(),l2.getX(),l2.getY());
 		}
 }

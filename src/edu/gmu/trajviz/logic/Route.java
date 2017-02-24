@@ -33,6 +33,12 @@ public class Route{
 	public Block getEndBlock(){
 		return SequiturModel.blocks.findBlockByLocation(endLocation);
 	}
+	public Location getStartLocation(){
+		return startLocation;
+	}
+	public Location getEndLocation(){
+		return endLocation;
+	}
 	public void addLocation(double latitude, double longitude){
 		lat.add(latitude);
 		lon.add(longitude);

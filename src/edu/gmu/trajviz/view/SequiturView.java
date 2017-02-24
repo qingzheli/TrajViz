@@ -327,17 +327,17 @@ public class SequiturView implements Observer, ActionListener{
 
 		    // the sliding window parameter
 		   
-		    minLinkLabel = new JLabel("Minimum Link Threshold:");
-		    minLinkField = new JTextField(String.valueOf(this.controller.getSession().getMinLink()));
+		    minLinkLabel = new JLabel("Max Error Steps:");
+		    minLinkField = new JTextField(String.valueOf(this.controller.getSession().maxErrorSteps()));
 		    
 		    JLabel alphabetSizeLabel = new JLabel("Alphabet size:");
 		    alphabetSizeField = new JTextField(String.valueOf(this.controller.getSession()
-		        .getAlphabet()));
+		        .getBlockSize()));
 		    minBlocksLabel = new JLabel("Minimal Continous Blocks:");
 		    minBlocksField = new JTextField(String.valueOf(this.controller.getSession().getMinBlocks()));
 		    
 		    noiseThresholdLabel = new JLabel("Resampling Rate:");
-		    noiseThresholdField = new JTextField(String.valueOf(this.controller.getSession().getNoisePointThreshold()));
+		    noiseThresholdField = new JTextField(String.valueOf(this.controller.getSession().getResamplingRate()));
 
 
 		    parametersPane.add(minLinkLabel);
@@ -555,10 +555,10 @@ public class SequiturView implements Observer, ActionListener{
 	      if (this.isTimeSeriesLoaded) {
 	    	//  mapPanel1.setRuleDetails(-1);  //reset the to -1 to avoid IndexOutOfBoundException
 	        // check the values for window/minimum link R/alphabet, etc.
-	    	  this.controller.getSession().setMinLink(Double.valueOf(this.minLinkField.getText()));
+	    	  this.controller.getSession().setMaxErrorSteps(Double.valueOf(this.minLinkField.getText()));
 	    	  this.controller.getSession().setAlphabet(Integer.valueOf(this.alphabetSizeField.getText()));
 	    	  this.controller.getSession().setMinBlocks(Integer.valueOf(this.minBlocksField.getText()));
-	    	  this.controller.getSession().setNoisePointThreshold(Integer.valueOf(this.noiseThresholdField.getText()));
+	    	  this.controller.getSession().setResamplingRate(Integer.valueOf(this.noiseThresholdField.getText()));
 	    	  this.controller.getProcessDataListener().actionPerformed(new ActionEvent(this,2,null));
 	  //  	  mapPanel.setMotifs(SequiturModel.getMotifs());
 	    	  

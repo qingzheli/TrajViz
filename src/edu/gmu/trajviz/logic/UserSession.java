@@ -1,41 +1,43 @@
 package edu.gmu.trajviz.logic;
 
 public class UserSession {
-	  public static final double DEFAULT_MIN_LINK = 1;
-	  public static final int DEFAULT_ALPHABET_SIZE = 10;
-	  public static final int DEFAULT_MINIMUM_BLOCKS = 10;
-	  public static final int DEFALULT_NOISE_POINT_THRESHOLD = 500;
-	  private double minLink;
+	  public static final double DEFAULT_MAX_ERROR_STEP = 10;
+	  public static final int DEFAULT_ALPHABET_SIZE = 20;
+	  public static final int DEFAULT_MINIMUM_BLOCKS = 3;
+	  public static final int DEFALULT_RESAMPLING_RATE = 500;
+	  private double maxErrorSteps;
 	  private int alphabetSize;
 	  private int minBlocks;
-	  private int noisePointsThreshold;
+	  private int resamplingRate;
   public UserSession(){
 	  super();
-	  this.minLink = DEFAULT_MIN_LINK;
+	  this.maxErrorSteps = DEFAULT_MAX_ERROR_STEP;
 	  this.alphabetSize = DEFAULT_ALPHABET_SIZE;
 	  this.minBlocks = DEFAULT_MINIMUM_BLOCKS;
-	  this.noisePointsThreshold = DEFALULT_NOISE_POINT_THRESHOLD;
+	  this.resamplingRate = DEFALULT_RESAMPLING_RATE;
+	 // log("maxErrorSteps: " + maxErrorSteps + ", blockSize: "
+	 //           + blockSize + ", Minimal Continous Blocks: " + minBlocks+", resamplingRate:"+resamplingRate);
 	  
   }
-  public double getMinLink(){
-	  return this.minLink;
+  public double maxErrorSteps(){
+	  return this.maxErrorSteps;
   }
-  public int getAlphabet(){
+  public int getBlockSize(){
 	  return this.alphabetSize;
   }
   public int getMinBlocks(){
 	  return this.minBlocks;
   }
-  public int getNoisePointThreshold(){
-	  return this.noisePointsThreshold;
+  public int getResamplingRate(){
+	  return this.resamplingRate;
   }
   
-  public void setNoisePointThreshold(int count){
-	  this.noisePointsThreshold = count;
+  public void setResamplingRate(int count){
+	  this.resamplingRate = count;
   }
   
-  public void setMinLink(double minLink){
-	  this.minLink = minLink;
+  public void setMaxErrorSteps(double minLink){
+	  this.maxErrorSteps = minLink;
   }
   public void setAlphabet(int alphabet){
 	  this.alphabetSize = alphabet;

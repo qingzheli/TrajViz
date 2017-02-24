@@ -167,8 +167,8 @@ private boolean isClose(int traj, int s) {
 		for(int index = 0; index<length; index++){
 			
 		//	System.out.println("Eudist: "+SequiturModel.euDist(repLineX.get(index),repLineY.get(index),SequiturModel.oldtrajX.get(traj).get(s+index),SequiturModel.oldtrajY.get(traj).get(s+index)));
-		//	if (Tools.euDist(repLineX.get(index),repLineY.get(index),SequiturModel.oldtrajX.get(traj).get(s+index),SequiturModel.oldtrajY.get(traj).get(s+index))>SequiturModel.minLink)
-			if (Tools.pointEuDist(repLineX.get(index),repLineY.get(index),SequiturModel.oldtrajX.get(traj).get(s+index),SequiturModel.oldtrajY.get(traj).get(s+index))>SequiturModel.distCut*length*SequiturModel.minLink)
+		//	if (Tools.euDist(repLineX.get(index),repLineY.get(index),SequiturModel.oldtrajX.get(traj).get(s+index),SequiturModel.oldtrajY.get(traj).get(s+index))>SequiturModel.maxPointErrorDistance)
+			if (Tools.pointEuDist(repLineX.get(index),repLineY.get(index),SequiturModel.oldtrajX.get(traj).get(s+index),SequiturModel.oldtrajY.get(traj).get(s+index))>SequiturModel.distCut*length*SequiturModel.maxPointErrorDistance)
 
 			return false;
 			

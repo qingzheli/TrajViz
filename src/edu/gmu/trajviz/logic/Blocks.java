@@ -66,6 +66,12 @@ public class Blocks {
 		
 
 	}
+	public void addInterval2Block(Integer startIdx, int endIdx, Integer blockId) {
+		blocks.get(blockId).addIntervals(startIdx, endIdx);
+		
+	}
+	
+	
 	public void addPoint2Block(Location point){
 		blocks.get(findBlockIdForPoint(point)).addPoint(point);
 		
@@ -83,7 +89,7 @@ public class Blocks {
 		//System.out.println("latID: "+(Math.floor((point.latitude-latMin)/latCut))+" lonID: "+(Math.floor((point.longitude-lonMin)/lonCut)));
 	//	if(point.x<-90||point.y<-180)
 	//		return (int)(point.x);
-		int id = (int)(Math.floor((point.x-latMin)/latCut))*nLon+(int)(Math.floor((point.y-lonMin)/lonCut));
+		int id = (int)(Math.floor((point.getX()-latMin)/latCut))*nLon+(int)(Math.floor((point.getY()-lonMin)/lonCut));
 		return id;
 	}
 	public Block findBlockById(int id){
@@ -163,5 +169,6 @@ public class Blocks {
 	    return dist;
 	    */
 	    }
+	
 
 }

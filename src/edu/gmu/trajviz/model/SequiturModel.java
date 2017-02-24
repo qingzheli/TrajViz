@@ -45,6 +45,7 @@ import edu.gmu.trajviz.gi.sequitur.SequiturFactory;
 import edu.gmu.trajviz.logic.*;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
+import edu.gmu.trajviz.sax.datastructures.Interval;
 import edu.gmu.trajviz.sax.datastructures.SAXRecords;
 import edu.gmu.trajviz.timeseries.TSException;
 import edu.gmu.trajviz.util.StackTrace;
@@ -71,9 +72,10 @@ public class SequiturModel extends Observable {
 //	private static final int DEFAULT_TIME_GAP = 3;
 	
 //=======================20170209=========================
-	public static double r;
+	public static double stepDist;
 	public ArrayList<Double> rescaleX;
 	public ArrayList<Double> rescaleY;
+	public ArrayList<Integer[]> long2shortMap;
 	
 	
 	
@@ -124,7 +126,7 @@ public class SequiturModel extends Observable {
 	
 	
 //	public static double MINLINK = 0.0;
-//	public final static double (minLink*2) = 0.0;
+//	public final static double (maxPointErrorDistance*2) = 0.0;
 	
 	public final static int EVAL_RESOLUTION = 100;
 	
@@ -151,7 +153,7 @@ public class SequiturModel extends Observable {
     
 //	private static final int NOISYELIMINATIONTHRESHOLD = 5;
 	public static int alphabetSize;
-	public static double minLink;
+	public static double maxPointErrorDistance;
 	private static int resampleRate;
 	private static GrammarRules rules;
 	public static HashMap<String, ArrayList<String>> allPostions;
@@ -469,13 +471,18 @@ public class SequiturModel extends Observable {
 	  
 	  
 	  
-	  public synchronized void processData(double minLink, int alphabetSize, int minBlocks, int noiseThreshold)throws IOException{
-		  this.resampleRate = noiseThreshold;
-		  this.minLink = minLink;
-		  this.minBlocks = minBlocks;
+	  public synchronized void processData(double maxErrorSteps, int blockSize, int minContinualBlocks, int resamplingRate)throws IOException{
+		  resampleRate = resamplingRate;
+		 
+		  minBlocks = minContinualBlocks;
 		  
-		  this.alphabetSize = alphabetSize;
-		  R = Tools.pointEuDist(latMin, lonMin, latMax, lonMax)/minBlocks;
+		  alphabetSize = blockSize;
+		  stepDist = Tools.pointEuDist(latMin, lonMin, latMax, lonMax)/resampleRate;
+		  maxPointErrorDistance = maxErrorSteps*stepDist;
+		  
+		  
+		  R = Tools.pointEuDist(latMin, lonMin, latMax, lonMax)/minContinualBlocks; 
+		  
 		  initializeVariables();
 		 
 		  StringBuffer sb = new StringBuffer();
@@ -483,36 +490,37 @@ public class SequiturModel extends Observable {
 			  this.log("unable to \"Process data\" - no data were loaded...");
 		  }
 		  else{
+			
 			  consoleLogger.info("setting up GI with params: ");
 			  sb.append(" algorithm: Sequitur");
-			  sb.append(" MinLink: ").append(minLink);
-			  sb.append(" Alphabet size: ").append(alphabetSize);
-			  sb.append(" Minimal Continuous Blocks: ").append(minBlocks);
-			  sb.append(" Resampling Rate: ").append(noiseThreshold);
+			  sb.append(" maxErrorSteps: ").append(maxErrorSteps);
+			  sb.append(" blockSize: ").append(blockSize);
+			  sb.append(" Minimal Continuous Blocks: ").append(minContinualBlocks);
+			  sb.append(" Resampling Rate: ").append(resamplingRate);
 			  consoleLogger.info(sb.toString());
 			 
 			 
 			  this.log(sb.toString());
 		  }
 		  buildModel();
-		  
+		  leftPanelRaw();
 		  runSequitur();
 		  
 		  postProcessing();
 		  
-		  leftPanelRaw();
+		 
 		  
 		  /*
 		  long time = System.currentTimeMillis()/1000;
 		  System.out.println("distCut = "+distCut);
-			double r = SequiturModel.distCut*minBlocks*minLink;
-			System.out.println("r================="+r);
-			  SequiturModel.R = r*r;  	
+			double stepDist = SequiturModel.distCut*minBlocks*maxPointErrorDistance;
+			System.out.println("stepDist================="+stepDist);
+			  SequiturModel.R = stepDist*stepDist;  	
 		  int minLength = minBlocks;
 		  int maxLength = minLength;
 		 
 		  System.out.println("Dataset = "+this.fileNameOnly);
-		  System.out.println("MinLink = "+minLink+", AlphabetSize = "+this.alphabetSize+", slidingWindow = "+this.minBlocks+ ", resampling rate = "+this.resolution);
+		  System.out.println("MinLink = "+maxPointErrorDistance+", AlphabetSize = "+this.alphabetSize+", slidingWindow = "+this.minBlocks+ ", resampling rate = "+this.resolution);
 		  System.out.println("findAllMotif time: "+this.heuristicTime);  
 		  System.out.println("drawMotifsax time: "+(System.currentTimeMillis()-time));
 		  
@@ -570,20 +578,40 @@ public class SequiturModel extends Observable {
 		System.out.println(rule.getR0Intervals()); // not working
 		System.out.println(rule.getRuleIntervals());
 		*/
-		Integer startBlock = Integer.parseInt(rule.getRuleStringList().get(0));
+		ArrayList<String> stringList = rule.getRuleStringList();
 		
 		RuleInterval ruleInterval = rule.getRuleIntervals().get(0);   // get the 1st rule interval first
 		int length = ruleInterval.getLength();
 		int start = ruleInterval.getStartPos();
 		int end = ruleInterval.getEndPos();
+		//Location queryStartLocation = new Location(rescale)
+		Block startBlock = blocks.findBlockById(words.get(start));
 		Route queryRoute = new Route(rescaleX.subList(start,end+1),rescaleY.subList(start, end+1));
-		
+		double[] lowerBoundDistance = startBlock.getLowerBoundDistance2Neighbor(rescaleX.get(start), rescaleY.get(start));
+	//	blocks.printBlockMap();
+	//	System.out.println("startBlock: "+startBlock);
+		for(int i = 0; i<startBlock.nearbyBlocks.length; i++){
+			Block nearbyBlock = startBlock.nearbyBlocks[i];
+			if(nearbyBlock!=null && lowerBoundDistance[i]<maxPointErrorDistance){   // if this neighbor block might contains nearby points
+              for(Interval interval : nearbyBlock.getIntervals()) {
+            	  int s = interval.getStartIdx();
+            	  int e = s+length;
+            	  Location sPoint = new Location(rescaleX.get(s),rescaleY.get(s));
+            	  double sDist = Tools.locationDist(sPoint,queryRoute.getStartLocation());
+            	  while(){
+            		  
+            	  }
+              }
+			}
+	//	  System.out.println(startBlock.nearbyBlocks[i]);
+		}
 		
 		
 		System.out.println(queryRoute);
 	}
 
 	private void initializeVariables() throws IOException {
+		  long2shortMap = new ArrayList<Integer[]>();  // i.e. long2shortMap.get(indexOfrescaleX) =={trajId,position in rescaledRoutes}
 		  sortedCounter = 0;
 		  count_works = 0;
 		  not_works = 0;
@@ -1037,7 +1065,7 @@ private void findAllMotifSax(){
 					  pos++;
 				  }
 				 
-				  if(singleTrueAnomaly.getLats().size()>=3)//(int)(minBlocks*SequiturModel.minLink))
+				  if(singleTrueAnomaly.getLats().size()>=3)//(int)(minBlocks*SequiturModel.maxPointErrorDistance))
 				  {
 					  
 					  Integer l = singleTrueAnomaly.getLats().size();
@@ -1094,7 +1122,7 @@ private void findAllMotifSax(){
 					  pos++;
 				  }
 				 
-				  if(singleDiscord.getLats().size()>=3)//(int)(minBlocks*SequiturModel.minLink))
+				  if(singleDiscord.getLats().size()>=3)//(int)(minBlocks*SequiturModel.maxPointErrorDistance))
 				  {
 					  
 					  Integer l = singleDiscord.getLats().size();
@@ -1147,7 +1175,7 @@ public static void DrawDiscordOnly()
 					  pos++;
 				  }
 				 
-				  if(singleDiscord.getLats().size()>=3)//(int)(minBlocks*SequiturModel.minLink))
+				  if(singleDiscord.getLats().size()>=3)//(int)(minBlocks*SequiturModel.maxPointErrorDistance))
 				  {
 					  
 					  Integer l = singleDiscord.getLats().size();
@@ -1200,7 +1228,7 @@ public static void DrawDiscordOnly()
 							  prePos = pos;
 							  pos++;
 						  }
-						  if(singleAnomaly.getLats().size()>=3)//(int)(minBlocks*SequiturModel.minLink))
+						  if(singleAnomaly.getLats().size()>=3)//(int)(minBlocks*SequiturModel.maxPointErrorDistance))
 						  {
 							  Integer l = singleAnomaly.getLats().size();
 					//		  System.out.println("DEBUG::::::::::::::: l = "+l);
@@ -1493,7 +1521,7 @@ public static void DrawDiscordOnly()
 			double dist = 0;
 			for(int index = 0; index<allTrajClusters.get(length).get(i).repLineX.size(); index++){
 				double pairDist = Tools.euDist(allTrajClusters.get(length).get(i).repLineX.get(index),allTrajClusters.get(length).get(i).repLineY.get(index),oldtrajX.get(traj).get(s+index),oldtrajY.get(traj).get(s+index));
-				if(pairDist>distCut*(length)*minLink)
+				if(pairDist>distCut*(length)*maxPointErrorDistance)
 					{
 					dist = Double.MAX_VALUE;
 					break;
@@ -1512,11 +1540,11 @@ public static void DrawDiscordOnly()
 			
 		}
 		
-		if((minDist/length)<=(distCut*(length)*minLink)){
+		if((minDist/length)<=(distCut*(length)*maxPointErrorDistance)){
 			//isAdded = true;
 		System.out.println("trajId = "+traj);
 		System.out.println("minDist/length = "+minDist/length);
-		System.out.println("R      = "+distCut*(length)*minLink);
+		System.out.println("R      = "+distCut*(length)*maxPointErrorDistance);
 		System.out.println("minCluster = "+ minCluster);
 			allTrajClusters.get(length).get(minCluster).addBest(traj, s);
 		}
@@ -1652,8 +1680,8 @@ private void paa2saxseqs() {
 		routes = new ArrayList< ArrayList<Route>>();
 		System.out.println("BBBBBBBBBBBBBBBBBBBBBBBBBbb  latMin = "+latMin+"   lonMin = "+lonMin +"   latMax = "+latMax+"  lonMax = "+lonMax );
 		blocks = new Blocks(alphabetSize,latMin,latMax,lonMin,lonMax);
-		r = Tools.pointEuDist(latMin, lonMin, latMax, lonMax)/resampleRate;
-		System.out.println("r_dynamic = "+r);
+		
+		System.out.println("stepDist = "+stepDist);
 		
 		resample();
 		descritization();
@@ -1664,6 +1692,7 @@ private void paa2saxseqs() {
 		  words = new ArrayList<Integer>();
 		  // add all points into blocks.
 		  Integer previousId=(Integer)(-1);
+		  Integer startIndex = 0;
 		
 		//  HashMap<Integer,Integer> trackMap = new HashMap<Integer, Integer>();
 		  trimedTrack = new ArrayList<NumerosityReductionMapEntry>();
@@ -1683,7 +1712,7 @@ private void paa2saxseqs() {
 			  else{
 				  Location loc = new Location(rescaleX.get(i),rescaleY.get(i));
 				  id = new Integer(blocks.findBlockIdForPoint(loc));
-				  blocks.addPoint2Block(loc, id);
+				  //blocks.addPoint2Block(loc, id);
 			  }
 			 
 			words.add(id);
@@ -1695,7 +1724,8 @@ private void paa2saxseqs() {
 			  if (!id.equals(previousId))
 			  {
 				  
-				  NumerosityReductionMapEntry<Integer, String> entry = new NumerosityReductionMapEntry<Integer, String>(new Integer(i),id.toString());
+				  NumerosityReductionMapEntry<Integer, String> 
+				  entry = new NumerosityReductionMapEntry<Integer, String>(i,id.toString());
 		//		  System.out.println("entry: "+i+","+id);
 				  trimedTrack.add(entry);
 				  mapTrimed2Original.add(i);
@@ -1703,7 +1733,12 @@ private void paa2saxseqs() {
 				  //put the new <index,id> pair into a map 
 				  //NumerosityReductionMapEntry entry = new NumerosityReductionMapEntry(i,id);
 			//	  trackMap.put(i, id);
+				  if(previousId>0){
+				  blocks.addInterval2Block(startIndex,i-1,previousId);
+				  System.out.println(previousId+" "+blocks.findBlockById(previousId).getIntervals());
+				  }
 				  previousId = id;
+				  startIndex = i>0?i-1:0;
 			  }
 			  
 			  				  
@@ -1723,7 +1758,7 @@ private void paa2saxseqs() {
 
 	}
     private void dummyResampling(){
-    	R = minLink;
+    	R = maxPointErrorDistance;
   	  oldtrajX = new ArrayList<ArrayList<Double>>();
 		  oldtrajY = new ArrayList<ArrayList<Double>>();
 		  travelDistance = new ArrayList<Double>();
@@ -1815,13 +1850,13 @@ private void paa2saxseqs() {
 			 if(x!=Double.MAX_VALUE){   // adjust the x0, y0
 				 double dist=Tools.pointEuDist(x, y, x1, y1);
 				
-				 if(dist<r)   //Figure 4 condition
+				 if(dist<stepDist)   //Figure 4 condition
 					 continue;
 				 if(Math.abs(x1-x0)<0.000001){  // handling a = infinity case
-					 //x'==x0; so (x'-x)^2+(y'-y)^2 = r*r  <=> (x0-x)^2+(y'-y)^2 = r*r;
+					 //x'==x0; so (x'-x)^2+(y'-y)^2 = stepDist*stepDist  <=> (x0-x)^2+(y'-y)^2 = stepDist*stepDist;
 					 double A = 1;
 					 double B = -2*y;
-					 double C = (x0-x)*(x0-x)+y*y-r*r;
+					 double C = (x0-x)*(x0-x)+y*y-stepDist*stepDist;
 					 double b4ac=Math.sqrt(B*B-4*A*C);
 					 double root1 = (-B+b4ac)/(2*A);   
 					 double root2 = (-B-b4ac)/(2*A);
@@ -1834,7 +1869,7 @@ private void paa2saxseqs() {
 					 else{
 						 double test_dist = Tools.pointEuDist(x, y, x0, y0);
 						 
-						 System.out.println("r = "+r);
+						 System.out.println("stepDist = "+stepDist);
 						 System.out.println("x_y1_dist = "+dist);
 						 System.out.println("x_y0_test_dist = "+test_dist);
 						 System.out.println("x = "+x);
@@ -1852,11 +1887,11 @@ private void paa2saxseqs() {
 				 double a = (y1-y0)/(x1-x0);
 				 double b = y0-a*x0;
 				 // y' = ax_1'+b;
-				 //Math.sqrt((x-x')^2+(y-y')^2) = r;
+				 //Math.sqrt((x-x')^2+(y-y')^2) = stepDist;
 				 // solve the above equations about x' and y'
 				 double A = 1+a*a;
 				 double B = 2*a*b-2*x-2*a*y;
-				 double C = x*x+y*y+b*b-2*y*b-r*r;
+				 double C = x*x+y*y+b*b-2*y*b-stepDist*stepDist;
 		
 				 double sqrt_bb4ac = Math.sqrt(B*B-4*A*C);
 		
@@ -1872,7 +1907,7 @@ private void paa2saxseqs() {
 					 
 					 double test_dist = Tools.pointEuDist(x, y, x0, y0);
 					 
-					 System.out.println("r = "+r);
+					 System.out.println("stepDist = "+stepDist);
 					 System.out.println("dist = "+dist);
 					 System.out.println("test_dist = "+test_dist);
 					 System.out.println("x = "+x);
@@ -1892,9 +1927,9 @@ private void paa2saxseqs() {
 			 rescaleY.add(y0);
 			 
 				 l = Tools.pointEuDist(x0, y0, x1, y1);
-			 for(int i=1; i*r<=l+0.00001; i++){
-				 x = i*r*(x1-x0)/l+x0;
-				 y = i*r*(y1-y0)/l+y0;
+			 for(int i=1; i*stepDist<=l+0.00001; i++){
+				 x = i*stepDist*(x1-x0)/l+x0;
+				 y = i*stepDist*(y1-y0)/l+y0;
 				 rescaleX.add(x);
 				 rescaleY.add(y);
 			 }
@@ -1904,7 +1939,7 @@ private void paa2saxseqs() {
 		  
 		  System.out.println("latOri = "+latOri.subList(0, 100));
 		  System.out.println("lonOri = "+lonOri.subList(0, 100));
-		  System.out.println("r = "+r);
+		  System.out.println("stepDist = "+stepDist);
 		  System.out.println("original length : rescaled length = "+latOri.size()+" : "+rescaleX.size());
 		  System.out.println("rescaleX = "+rescaleX.subList(0, 100));
 		  System.out.println("rescaleY = "+rescaleY.subList(0, 100));
@@ -1921,20 +1956,18 @@ private void paa2saxseqs() {
 	// Draw raw trajectory on left map
 	private void leftPanelRaw(){
 		System.out.println("rawtrajX.size = "+rawtrajX.size());
+		/*
 		for (int i =0; i<rawtrajX.size();i++){
 			if(rawtrajX.get(i).size()==0||rawtrajX.get(i).size()==0)
 			System.out.println(rawtrajX.get(i));
 			Route singleRoute = new Route(rawtrajX.get(i),rawtrajY.get(i));
-		/*
-			for(int j = 0; j<rawtrajX.get(i).size(); j++){
-			//	Location loca = new Location(oldtrajX.get(i).get(j),oldtrajY.get(i).get(j));
-				singleRoute.addLocation(rawtrajX.get(i).get(j),rawtrajY.get(i).get(j));
-			}
-			*/
+		
 			rawRoutes.add(singleRoute);
 			
-		}
+		}*/
 		int start = 0;
+		int trajId = -1001;
+		int posInTraj = 0;
 		for(int i = 0; i<rescaleX.size();i++){
 		//	System.out.println("i = "+i+"  x = "+rescaleX.get(i));
 			if(rescaleX.get(i)<=-1000&&i-start>1){
@@ -1956,6 +1989,14 @@ private void paa2saxseqs() {
 				start = j;
 				i = j;
 				//System.out.println("nextstart = "+ start);
+				if(i<rescaleX.size()){
+				trajId = rescaleX.get(i).intValue();
+				posInTraj = 0;
+				}
+			}
+			else{
+				Integer[] map = {trajId,posInTraj};
+				long2shortMap.add(map);
 			}
 		}
 	}
@@ -2101,9 +2142,9 @@ private void paa2saxseqs() {
 			    		//System.out.println("cluster "+i+" : {" +clusters.get(i)+"}");
 			    		totalRuleCount = totalRuleCount+clusters.get(i).size();
 			    	
-			    	for(int r : clusters.get(i)){
+			    	for(int stepDist : clusters.get(i)){
 			    	
-			    		int rule = r; //filter.get(r);
+			    		int rule = stepDist; //filter.get(stepDist);
 			    		set.add(rule);
 			    		if(mergedIntervals.size()==0)
 			    			mergedIntervals.addAll(chartData.getRulePositionsByRuleNum(rule));
@@ -2250,7 +2291,7 @@ private void paa2saxseqs() {
 				String s = r0[i];
 				if(!Tools.isNumeric(s) && s!=null){
 					if(r0[i].charAt(0)=='R'){
-						s = "I"+iteration+"r"+r0[i].substring(1);
+						s = "I"+iteration+"stepDist"+r0[i].substring(1);
 						
 						cluster = new Cluster(s);
 						//cluster.addRule(rules.get(Integer.valueOf(r0[i].substring(1))));
@@ -2261,7 +2302,7 @@ private void paa2saxseqs() {
 
 				}
 			}
-			RuleDistanceMatrix rdm = new RuleDistanceMatrix(blocks,currentClusters,minBlocks,minLink);
+			RuleDistanceMatrix rdm = new RuleDistanceMatrix(blocks,currentClusters,minBlocks,maxPointErrorDistance);
 			
 		
 	}
@@ -2759,11 +2800,11 @@ System.out.println("]");
 	//	  String evalHead = "DataName,PaaSize,AlphabetSize,MinimalContinuousBlocks,NoiseCancellationThreshold\n";
 		  
 		  try{
-		  File evalFile = new File("./evaluation/"+"evaluate_"+(int)(minLink*1000)+"_"+alphabetSize+"_"+minBlocks+"_"+resampleRate+"_"+lat.size()+"_"+fileNameOnly);
+		  File evalFile = new File("./evaluation/"+"evaluate_"+(int)(maxPointErrorDistance*1000)+"_"+alphabetSize+"_"+minBlocks+"_"+resampleRate+"_"+lat.size()+"_"+fileNameOnly);
 		  FileWriter fr = new FileWriter(evalFile);
 		  String sb1; // = new StringBuffer();
 		  //sb1.append(fileNameOnly+",");
-		  sb1 = (fileNameOnly+","+minLink+","+alphabetSize+","+minBlocks+","+resampleRate+","+runTime+","+avgIntraDistance+","+avgIntraDistanceStdDev+","+ minInterDistance+","+avgSilhouetteCoefficient+","+routes.size()+","+lat.size()+','+totalSubTrajectory+","+coverCount+","+immergableRuleCount+"\n");
+		  sb1 = (fileNameOnly+","+maxPointErrorDistance+","+alphabetSize+","+minBlocks+","+resampleRate+","+runTime+","+avgIntraDistance+","+avgIntraDistanceStdDev+","+ minInterDistance+","+avgSilhouetteCoefficient+","+routes.size()+","+lat.size()+','+totalSubTrajectory+","+coverCount+","+immergableRuleCount+"\n");
 		  fr.append(sb1);
 		  System.out.println(EVALUATION_HEAD);
 		  System.out.println(sb1);
@@ -2837,9 +2878,9 @@ System.out.println("]");
 		    		//System.out.println("cluster "+i+" : {" +clusters.get(i)+"}");
 		    		totalRuleCount = totalRuleCount+clusters.get(i).size();
 		    	
-		    	for(int r : clusters.get(i)){
+		    	for(int stepDist : clusters.get(i)){
 		    	
-		    		int rule = r; //filter.get(r);
+		    		int rule = stepDist; //filter.get(stepDist);
 		    		set.add(rule);
 		    		if(mergedIntervals.size()==0)
 		    			mergedIntervals.addAll(chartData.getRulePositionsByRuleNum(rule));
@@ -3004,7 +3045,7 @@ System.out.println("]");
 					int i = filterMap.get(j);
 					dist = dist + distance[x][i]; 
 					counter++;
-					//if(distance[x][i]>(minLink*2))
+					//if(distance[x][i]>(maxPointErrorDistance*2))
 						//return false;
 			
 				}
@@ -3016,7 +3057,7 @@ System.out.println("]");
 					int i = filterMap.get(j);
 					dist = dist + distance[i][y];
 					counter++;
-					//if(distance[i][y]>(minLink*2))
+					//if(distance[i][y]>(maxPointErrorDistance*2))
 					
 						//return false;
 			
@@ -3034,7 +3075,7 @@ System.out.println("]");
 				int j =filterMap.get(n);
 		//		int xSibling = families.get(x).get(i);
 		//		int ySibling = families.get(y).get(j);
-			//	if(distance[i][j]>(minLink*2))
+			//	if(distance[i][j]>(maxPointErrorDistance*2))
 				//	return false;
 				dist = dist+distance[i][j];
 				counter++;

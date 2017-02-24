@@ -97,8 +97,8 @@ public static String parseRule(String string) {
 	for (String s:stringArray){
 		if (s.charAt(0)=='I')
 		{
-			if(s.contains("r")){
-				int rIndex = s.indexOf("r");
+			if(s.contains("stepDist")){
+				int rIndex = s.indexOf("stepDist");
 				Integer iteration = Integer.valueOf(s.substring(1, rIndex));
 				Integer rule = Integer.valueOf(s.substring(rIndex+1));
 			//	System.out.println("s: "+s+" iteration: "+iteration+" rule: "+rule);
@@ -208,11 +208,11 @@ private double lcssDistance(Blocks blocks, ArrayList<Integer> x, ArrayList<Integ
 		}
 	ans = 1- Math.max(0.0,(double)opt[0][0])/(Math.max(m, n));
 	/*
-	if(true){//(ans<=minLink){
+	if(true){//(ans<=maxPointErrorDistance){
 		
 	System.out.println("x: "+x);
 	System.out.println("y: "+y);
-	System.out.println("minLink = "+minLink);
+	System.out.println("maxPointErrorDistance = "+maxPointErrorDistance);
 	System.out.println("ans: "+ans+" opt00 = "+opt[0][0]);
 	
 	
