@@ -75,7 +75,7 @@ public class SequiturModel extends Observable {
 	public static double stepDist;
 	public ArrayList<Double> rescaleX;
 	public ArrayList<Double> rescaleY;
-	public ArrayList<Integer[]> long2shortMap;
+	public ArrayList<Integer[]> whole2separateTrajMap;
 	
 	
 	
@@ -582,26 +582,78 @@ public class SequiturModel extends Observable {
 		
 		RuleInterval ruleInterval = rule.getRuleIntervals().get(0);   // get the 1st rule interval first
 		int length = ruleInterval.getLength();
-		int start = ruleInterval.getStartPos();
-		int end = ruleInterval.getEndPos();
+		int queryStartPoint = ruleInterval.getStartPos();
+		int queryEndPoint = ruleInterval.getEndPos();
+		double maxSubtrajSquareEuDist = length*maxPointErrorDistance*maxPointErrorDistance;   //
 		//Location queryStartLocation = new Location(rescale)
-		Block startBlock = blocks.findBlockById(words.get(start));
-		Route queryRoute = new Route(rescaleX.subList(start,end+1),rescaleY.subList(start, end+1));
-		double[] lowerBoundDistance = startBlock.getLowerBoundDistance2Neighbor(rescaleX.get(start), rescaleY.get(start));
+		
+		/*=================================================================================================================
+		 * Below is pruning 1: only select points in blocks which overlap with the query circle of query trajectory's start point  
+		 */
+		
+		Block startBlock = blocks.findBlockById(words.get(queryStartPoint));
+		Route queryRoute = new Route(rescaleX.subList(queryStartPoint,queryEndPoint+1),rescaleY.subList(queryStartPoint, queryEndPoint+1));
+		double[] lowerBoundDistance = startBlock.getLowerBoundDistance2Neighbor(rescaleX.get(queryStartPoint), rescaleY.get(queryStartPoint));
 	//	blocks.printBlockMap();
 	//	System.out.println("startBlock: "+startBlock);
 		for(int i = 0; i<startBlock.nearbyBlocks.length; i++){
 			Block nearbyBlock = startBlock.nearbyBlocks[i];
 			if(nearbyBlock!=null && lowerBoundDistance[i]<maxPointErrorDistance){   // if this neighbor block might contains nearby points
-              for(Interval interval : nearbyBlock.getIntervals()) {
-            	  int s = interval.getStartIdx();
-            	  int e = s+length;
-            	  Location sPoint = new Location(rescaleX.get(s),rescaleY.get(s));
-            	  double sDist = Tools.locationDist(sPoint,queryRoute.getStartLocation());
-            	  while(){
-            		  
+              
+       /*==================================================================================================================================
+		* Below is pruning 2: only select sub-trajectories which are close to the start and end points located in query circle of
+		*  query trajectory's start and end point respectively 
+		* 
+        */
+				for(Interval interval : nearbyBlock.getIntervals()) {
+	              int start = interval.getStartIdx();
+	              int end = start+length;
+	              if(start<=interval.getEndIdx()&&
+            			  end<rescaleX.size()&&whole2separateTrajMap.get(start)[0]==whole2separateTrajMap.get(end)[0]){	  
+	            	  //int e = s+length;
+            	  Location startPoint = new Location(rescaleX.get(start),rescaleY.get(start));
+            	  Location endPoint = new Location(rescaleX.get(end),rescaleY.get(end));
+            	  double startDist = Tools.locationDist(startPoint,queryRoute.getStartLocation());
+            	  double endDist = Tools.locationDist(endPoint,queryRoute.getEndLocation());
+
+            	  while(start<=interval.getEndIdx()&&
+            			  end<rescaleX.size()&&(whole2separateTrajMap.get(start)[0]==whole2separateTrajMap.get(end)[0])
+            			  &&(startDist>maxPointErrorDistance||endDist>maxPointErrorDistance)){
+            		  int steps = Math.max( Double.valueOf((startDist-maxPointErrorDistance)/this.stepDist).intValue(),Double.valueOf((endDist-maxPointErrorDistance)/this.stepDist).intValue());
+            		  steps = steps==0?1:steps;
+            		  start = start+steps;
+            		  end = end+steps;
+            		  startDist = Tools.locationDist(startPoint,queryRoute.getStartLocation());
+            		  endDist = Tools.locationDist(endPoint,queryRoute.getEndLocation());
             	  }
-              }
+            	  
+        /*======================================================================================================================================
+         * Below is pruning 3: the closest sub-trajectory among all trivial sub-trajectory must satisfy the start and end positions must be also the closest pair.  
+         */
+            	
+                	//  System.out.println("end = "+end+"        sDist = "+startDist+ "eDist = "+endDist+"    maxPointErrorDistance = "+maxPointErrorDistance);
+                	  double minDist = startDist+endDist;
+                	  int minStart = start;
+                	  while(start<=interval.getEndIdx()&& end<rescaleX.size()&&(whole2separateTrajMap.get(start)[0]==whole2separateTrajMap.get(start+length)[0])&&
+                			  startDist<maxPointErrorDistance&&endDist<maxPointErrorDistance){
+                		  if(minDist<startDist+endDist){
+                			  minDist = startDist+endDist;
+                			  minStart = start;
+                		  }
+                		  start++;
+                		  end++;
+                		  startPoint = new Location(rescaleX.get(start),rescaleY.get(start));
+                    	  endPoint = new Location(rescaleX.get(end),rescaleY.get(end));
+                    	  startDist = Tools.locationDist(startPoint,queryRoute.getStartLocation());
+                		  endDist = Tools.locationDist(endPoint,queryRoute.getEndLocation());
+                		  
+                	  }
+                	  System.out.println("minStart = "+minStart+ "   minDistance = "+minDist);
+            	  
+            	  
+            		  
+                  }
+			  }  // end for interval
 			}
 	//	  System.out.println(startBlock.nearbyBlocks[i]);
 		}
@@ -611,7 +663,7 @@ public class SequiturModel extends Observable {
 	}
 
 	private void initializeVariables() throws IOException {
-		  long2shortMap = new ArrayList<Integer[]>();  // i.e. long2shortMap.get(indexOfrescaleX) =={trajId,position in rescaledRoutes}
+		  whole2separateTrajMap = new ArrayList<Integer[]>();  // i.e. whole2separateTrajMap.get(indexOfrescaleX) =={trajId,position in rescaledRoutes}
 		  sortedCounter = 0;
 		  count_works = 0;
 		  not_works = 0;
@@ -1824,11 +1876,18 @@ private void paa2saxseqs() {
 		//  System.out.println(lonOri.subList(0, 100));
 		  double x=Double.MAX_VALUE;
 		  double y=Double.MAX_VALUE;
+		  int trajId = -1001;
+		  int posInTraj = 0;
 		  for(int j = 1; j<latOri.size(); j++){
 			 if(latOri.get(j)<=-1000){    // if the current point is the trajectory id
 				 
 				 rescaleX.add(latOri.get(j));
 				 rescaleY.add(lonOri.get(j));
+				
+				 trajId = latOri.get(j).intValue()-1;
+				 posInTraj = 0;
+				 Integer[] map = {latOri.get(j).intValue(),-1};
+					whole2separateTrajMap.add(map);
 				/*
 				 if(j+1<latOri.size()){  // add the start point to rescaled trajectory
 					rescaleX.add(latOri.get(j+1));
@@ -1925,13 +1984,18 @@ private void paa2saxseqs() {
 			 y = y0;
 			 rescaleX.add(x0);
 			 rescaleY.add(y0);
-			 
+			 Integer[] map = {latOri.get(j).intValue(),posInTraj};
+			 posInTraj++;
+			 whole2separateTrajMap.add(map);
 				 l = Tools.pointEuDist(x0, y0, x1, y1);
 			 for(int i=1; i*stepDist<=l+0.00001; i++){
 				 x = i*stepDist*(x1-x0)/l+x0;
 				 y = i*stepDist*(y1-y0)/l+y0;
 				 rescaleX.add(x);
 				 rescaleY.add(y);
+				 Integer[] map1 = {latOri.get(j).intValue(),posInTraj};
+				 posInTraj++;
+				 whole2separateTrajMap.add(map);
 			 }
 			  
 			  
@@ -1941,10 +2005,13 @@ private void paa2saxseqs() {
 		  System.out.println("lonOri = "+lonOri.subList(0, 100));
 		  System.out.println("stepDist = "+stepDist);
 		  System.out.println("original length : rescaled length = "+latOri.size()+" : "+rescaleX.size());
+		  System.out.println("whole2separateTrajMap.size() = "+whole2separateTrajMap.size());
 		  System.out.println("rescaleX = "+rescaleX.subList(0, 100));
 		  System.out.println("rescaleY = "+rescaleY.subList(0, 100));
-		  
-		  
+		  /*
+		  for(int i = 0; i<whole2separateTrajMap.size(); i++)
+		  System.out.print(i+"("+whole2separateTrajMap.get(i)[0]+","+whole2separateTrajMap.get(i)[1]+")  ");
+		  */
 		  
 		  
 		  
@@ -1994,10 +2061,14 @@ private void paa2saxseqs() {
 				posInTraj = 0;
 				}
 			}
+			/*
 			else{
+				
+				
 				Integer[] map = {trajId,posInTraj};
-				long2shortMap.add(map);
+				whole2separateTrajMap.add(map);
 			}
+			*/
 		}
 	}
 	
