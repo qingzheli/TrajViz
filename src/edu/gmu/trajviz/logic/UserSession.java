@@ -1,10 +1,10 @@
 package edu.gmu.trajviz.logic;
 
 public class UserSession {
-	  public static final double DEFAULT_MAX_ERROR_STEP = 10;
-	  public static final int DEFAULT_ALPHABET_SIZE = 20;
+	  public static final double DEFAULT_MAX_ERROR_STEP = 5;
+	  public static final int DEFAULT_ALPHABET_SIZE = 100;
 	  public static final int DEFAULT_MINIMUM_BLOCKS = 3;
-	  public static final int DEFALULT_RESAMPLING_RATE = 500;
+	  public static final int DEFALULT_RESAMPLING_RATE = 1000;
 	  private double maxErrorSteps;
 	  private int alphabetSize;
 	  private int minBlocks;

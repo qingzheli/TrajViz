@@ -76,8 +76,8 @@ public class SequiturModel extends Observable {
 	public ArrayList<Double> rescaleX;
 	public ArrayList<Double> rescaleY;
 	public ArrayList<Integer[]> whole2separateTrajMap;
-	
-	
+	public int queryResultCounter;
+	public int queryRuleCounter;
 	
 	
 	
@@ -502,12 +502,21 @@ public class SequiturModel extends Observable {
 			 
 			  this.log(sb.toString());
 		  }
+		  long ct = System.currentTimeMillis();
 		  buildModel();
+		  System.out.println("buildModel time: "+ (System.currentTimeMillis()-ct));
+		  ct = System.currentTimeMillis();
 		  leftPanelRaw();
+		  System.out.println("leftPanelRaw time: "+ (System.currentTimeMillis()-ct));
+		  ct = System.currentTimeMillis();
 		  runSequitur();
-		  
+		  System.out.println("runSequitur time: "+ (System.currentTimeMillis()-ct));
+		  ct = System.currentTimeMillis();
 		  postProcessing();
-		  
+		  System.out.println("postProcessing time: "+ (System.currentTimeMillis()-ct));
+		  ct = System.currentTimeMillis();
+		  System.out.println("queryResultCounter = "+queryResultCounter);
+		  System.out.println("queryRuleCounter = "+queryRuleCounter);
 		 
 		  
 		  /*
@@ -565,7 +574,7 @@ public class SequiturModel extends Observable {
 		    */
 			if(rule.getActualRuleYield()>=minBlocks){
 			
-			
+			queryRuleCounter++;
 			query(rule) ;
 			}
 		}
@@ -581,7 +590,7 @@ public class SequiturModel extends Observable {
 		ArrayList<String> stringList = rule.getRuleStringList();
 		
 		RuleInterval ruleInterval = rule.getRuleIntervals().get(0);   // get the 1st rule interval first
-		int length = ruleInterval.getLength();
+		int length = ruleInterval.getLength()+1;
 		int queryStartPoint = ruleInterval.getStartPos();
 		int queryEndPoint = ruleInterval.getEndPos();
 		double maxSubtrajSquareEuDist = length*maxPointErrorDistance*maxPointErrorDistance;   //
@@ -630,10 +639,12 @@ public class SequiturModel extends Observable {
         /*======================================================================================================================================
          * Below is pruning 3: the closest sub-trajectory among all trivial sub-trajectory must satisfy the start and end positions must be also the closest pair.  
          */
+            	  if(start<=interval.getEndIdx()&& end<rescaleX.size()&&(whole2separateTrajMap.get(start)[0]==whole2separateTrajMap.get(start+length)[0])){
             	
                 	//  System.out.println("end = "+end+"        sDist = "+startDist+ "eDist = "+endDist+"    maxPointErrorDistance = "+maxPointErrorDistance);
                 	  double minDist = startDist+endDist;
                 	  int minStart = start;
+                	  
                 	  while(start<=interval.getEndIdx()&& end<rescaleX.size()&&(whole2separateTrajMap.get(start)[0]==whole2separateTrajMap.get(start+length)[0])&&
                 			  startDist<maxPointErrorDistance&&endDist<maxPointErrorDistance){
                 		  if(minDist<startDist+endDist){
@@ -648,10 +659,19 @@ public class SequiturModel extends Observable {
                 		  endDist = Tools.locationDist(endPoint,queryRoute.getEndLocation());
                 		  
                 	  }
-                	  System.out.println("minStart = "+minStart+ "   minDistance = "+minDist);
+                //	  System.out.println("start : end = "+start+" : "+end+ "  minStart  = "+minStart+"   length="+length);
+            	  
+            	  Route candidateRoute = new Route(rescaleX.subList(minStart, minStart+length),rescaleY.subList(minStart, minStart+length));
+            	  double subtrajSquareEuDist = Tools.routeSqrEuDist(queryRoute, candidateRoute, maxSubtrajSquareEuDist);
+            	  if(subtrajSquareEuDist<maxSubtrajSquareEuDist){
+            		  // todo: put it into motif set
+            		  queryResultCounter++;
+            		 // System.out.println("found query Result:\n queryStartPoint = "+queryStartPoint+"\n resultStartPoint = "+minStart+"\n subtrajEuDist = "+subtrajSquareEuDist+" maxSubtrajSquareEudist = "+maxSubtrajSquareEuDist);
+            	  }
+            	  
+            	  } // else advance to next interval.
             	  
             	  
-            		  
                   }
 			  }  // end for interval
 			}
@@ -659,7 +679,7 @@ public class SequiturModel extends Observable {
 		}
 		
 		
-		System.out.println(queryRoute);
+	//	System.out.println(queryRoute);
 	}
 
 	private void initializeVariables() throws IOException {
@@ -1732,7 +1752,8 @@ private void paa2saxseqs() {
 		routes = new ArrayList< ArrayList<Route>>();
 		System.out.println("BBBBBBBBBBBBBBBBBBBBBBBBBbb  latMin = "+latMin+"   lonMin = "+lonMin +"   latMax = "+latMax+"  lonMax = "+lonMax );
 		blocks = new Blocks(alphabetSize,latMin,latMax,lonMin,lonMax);
-		
+		queryResultCounter = 0;
+		queryRuleCounter = 0;
 		System.out.println("stepDist = "+stepDist);
 		
 		resample();
@@ -1787,7 +1808,7 @@ private void paa2saxseqs() {
 			//	  trackMap.put(i, id);
 				  if(previousId>0){
 				  blocks.addInterval2Block(startIndex,i-1,previousId);
-				  System.out.println(previousId+" "+blocks.findBlockById(previousId).getIntervals());
+				//  System.out.println(previousId+" "+blocks.findBlockById(previousId).getIntervals());
 				  }
 				  previousId = id;
 				  startIndex = i>0?i-1:0;
