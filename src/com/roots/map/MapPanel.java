@@ -98,6 +98,7 @@ import org.xml.sax.helpers.DefaultHandler;
 
 import edu.gmu.trajviz.logic.Route;
 import edu.gmu.trajviz.sax.datastructures.Cluster;
+import edu.gmu.trajviz.sax.datastructures.Motif;
 import edu.gmu.trajviz.view.SequiturRulesPanel;
 
 
@@ -242,7 +243,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
     private SearchPanel searchPanel;
     private Rectangle magnifyRegion;
     private ArrayList<ArrayList<Route>> motifs;
-    private HashMap<Integer, ArrayList<Cluster>> allMotifs;
+    private ArrayList<Motif> allMotifs;
     private ArrayList<Route> allTrajectory;
     private ArrayList<Route> allAnomaly;
     private ArrayList<Double> routeLat;// = new ArrayList<Double>();
@@ -675,16 +676,15 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
               
              // while(it.hasNext()){
             //	  ArrayList<Cluster> clusters = allMotifs.get(it.next());
-            	ArrayList<Cluster> clusters = allMotifs.get(ruleDetails);
-            	  for(int i = 0; clusters!=null && i< clusters.size(); i++){
-            		  Iterator it = clusters.get(i).trajIds.iterator();
-            		  while(it.hasNext()){
-            			  String j = (String) it.next();
-            			  route = clusters.get(i).getRoutes().get(j);
-            			  paintRoute(g,route.getLats(),route.getLons(),i);
+            //ArrayList<Cluster> clusters = allMotifs.get(ruleDetails);
+            	 
+            		 for(Route currentRoute : allMotifs.get(ruleDetails).getRoutes())
+            		  {
+            			  
+            			  paintRoute(g,currentRoute.getLats(),currentRoute.getLons(),ruleDetails);
             			  
             		  }
-            	  }
+            	
             	  
             	  
             	  
@@ -735,7 +735,8 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 		
 	}
 	
-	public void setAllMotifs(HashMap<Integer, ArrayList<Cluster>> allmotif){
+	public void setAllMotifs(ArrayList<Motif> allmotif){
+		System.out.println("===========================MapPanel.allMotifs.size = "+allmotif.size());
 		allMotifs = allmotif;
 	}
 	
@@ -831,7 +832,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 	//	g.drawPolyline(xPoints, yPoints, nPoints);
 
 		g.setPaintMode();
-		g.setStroke(new BasicStroke(2));
+		g.setStroke(new BasicStroke(4));
 		g.drawPolyline(xPoints, yPoints, latitudes.size());
 		
 		

@@ -9,23 +9,24 @@ import edu.gmu.trajviz.logic.Route;
 import edu.gmu.trajviz.model.SequiturModel;
 import edu.gmu.trajviz.util.Tools;
 //-qz
-public class Motif implements Comparable{
-	public int length;
+public class Motif {
+	public int id; //motif id should be same to rule # before merge. 
+	public int length;  // # of points
 	public Route repRoute;
 	public ArrayList<Double> repLineX,repLineY;
-	private HashMap<String, Route> routes;
-	private int firstTraj;
-	private int firstStartPos;
-	private boolean isSecond;
-	public HashSet<String> trajIds;
+	private ArrayList<Route> routes; //<StartPositionInRescaledX, Route>
+	private ArrayList<Integer> startPositions; 
+	//private int firstTraj;
+	//private int firstStartPos;
+	//private boolean isSecond;
+	//public HashSet<String> trajIds;
 	
-	public Motif(int length){
-		this.length = length;
-		trajIds = new HashSet<String>();
-		routes = new HashMap<String, Route>();
-		firstTraj = -1;
-		firstStartPos = -1;
-		isSecond = true;
+	public Motif(int ruleNumber,Route firstRoute){
+		id = ruleNumber;
+		length = firstRoute.size();
+		routes = new ArrayList<Route>();
+		routes.add(firstRoute);
+		startPositions = new ArrayList<Integer>();
 	}
 	/*
 	public Cluster(int length,String s1,String s2){
@@ -46,7 +47,11 @@ public class Motif implements Comparable{
 	/*
 	 * if repLine==null, repLine  = comming subtrajectory;
 	 */
-	public boolean add(int traj, int s){
+	public boolean add(Integer startPosition, Route route){
+		routes.add(route);
+		startPositions.add(startPosition);
+		return true;
+		/*
 		String name = "T"+traj+"S"+s+"L"+length;
 		if(repLineX==null || repLineY ==null){
 			repLineX = new ArrayList<Double>();
@@ -98,7 +103,9 @@ public class Motif implements Comparable{
 		}
 		else
 			return false;
+			*/
 	}
+	/*
 	public boolean addBest(int traj, int s){
 		String name = "T"+traj+"S"+s+"L"+length;
 		if(repLineX==null || repLineY ==null){
@@ -148,7 +155,10 @@ public class Motif implements Comparable{
 		else
 			return false;
 	}
+	*/
 private boolean nonTrivial(int traj) {
+	//need to rewrite
+	/*
 	Integer candidate = (Integer) traj;
 	Iterator it = trajIds.iterator();
 	while(it.hasNext()){
@@ -156,11 +166,11 @@ private boolean nonTrivial(int traj) {
 		
 		if(traj == Tools.parseTrajId(name)[0])
 		return false;
-	}
+	}*/
 		return true;
 	}
 
-public HashMap<String,Route> getRoutes(){
+public ArrayList<Route> getRoutes(){
 	return routes;
 }
 private boolean isClose(int traj, int s) {
@@ -178,7 +188,7 @@ private boolean isClose(int traj, int s) {
 	}
 
 public String toString(){
-	return this.trajIds.toString();
+	return id+": size = "+routes.size();
 }
 
 /*
@@ -259,7 +269,8 @@ public void merge(Cluster c2,double threshold,HashMap<String, Cluster> findClust
 	
 	
 }
-*/
+
+/*
 private void remove(String name) {
 	
 	Route route = this.routes.get(name);
@@ -295,7 +306,7 @@ public boolean findTraj(int[] i) {
 	return false;
 }
 	
-}
+}*/
 /*
 public class Cluster {
 public String name;
@@ -317,7 +328,6 @@ public HashSet<GrammarRuleRecord> getRules(){
 public ArrayList<RuleInterval> getIntervals(){
 	return intervals;
 }
-
+*/
 }
 
-*/

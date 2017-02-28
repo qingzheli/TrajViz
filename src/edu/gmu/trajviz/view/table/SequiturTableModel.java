@@ -8,6 +8,7 @@ import java.util.Iterator;
 import edu.gmu.trajviz.gi.GrammarRules;
 import edu.gmu.trajviz.logic.RuleInterval;
 import edu.gmu.trajviz.sax.datastructures.Cluster;
+import edu.gmu.trajviz.sax.datastructures.Motif;
 
 /**
  * Table Data Model for the sequitur JTable
@@ -56,7 +57,30 @@ public class SequiturTableModel extends SequiturTableDataModel {
 	    fireTableDataChanged();
 	  }
 	  */
+	  public void update(ArrayList<Motif> allMotifs) {
+		  if(allMotifs !=null){
+			  System.out.println("update(!null)."+allMotifs.size());
+		  int rowIndex = 0;
+		  
+		  rows.clear();
+		  for(int i = 0; i<allMotifs.size(); i++){
+			  Motif motif = allMotifs.get(i);
+			  Integer id = motif.id;
+				 Object[] item = new Object[getColumnCount()+1];
+				 int nColumn = 0;
+				 item[nColumn++] = i;
+				 item[nColumn++] = motif.getRoutes().size();
+				 rows.add(item);
+			 }
+			  
+			  
+		  fireTableDataChanged();
+		  }
+		  else
+			  System.out.println("update(null).");
+		}
 	  
+	  /*
 	  public void update(HashMap<String, ArrayList<Cluster>> allMotifs) {
 		  if(allMotifs !=null){
 			  System.out.println("update(!null)."+allMotifs.size());
@@ -80,7 +104,7 @@ public class SequiturTableModel extends SequiturTableDataModel {
 		  else
 			  System.out.println("update(null).");
 		}
-	  
+	  */
 	  /*
 	  
 	  public void update(GrammarRules grammarRules, ArrayList<ArrayList<RuleInterval>> ruleIntervals, ArrayList<HashSet<Integer>> mapToOriginRules) {

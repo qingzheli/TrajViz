@@ -53,4 +53,7 @@ public class Route{
 	public String toString(){
 		return lat.toString()+"\n"+lon.toString();
 	}
+	public int size() {
+		return lat.size();
+	}
 }

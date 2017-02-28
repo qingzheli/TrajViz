@@ -47,6 +47,7 @@ import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import edu.gmu.trajviz.sax.datastructures.Cluster;
 import edu.gmu.trajviz.sax.datastructures.Interval;
+import edu.gmu.trajviz.sax.datastructures.Motif;
 import edu.gmu.trajviz.sax.datastructures.SAXRecords;
 import edu.gmu.trajviz.timeseries.TSException;
 import edu.gmu.trajviz.util.StackTrace;
@@ -79,7 +80,9 @@ public class SequiturModel extends Observable {
 	public ArrayList<Integer[]> whole2separateTrajMap;
 	public int queryResultCounter;
 	public int queryRuleCounter;
-	
+	public static ArrayList<Motif> motifList;
+	public static ArrayList<Integer> motifListRuleMap;
+
 	
 	
 	
@@ -556,7 +559,7 @@ public class SequiturModel extends Observable {
 		  System.out.println("Done!");
 		  */
 		  setChanged();
-		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, allMotifs));
+		  notifyObservers(new SequiturMessage(SequiturMessage.CHART_MESSAGE, motifList));
 		
 	  }
 	  
@@ -603,6 +606,7 @@ public class SequiturModel extends Observable {
 		
 		Block startBlock = blocks.findBlockById(words.get(queryStartPoint));
 		Route queryRoute = new Route(rescaleX.subList(queryStartPoint,queryEndPoint+1),rescaleY.subList(queryStartPoint, queryEndPoint+1));
+		Motif motif = new Motif(rule.getRuleNumber(), queryRoute);
 		double[] lowerBoundDistance = startBlock.getLowerBoundDistance2Neighbor(rescaleX.get(queryStartPoint), rescaleY.get(queryStartPoint));
 	//	blocks.printBlockMap();
 	//	System.out.println("startBlock: "+startBlock);
@@ -672,6 +676,7 @@ public class SequiturModel extends Observable {
             	  double subtrajSquareEuDist = Tools.routeSqrEuDist(queryRoute, candidateRoute, maxSubtrajSquareEuDist);
             	  if(subtrajSquareEuDist<maxSubtrajSquareEuDist){
             		  // todo: put it into motif set
+            		  motif.add(minStart, candidateRoute);
             		  queryResultCounter++;
             		 // System.out.println("found query Result:\n queryStartPoint = "+queryStartPoint+"\n resultStartPoint = "+minStart+"\n subtrajEuDist = "+subtrajSquareEuDist+" maxSubtrajSquareEudist = "+maxSubtrajSquareEuDist);
             	  }
@@ -684,7 +689,8 @@ public class SequiturModel extends Observable {
 			}
 	//	  System.out.println(startBlock.nearbyBlocks[i]);
 		}
-		
+		motifList.add(motif);
+		motifListRuleMap.add(motif.id);
 		
 	//	System.out.println(queryRoute);
 	}
@@ -2181,7 +2187,9 @@ private void paa2saxseqs() {
 		          
 		          chartData.setGrammarRules(rules);
 		          System.out.println("chartData size: "+ chartData.getRulesNumber());
-				
+		          System.out.println("rules size: "+ rules.size());
+				  motifList = new ArrayList<Motif>();
+				  motifListRuleMap = new ArrayList<Integer>();
 		
 			  }
 			  catch (TSException e){

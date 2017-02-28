@@ -63,6 +63,7 @@ import edu.gmu.trajviz.logic.RuleInterval;
 import edu.gmu.trajviz.model.SequiturMessage;
 import edu.gmu.trajviz.model.SequiturModel;
 import edu.gmu.trajviz.sax.datastructures.Cluster;
+import edu.gmu.trajviz.sax.datastructures.Motif;
 import edu.gmu.trajviz.util.StackTrace;
 import edu.gmu.trajviz.controller.SequiturController;
 
@@ -564,10 +565,10 @@ public class SequiturView implements Observer, ActionListener{
 	    	  
 	    	  mapPanel.setAllTrajectories(SequiturModel.getRescaleTrajectory());
 	    	  mapPanel.setAllAnomalies(SequiturModel.getAnomaly());
-	    	  mapPanel1.setAllTrajectories(SequiturModel.getRescaleTrajectory());
+	    	  System.out.println("============================================ Motif List.size"+SequiturModel.motifList.size());
+	    	  mapPanel1.setAllMotifs(SequiturModel.motifList);
 	    	//  mapPanel1.setAllAnomalies(SequiturModel.getDiscord());  // display discords
 	    	  
-	    	  mapPanel1.setAllAnomalies(SequiturModel.getTrueAnomaly());
 	    	  
 	    	  // following is setting motif view;
 	    	 // mapPanel1.setMotifs(SequiturModel.getMotifs());
@@ -609,7 +610,7 @@ public class SequiturView implements Observer, ActionListener{
 	      }
 	      else if (SequiturMessage.CHART_MESSAGE.equalsIgnoreCase(message.getType())) {
 	    	  
-	    	  HashMap<String, ArrayList<Cluster>> allMotifs = (HashMap<String, ArrayList<Cluster>>) message.getPayload();
+	    	  ArrayList<Motif> allMotifs = (ArrayList<Motif>) message.getPayload();
 	    	  sequiturRulesPane.setMotifData(allMotifs);
 	    	  
 	    	  
