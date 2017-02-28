@@ -6,20 +6,20 @@ import java.util.Iterator;
 import java.util.Map.Entry;
 
 import edu.gmu.trajviz.logic.Blocks;
-import edu.gmu.trajviz.logic.Cluster;
 import edu.gmu.trajviz.logic.Location;
 import edu.gmu.trajviz.logic.Route;
+import edu.gmu.trajviz.sax.datastructures.Motif;
 import edu.gmu.trajviz.util.Tools;
 
 public class Evaluation{
-public static HashMap<Integer, Double> silCoefMap(HashMap<Integer, ArrayList<Cluster>> allMotifs){
+public static HashMap<Integer, Double> silCoefMap(HashMap<Integer, ArrayList<Motif>> allMotifs){
 	HashMap<Integer, Double> coefMap = new HashMap<Integer,Double>();
 	Iterator it = allMotifs.entrySet().iterator();
 	while(it.hasNext())
 	{
-		Entry<Integer, ArrayList<Cluster>> entry = (Entry<Integer, ArrayList<Cluster>>) it.next();
+		Entry<Integer, ArrayList<Motif>> entry = (Entry<Integer, ArrayList<Motif>>) it.next();
 		Integer len = entry.getKey();
-		ArrayList<Cluster> clusters = entry.getValue();
+		ArrayList<Motif> clusters = entry.getValue();
 		Double avgSilcoef = getAvgSilcoef(clusters);
 		coefMap.put(len, avgSilcoef);
 	}
@@ -27,12 +27,12 @@ public static HashMap<Integer, Double> silCoefMap(HashMap<Integer, ArrayList<Clu
 	//for
 	return coefMap;
 }
-private static double getAvgSilcoef(ArrayList<Cluster> clusters) {
+private static double getAvgSilcoef(ArrayList<Motif> clusters) {
 	double[] result = new double[4];  
 	StringBuffer sb = new StringBuffer();
 	ArrayList<Double> allSilcoef = new ArrayList<Double>();
 	for (int i=0;i<clusters.size();i++){   // iterate all motifs
-		Cluster cluster = clusters.get(i);
+		Motif cluster = clusters.get(i);
 		Iterator it = cluster.trajIds.iterator();
 		while(it.hasNext()){
 			String name = (String) it.next();
@@ -96,7 +96,7 @@ private static double getAvgSilcoef(ArrayList<Cluster> clusters) {
 	return result;
   }
   */
-private static double getMinInterDistance(int i, String name, ArrayList<Cluster> clusters) {
+private static double getMinInterDistance(int i, String name, ArrayList<Motif> clusters) {
 	Route route = clusters.get(i).getRoutes().get(name);
 	double min = Double.MAX_VALUE;
 	for(int k = 0; k<clusters.size(); k++){
@@ -116,7 +116,7 @@ private static double getMinInterDistance(int i, String name, ArrayList<Cluster>
 	}
 	return min;
 }
-private static double getAvgIntraDistance(String name, Cluster cluster) {
+private static double getAvgIntraDistance(String name, Motif cluster) {
 	double sum = 0;
 	int count = 0;
 	Iterator it = cluster.trajIds.iterator();
@@ -133,7 +133,7 @@ private static double getAvgIntraDistance(String name, Cluster cluster) {
 	double avg = sum/count;
 	return avg;
 }
-private static Double getMinDist(Cluster c1, Cluster c2) {
+private static Double getMinDist(Motif c1, Motif c2) {
 	Double min = Double.MAX_VALUE;
 	
 	for(int i = 0; i<c1.getRoutes().size();i++)
@@ -146,7 +146,7 @@ private static Double getMinDist(Cluster c1, Cluster c2) {
 	return min;
 }
 /*
-private static Double getAvgPairDistances(Cluster c) {
+private static Double getAvgPairDistances(Motif c) {
 	ArrayList<Double> pairDistances = new ArrayList<Double>();
 	HashMap<String, Route> c.getRoutes();
 	ArrayList<Route> routes = 

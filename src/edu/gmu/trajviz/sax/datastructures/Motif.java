@@ -1,14 +1,15 @@
-package edu.gmu.trajviz.logic;
+package edu.gmu.trajviz.sax.datastructures;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 
+import edu.gmu.trajviz.logic.Route;
 import edu.gmu.trajviz.model.SequiturModel;
 import edu.gmu.trajviz.util.Tools;
 //-qz
-public class Cluster implements Comparable{
+public class Motif implements Comparable{
 	public int length;
 	public Route repRoute;
 	public ArrayList<Double> repLineX,repLineY;
@@ -18,7 +19,7 @@ public class Cluster implements Comparable{
 	private boolean isSecond;
 	public HashSet<String> trajIds;
 	
-	public Cluster(int length){
+	public Motif(int length){
 		this.length = length;
 		trajIds = new HashSet<String>();
 		routes = new HashMap<String, Route>();
@@ -27,7 +28,7 @@ public class Cluster implements Comparable{
 		isSecond = true;
 	}
 	/*
-	public Cluster(int length,String s1,String s2){
+	public Motif(int length,String s1,String s2){
 		this.length = length;
 		trajIds = new HashSet<String>();
 		trajIds.add(s1);
@@ -184,7 +185,7 @@ public String toString(){
  * distance based
  * if a trajectory in A in cluster A is close to cluster B's repTraj, get a into b.
  */
-public void merge(Cluster c2,double threshold,HashMap<String, Cluster> findCluster) {
+public void merge(Motif c2,double threshold,HashMap<String, Motif> findCluster) {
 	if(this.getSize()>=c2.getSize()){
 	Iterator it = c2.trajIds.iterator();
 	ArrayList<String> removeCandidate = new ArrayList<String>();
@@ -276,7 +277,7 @@ private void remove(String name) {
 }
 @Override
 public int compareTo(Object o) {
-Cluster c = (Cluster) o;
+Motif c = (Motif) o;
 if(this.getSize()>c.getSize())
 	return 1;
 else if(this.getSize()<c.getSize())
@@ -300,11 +301,11 @@ public boolean findTraj(int[] i) {
 	
 }
 /*
-public class Cluster {
+public class Motif {
 public String name;
 public HashSet<GrammarRuleRecord> ruleSet;
 //public ArrayList<RuleInterval> intervals;
-public Cluster(String name){
+public Motif(String name){
 	this.name = name;
 	ruleSet = new HashSet<GrammarRuleRecord>();
 	//intervals = new ArrayList<RuleInterval>();	

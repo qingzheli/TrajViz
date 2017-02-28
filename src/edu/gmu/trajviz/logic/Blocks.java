@@ -4,6 +4,7 @@ import java.util.ArrayList;
 
 import edu.gmu.trajviz.model.Center;
 import edu.gmu.trajviz.model.SequiturModel;
+import edu.gmu.trajviz.sax.datastructures.Motif;
 import edu.gmu.trajviz.util.Tools;
 
 public class Blocks {
@@ -57,7 +58,7 @@ public class Blocks {
 		{
 			Block block = new Block(i,nLon,latCut,lonCut,latMin,lonMin,this);
 			blocks.add(block);
-			SequiturModel.allTrajClusters.put(i, new ArrayList<Cluster>());
+			SequiturModel.allTrajClusters.put(i, new ArrayList<Motif>());
 		}
 		for(int i = 0; i<blocks.size();i++){
 			blocks.get(i).setNearbyBlocks();

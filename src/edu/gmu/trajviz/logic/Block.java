@@ -9,6 +9,7 @@ import java.util.Stack;
 import edu.gmu.trajviz.model.Center;
 import edu.gmu.trajviz.model.RoutePair;
 import edu.gmu.trajviz.model.SequiturModel;
+import edu.gmu.trajviz.sax.datastructures.Motif;
 import edu.gmu.trajviz.sax.datastructures.Interval;
 import edu.gmu.trajviz.util.Tools;
 
@@ -402,14 +403,14 @@ public class Block {
 		SequiturModel.allSubseq.put(id, new ArrayList<String>());
 		
 		PriorityQueue<RoutePair> mergablePair = new PriorityQueue<RoutePair>();
-		HashMap<String, Cluster> clusterMap = new HashMap<String, Cluster>();
+		HashMap<String, Motif> clusterMap = new HashMap<String, Motif>();
 		/*
 	     SequiturModel.allSubseq = new HashMap<Integer,ArrayList<String>>();
 		  for(int len = minLength; len<=maxLength; len = minLength +len){
-			  allTrajClusters.put(len, new  ArrayList<Cluster>());
+			  allTrajClusters.put(len, new  ArrayList<Motif>());
 			  allSubseq.put(len, new ArrayList<String>());
 			  mergablePair.put(len, new PriorityQueue<RoutePair>());
-			  clusterMaps.put(len, new HashMap<String, Cluster>());
+			  clusterMaps.put(len, new HashMap<String, Motif>());
 		  }
 		  */
 		//iterator all centers subtract subseqId
@@ -462,12 +463,12 @@ public class Block {
 		  
 		  
 			  PriorityQueue<RoutePair> pq = mergablePair;
-			  HashMap<String, Cluster> findCluster = clusterMap;
+			  HashMap<String, Motif> findCluster = clusterMap;
 			  while(!pq.isEmpty()){
 				  RoutePair pair = pq.poll();
 				  if(!findCluster.containsKey(pair.r1)&&!findCluster.containsKey(pair.r2)) // if neither belongs to a cluster, create new cluster
 				  {
-					Cluster cluster = new Cluster(len);
+					Motif cluster = new Motif(len);
 					int[] t1 = Tools.parseTrajId(pair.r1);
 					int[] t2 = Tools.parseTrajId(pair.r2);
 					cluster.add(t1[0], t1[1]);
@@ -479,22 +480,22 @@ public class Block {
 				  }
 				  else if(!findCluster.containsKey(pair.r1)&&findCluster.containsKey(pair.r2)){    // if r1 is not in cluster r2 is in a cluster
 					  int[] t1 = Tools.parseTrajId(pair.r1);
-					  Cluster cluster = findCluster.get(pair.r2);
+					  Motif cluster = findCluster.get(pair.r2);
 					  cluster.add(t1[0], t1[1]);
 					  findCluster.put(pair.r1, cluster);
 					  
 				  }
 				  else if(findCluster.containsKey(pair.r1)&&!findCluster.containsKey(pair.r2)){   // if r2 is not in cluster r1 is in a cluster
 					  int[] t2 = Tools.parseTrajId(pair.r2);
-					  Cluster cluster = findCluster.get(pair.r1);
+					  Motif cluster = findCluster.get(pair.r1);
 					  cluster.add(t2[0], t2[1]);
 					  findCluster.put(pair.r2, cluster);
 					  
 				  }
 				  else  
 				  {
-					 Cluster c1 = findCluster.get(pair.r1);
-					 Cluster c2 = findCluster.get(pair.r2);
+					 Motif c1 = findCluster.get(pair.r1);
+					 Motif c2 = findCluster.get(pair.r2);
 					 if(c1!=c2){
 						// System.out.println("Before Merege C1: "+c1.trajIds);
 						// System.out.println("Before Merege C2: "+c2.trajIds); 

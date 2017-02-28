@@ -58,11 +58,11 @@ import ch.qos.logback.classic.Level;
 
 import com.roots.map.MapPanel;
 
-import edu.gmu.trajviz.logic.Cluster;
 import edu.gmu.trajviz.logic.MotifChartData;
 import edu.gmu.trajviz.logic.RuleInterval;
 import edu.gmu.trajviz.model.SequiturMessage;
 import edu.gmu.trajviz.model.SequiturModel;
+import edu.gmu.trajviz.sax.datastructures.Motif;
 import edu.gmu.trajviz.util.StackTrace;
 import edu.gmu.trajviz.controller.SequiturController;
 
@@ -609,7 +609,7 @@ public class SequiturView implements Observer, ActionListener{
 	      }
 	      else if (SequiturMessage.CHART_MESSAGE.equalsIgnoreCase(message.getType())) {
 	    	  
-	    	  HashMap<String, ArrayList<Cluster>> allMotifs = (HashMap<String, ArrayList<Cluster>>) message.getPayload();
+	    	  HashMap<String, ArrayList<Motif>> allMotifs = (HashMap<String, ArrayList<Motif>>) message.getPayload();
 	    	  sequiturRulesPane.setMotifData(allMotifs);
 	    	  
 	    	  
