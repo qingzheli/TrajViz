@@ -605,9 +605,15 @@ public class SequiturModel extends Observable {
 		double[] lowerBoundDistance = startBlock.getLowerBoundDistance2Neighbor(rescaleX.get(queryStartPoint), rescaleY.get(queryStartPoint));
 	//	blocks.printBlockMap();
 	//	System.out.println("startBlock: "+startBlock);
-		for(int i = 0; i<startBlock.nearbyBlocks.length; i++){
-			Block nearbyBlock = startBlock.nearbyBlocks[i];
-			if(nearbyBlock!=null && lowerBoundDistance[i]<maxPointErrorDistance){   // if this neighbor block might contains nearby points
+		for(int i = -1; i<startBlock.nearbyBlocks.length; i++){
+			Block nearbyBlock;
+			if(i<0){
+				nearbyBlock = startBlock;
+			}
+			else{
+			 nearbyBlock = startBlock.nearbyBlocks[i];
+			}
+			if(i<0||(nearbyBlock!=null && lowerBoundDistance[i]<maxPointErrorDistance)){   // if this neighbor block might contains nearby points
               
        /*==================================================================================================================================
 		* Below is pruning 2: only select sub-trajectories which are close to the start and end points located in query circle of
