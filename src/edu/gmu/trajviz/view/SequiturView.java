@@ -62,7 +62,7 @@ import edu.gmu.trajviz.logic.MotifChartData;
 import edu.gmu.trajviz.logic.RuleInterval;
 import edu.gmu.trajviz.model.SequiturMessage;
 import edu.gmu.trajviz.model.SequiturModel;
-import edu.gmu.trajviz.sax.datastructures.Motif;
+import edu.gmu.trajviz.sax.datastructures.Cluster;
 import edu.gmu.trajviz.util.StackTrace;
 import edu.gmu.trajviz.controller.SequiturController;
 
@@ -236,13 +236,13 @@ public class SequiturView implements Observer, ActionListener{
 		MigLayout sequiturPaneLayout = new MigLayout(",insets 0 0 0 0", "[fill,grow]", "[fill,grow]");
 		sequiturRulesPane.setLayout(sequiturPaneLayout);
 
-	    tabbedRulesPane.addTab("Motif Length", null, sequiturRulesPane,"Shows grammar rules");
+	    tabbedRulesPane.addTab("Cluster Length", null, sequiturRulesPane,"Shows grammar rules");
 	    
 	    // now format the tabbed pane
 	    //
 	    tabbedRulesPane.setBorder(BorderFactory.createTitledBorder(
 	        BorderFactory.createEtchedBorder(BevelBorder.LOWERED),
-	        "Motif Details",
+	        "Cluster Details",
 	        TitledBorder.LEFT, TitledBorder.CENTER, new Font(TITLE_FONT, Font.PLAIN, 10)));
 	}
 
@@ -450,7 +450,7 @@ public class SequiturView implements Observer, ActionListener{
 	  private void buildMapPane1() {
 		  mapPanel1 = new MapPanel();
 		  mapPanel1.setBorder(BorderFactory.createTitledBorder(
-			        BorderFactory.createEtchedBorder(BevelBorder.LOWERED), "Motif Details", TitledBorder.LEFT,
+			        BorderFactory.createEtchedBorder(BevelBorder.LOWERED), "Cluster Details", TitledBorder.LEFT,
 			        TitledBorder.CENTER, new Font(TITLE_FONT, Font.PLAIN, 10)));
 			
 		}
@@ -609,7 +609,7 @@ public class SequiturView implements Observer, ActionListener{
 	      }
 	      else if (SequiturMessage.CHART_MESSAGE.equalsIgnoreCase(message.getType())) {
 	    	  
-	    	  HashMap<String, ArrayList<Motif>> allMotifs = (HashMap<String, ArrayList<Motif>>) message.getPayload();
+	    	  HashMap<String, ArrayList<Cluster>> allMotifs = (HashMap<String, ArrayList<Cluster>>) message.getPayload();
 	    	  sequiturRulesPane.setMotifData(allMotifs);
 	    	  
 	    	  

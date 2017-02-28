@@ -32,7 +32,7 @@ import com.roots.map.MapPanel;
 import edu.gmu.trajviz.logic.MotifChartData;
 import edu.gmu.trajviz.logic.RuleInterval;
 import edu.gmu.trajviz.model.SequiturMessage;
-import edu.gmu.trajviz.sax.datastructures.Motif;
+import edu.gmu.trajviz.sax.datastructures.Cluster;
 import edu.gmu.trajviz.view.table.SequiturTableColumns;
 import edu.gmu.trajviz.view.table.SequiturTableModel;
 
@@ -89,7 +89,7 @@ public int compare(String s1, String s2) {
 }
 };
 
-private HashMap<String, ArrayList<Motif>> allMotifs;
+private HashMap<String, ArrayList<Cluster>> allMotifs;
 
 
 
@@ -259,7 +259,7 @@ public void setRulesData(MotifChartData chartData) {
 	this.acceptListEvents = true;
 }
 */
-public void setMotifData(HashMap<String, ArrayList<Motif>> allMotifs) {
+public void setMotifData(HashMap<String, ArrayList<Cluster>> allMotifs) {
 	this.acceptListEvents = false;
     this.allMotifs = allMotifs;
     sequiturTableModel.update(allMotifs);

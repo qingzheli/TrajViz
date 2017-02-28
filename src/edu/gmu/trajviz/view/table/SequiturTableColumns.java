@@ -13,7 +13,7 @@ public enum SequiturTableColumns {
 	  //RULE_FREQUENCY("Frequency in R0"), 
 	  //SEQUITUR_RULE("Rule"), 
 	  //EXPANDED_SEQUITUR_RULE("Expanded Rule"),
-	  RULE_USE_FREQUENCY("Motif Count");
+	  RULE_USE_FREQUENCY("Cluster Count");
 	 // RULE_MEAN_LENGTH("Mean length"),
 	 // LENGTH("Min-max length");
 	  // RULE_INDEXES("String positions");

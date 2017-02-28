@@ -7,7 +7,7 @@ import java.util.Iterator;
 
 import edu.gmu.trajviz.gi.GrammarRules;
 import edu.gmu.trajviz.logic.RuleInterval;
-import edu.gmu.trajviz.sax.datastructures.Motif;
+import edu.gmu.trajviz.sax.datastructures.Cluster;
 
 /**
  * Table Data Model for the sequitur JTable
@@ -57,7 +57,7 @@ public class SequiturTableModel extends SequiturTableDataModel {
 	  }
 	  */
 	  
-	  public void update(HashMap<String, ArrayList<Motif>> allMotifs) {
+	  public void update(HashMap<String, ArrayList<Cluster>> allMotifs) {
 		  if(allMotifs !=null){
 			  System.out.println("update(!null)."+allMotifs.size());
 		  int rowIndex = 0;
@@ -66,7 +66,7 @@ public class SequiturTableModel extends SequiturTableDataModel {
 		  rows.clear();
 		  while(it.hasNext()){
 			  Integer id = (Integer) it.next();
-			  ArrayList<Motif> clusters = allMotifs.get(id);
+			  ArrayList<Cluster> clusters = allMotifs.get(id);
 				 Object[] item = new Object[getColumnCount()+1];
 				 int nColumn = 0;
 				 item[nColumn++] = id;

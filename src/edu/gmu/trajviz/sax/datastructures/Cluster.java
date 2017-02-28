@@ -9,17 +9,17 @@ import edu.gmu.trajviz.logic.Route;
 import edu.gmu.trajviz.model.SequiturModel;
 import edu.gmu.trajviz.util.Tools;
 //-qz
-public class Motif implements Comparable{
+public class Cluster implements Comparable{
 	public int length;
 	public Route repRoute;
 	public ArrayList<Double> repLineX,repLineY;
-	private HashMap<String, Route> routes;
+	public HashMap<String, Route> routes;
 	private int firstTraj;
 	private int firstStartPos;
 	private boolean isSecond;
 	public HashSet<String> trajIds;
 	
-	public Motif(int length){
+	public Cluster(int length){
 		this.length = length;
 		trajIds = new HashSet<String>();
 		routes = new HashMap<String, Route>();
@@ -185,7 +185,6 @@ public String toString(){
  * distance based
  * if a trajectory in A in cluster A is close to cluster B's repTraj, get a into b.
  */
-/*
 public void merge(Cluster c2,double threshold,HashMap<String, Cluster> findCluster) {
 	if(this.getSize()>=c2.getSize()){
 	Iterator it = c2.trajIds.iterator();
@@ -255,12 +254,17 @@ public void merge(Cluster c2,double threshold,HashMap<String, Cluster> findClust
 		}
 	
 	}
+	/*
+	for(int i = 0; i<c2.routes.size(); i++){
+		Route r2= c2.routes.get(i);
+		if(Tools.closeRouteEuDist(this.repRoute, r2, R)>R)
 	
+	}
+	*/
 	
 	
 }
-*/
-private void remove(String name) {
+public void remove(String name) {
 	
 	Route route = this.routes.get(name);
 	if(trajIds.size()>1)

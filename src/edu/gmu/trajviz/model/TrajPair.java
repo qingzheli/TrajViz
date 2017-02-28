@@ -1,7 +1,7 @@
 package edu.gmu.trajviz.model;
 
 import edu.gmu.trajviz.logic.Route;
-import edu.gmu.trajviz.sax.datastructures.Motif;
+import edu.gmu.trajviz.sax.datastructures.Cluster;
 import edu.gmu.trajviz.util.Tools;
 
 public class TrajPair implements Comparable<TrajPair> {

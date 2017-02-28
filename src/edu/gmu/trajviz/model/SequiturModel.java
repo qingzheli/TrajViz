@@ -45,7 +45,7 @@ import edu.gmu.trajviz.gi.sequitur.SequiturFactory;
 import edu.gmu.trajviz.logic.*;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
-import edu.gmu.trajviz.sax.datastructures.Motif;
+import edu.gmu.trajviz.sax.datastructures.Cluster;
 import edu.gmu.trajviz.sax.datastructures.Interval;
 import edu.gmu.trajviz.sax.datastructures.SAXRecords;
 import edu.gmu.trajviz.timeseries.TSException;
@@ -104,18 +104,18 @@ public class SequiturModel extends Observable {
 	public static ArrayList<ArrayList<Center>> paats,saxseqs;
 //	public static HashMap<Integer, ArrayList<ArrayList<Double>>> allCenterX, allCenterY;
 //	public static HashMap<Integer, HashMap<Center, ArrayList<Center>>> allNeighbors; 
-	public static HashMap<Integer, ArrayList<Motif>> allTrajClusters;  //<length, arraylist of clusters>
-	public static HashMap<Integer, ArrayList<Motif>> allMotifs;   // this should be a subset of allTrajClusters with size>1;
+	public static HashMap<Integer, ArrayList<Cluster>> allTrajClusters;  //<length, arraylist of clusters>
+	public static HashMap<Integer, ArrayList<Cluster>> allMotifs;   // this should be a subset of allTrajClusters with size>1;
 	public static HashMap<Integer, ArrayList<String>> allSubseq;
 	public static HashMap<Integer, PriorityQueue<RoutePair>> mergablePair;
-	public static HashMap<Integer, HashMap<String, Motif>> clusterMaps;
+	public static HashMap<Integer, HashMap<String, Cluster>> clusterMaps;
 	public static int longest3Traj[];
 	public static double distCut;
 	public static ArrayList<ArrayList<Boolean>> isAnomaly,isLongAnomaly,isDiscord, isTrueAnomaly;
 	public static double R;
 	public static double rs;
 	public static HashMap<String, HashSet<String>> motifMatches;
-	public static HashMap<String, Motif> subtrajClusterMap;
+	public static HashMap<String, Cluster> subtrajClusterMap;
 	public static int slidePoint;
 	public static int coverPoint;
 	public static HashMap<Integer, ArrayList<String>> anomalyMap;
@@ -162,8 +162,8 @@ public class SequiturModel extends Observable {
 	public static TreeMap<String, GrammarRuleRecord> sortedRuleMap;
 	public static ArrayList< ArrayList<HashSet<Integer>>> allClusters;
 	private ArrayList<HashSet<Integer>> clusters;
-//	private Motif cluster;
-//	private HashMap<String, Motif> currentClusters;
+//	private Cluster cluster;
+//	private HashMap<String, Cluster> currentClusters;
 	private ArrayList<Integer> filter;
 	public static ArrayList<ArrayList<Integer>> allFilters;
 	private HashMap<Integer,Integer> filterMap;
@@ -695,8 +695,8 @@ public class SequiturModel extends Observable {
 		  count_works = 0;
 		  not_works = 0;
 		  subSeqBlockMap = new HashMap<String, Integer>();
-		  this.allTrajClusters = new HashMap<Integer, ArrayList<Motif>>();
-		  this.allMotifs = new HashMap<Integer, ArrayList<Motif>>();
+		  this.allTrajClusters = new HashMap<Integer, ArrayList<Cluster>>();
+		  this.allMotifs = new HashMap<Integer, ArrayList<Cluster>>();
 		  this.reTime = new ArrayList<Double>();
 		  this.isLastIteration = false;
 		 
@@ -711,9 +711,9 @@ public class SequiturModel extends Observable {
 		  this.anomalyRoutes = new ArrayList<Route>();
 		  this.discordRoutes = new ArrayList<Route>();
 		  this.trueAnomalyRoutes = new ArrayList<Route>();
-		  this.allTrajClusters = new HashMap<Integer, ArrayList<Motif>>();
+		  this.allTrajClusters = new HashMap<Integer, ArrayList<Cluster>>();
 		  this.rawAllIntervals = new ArrayList<RuleInterval>();
-		  this.subtrajClusterMap = new HashMap<String,Motif>();
+		  this.subtrajClusterMap = new HashMap<String,Cluster>();
 		  this.allAnomalies = new ArrayList<String>();
 		  this.allDiscords = new ArrayList<String>();
 		  this.allTrueAnomalyString = new ArrayList<String>();
@@ -1046,7 +1046,7 @@ private void computePointConfusionMatrix() {
 private void findAllMotifSax(){
 	paats = this.getCenterArrayList(this.minBlocks);
 	allSubseq = new HashMap<Integer, ArrayList<String>>();
-	allTrajClusters = new HashMap<Integer,ArrayList<Motif>>();
+	allTrajClusters = new HashMap<Integer,ArrayList<Cluster>>();
 	/*
 	for(int i=0; i<paats.size();i++){
 		System.out.println(i+" paats = "+paats.get(i));
@@ -1343,7 +1343,7 @@ public static void DrawDiscordOnly()
 		 
 		  //separate anomalies and motifs
 		  for(int id = 0; id<blocks.blocks.size();id++){
-			  ArrayList<Motif> motif = new ArrayList<Motif>();
+			  ArrayList<Cluster> motif = new ArrayList<Cluster>();
 			  for(int i = 0; i<allTrajClusters.get(id).size(); i++){
 				  if(allTrajClusters.get(id).get(i).getSize()<2)//Anomalies
 				  {
@@ -1430,7 +1430,7 @@ public static void DrawDiscordOnly()
 			System.out.println(l+"Begin to draw motifs: allMotifs.get(min).size()"+allMotifs.get(l).size());
 			for(int i = 0; i<allMotifs.get(l).size(); i++)
 			{
-				System.out.println("Motif # "+i+" Size: "+allMotifs.get(l).get(i).getSize());
+				System.out.println("Cluster # "+i+" Size: "+allMotifs.get(l).get(i).getSize());
 				Iterator it = allMotifs.get(l).get(i).trajIds.iterator();
 				while (it.hasNext()){
 					String s = it.next().toString();
@@ -1447,7 +1447,7 @@ public static void DrawDiscordOnly()
 		 
 		  //separate anomalies and motifs
 		  for(int len = min; len<=max;len = len+min){
-			  ArrayList<Motif> motif = new ArrayList<Motif>();
+			  ArrayList<Cluster> motif = new ArrayList<Cluster>();
 			  for(int i = 0; i<allTrajClusters.get(len).size(); i++){
 				  if(allTrajClusters.get(len).get(i).getSize()<2)//Anomalies
 				  {
@@ -1534,7 +1534,7 @@ public static void DrawDiscordOnly()
 			System.out.println(l+"Begin to draw motifs: allMotifs.get(min).size()"+allMotifs.get(l).size());
 			for(int i = 0; i<allMotifs.get(l).size(); i++)
 			{
-				System.out.println("Motif # "+i+" Size: "+allMotifs.get(l).get(i).getSize());
+				System.out.println("Cluster # "+i+" Size: "+allMotifs.get(l).get(i).getSize());
 				Iterator it = allMotifs.get(l).get(i).trajIds.iterator();
 				while (it.hasNext()){
 					String s = it.next().toString();
@@ -1547,7 +1547,7 @@ public static void DrawDiscordOnly()
 		
 	}
 	
-	public static HashMap<Integer, ArrayList<Motif>> getAllMotifs(){
+	public static HashMap<Integer, ArrayList<Cluster>> getAllMotifs(){
 		return allMotifs;
 	}
 
@@ -1557,7 +1557,7 @@ public static void DrawDiscordOnly()
 	
 	private void filterMotifs(int min, int max) {
 		  for(int len = min; len<=max;len++){
-			  ArrayList<Motif> motif = new ArrayList<Motif>();
+			  ArrayList<Cluster> motif = new ArrayList<Cluster>();
 			  for(int i = 0; i<allTrajClusters.get(len).size(); i++){
 				  if(allTrajClusters.get(len).get(i).getSize()<2){
 					  
@@ -1574,7 +1574,7 @@ public static void DrawDiscordOnly()
 	}
 	private void addToAllTrajClusters(int trajId, int s, int length) {
 		boolean isAdded = false;
-		//ArrayList<Motif> clusterArrayList = allTrajClusters.get(length);
+		//ArrayList<Cluster> clusterArrayList = allTrajClusters.get(length);
 		for(int i = 0; i<allTrajClusters.get(length).size(); i++){
 			if(allTrajClusters.get(length).get(i).add(trajId, s))
 			{	isAdded = true;
@@ -1583,7 +1583,7 @@ public static void DrawDiscordOnly()
 			}
 		}
 		if(!isAdded){
-			Motif cluster = new Motif(length);
+			Cluster cluster = new Cluster(length);
 			cluster.add(trajId, s);
 			allTrajClusters.get(length).add(cluster);
 		}
@@ -1628,7 +1628,7 @@ public static void DrawDiscordOnly()
 			allTrajClusters.get(length).get(minCluster).addBest(traj, s);
 		}
 		else{
-			Motif cluster = new Motif(length);
+			Cluster cluster = new Cluster(length);
 			cluster.addBest(traj, s);
 			allTrajClusters.get(length).add(cluster);
 		}
@@ -2385,14 +2385,14 @@ private void paa2saxseqs() {
 	
 	/*
 		private void finalCluster() {
-			//currentClusters = new HashMap<String, Motif>();
+			//currentClusters = new HashMap<String, Cluster>();
 			for(int i = 0; i<r0.length; i++	){
 				String s = r0[i];
 				if(!Tools.isNumeric(s) && s!=null){
 					if(r0[i].charAt(0)=='R'){
 						s = "I"+iteration+"stepDist"+r0[i].substring(1);
 						
-						cluster = new Motif(s);
+						cluster = new Cluster(s);
 						//cluster.addRule(rules.get(Integer.valueOf(r0[i].substring(1))));
 						cluster.addRule(rules.get(Integer.valueOf(r0[i].substring(1))));
 						//r0[i]=s;

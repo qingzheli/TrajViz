@@ -97,7 +97,7 @@ import org.xml.sax.SAXException;
 import org.xml.sax.helpers.DefaultHandler;
 
 import edu.gmu.trajviz.logic.Route;
-import edu.gmu.trajviz.sax.datastructures.Motif;
+import edu.gmu.trajviz.sax.datastructures.Cluster;
 import edu.gmu.trajviz.view.SequiturRulesPanel;
 
 
@@ -242,7 +242,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
     private SearchPanel searchPanel;
     private Rectangle magnifyRegion;
     private ArrayList<ArrayList<Route>> motifs;
-    private HashMap<Integer, ArrayList<Motif>> allMotifs;
+    private HashMap<Integer, ArrayList<Cluster>> allMotifs;
     private ArrayList<Route> allTrajectory;
     private ArrayList<Route> allAnomaly;
     private ArrayList<Double> routeLat;// = new ArrayList<Double>();
@@ -674,8 +674,8 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
             //  Iterator it = allMotifs.keySet().iterator();
               
              // while(it.hasNext()){
-            //	  ArrayList<Motif> clusters = allMotifs.get(it.next());
-            	ArrayList<Motif> clusters = allMotifs.get(ruleDetails);
+            //	  ArrayList<Cluster> clusters = allMotifs.get(it.next());
+            	ArrayList<Cluster> clusters = allMotifs.get(ruleDetails);
             	  for(int i = 0; clusters!=null && i< clusters.size(); i++){
             		  Iterator it = clusters.get(i).trajIds.iterator();
             		  while(it.hasNext()){
@@ -735,7 +735,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 		
 	}
 	
-	public void setAllMotifs(HashMap<Integer, ArrayList<Motif>> allmotif){
+	public void setAllMotifs(HashMap<Integer, ArrayList<Cluster>> allmotif){
 		allMotifs = allmotif;
 	}
 	
