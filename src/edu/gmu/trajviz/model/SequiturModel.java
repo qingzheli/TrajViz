@@ -32,6 +32,7 @@ import java.util.Map.Entry;
 import java.util.Observable;
 import java.util.PriorityQueue;
 import java.util.SortedMap;
+import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.concurrent.TimeUnit;
 
@@ -77,12 +78,12 @@ public class SequiturModel extends Observable {
 	public static double stepDist;
 	public ArrayList<Double> rescaleX;
 	public ArrayList<Double> rescaleY;
-	public ArrayList<Integer[]> whole2separateTrajMap;
+	public ArrayList<Integer[]> whole2separateTrajMap; // i.e. whole2separateTrajMap.get(indexOfrescaleX) =={trajId,position in rescaledRoutes}
 	public int queryResultCounter;
 	public int queryRuleCounter;
 	public static ArrayList<Motif> motifList;
 	public static ArrayList<Integer> motifListRuleMap;
-
+	public static ArrayList<ArrayList<Motif>> trajMotifMap;
 	
 	
 	
@@ -569,10 +570,15 @@ public class SequiturModel extends Observable {
 	 */
 	  
 	private void postProcessing() {
-		for(int i = 0; i<rules.size(); i++){
-			GrammarRuleRecord rule = rules.get(i);
+			rules.sortByLength();
+		//SortedSet<GrammarRuleRecord> set = rules.sortByValues();
+		
+		
+		for (GrammarRuleRecord rule : rules.getSortedRulesByLength()){
+		//	GrammarRuleRecord rule = rules.get(i);
 			/*
 			System.out.println(rule);
+			System.out.println("ruleYield = " +rule.getRuleYield());
 			System.out.println("expandedRuleString :"+rule.getExpandedRuleString());
 			System.out.println("Rule String list:"+ rule.getRuleStringList());
 		    */
@@ -581,6 +587,7 @@ public class SequiturModel extends Observable {
 			queryRuleCounter++;
 			query(rule) ;
 			}
+			
 		}
 	}
 
@@ -628,16 +635,22 @@ public class SequiturModel extends Observable {
 				for(Interval interval : nearbyBlock.getIntervals()) {
 	              int start = interval.getStartIdx();
 	              int end = start+length;
-	              if(start<=interval.getEndIdx()&&
-            			  end<rescaleX.size()&&whole2separateTrajMap.get(start)[0]==whole2separateTrajMap.get(end)[0]){	  
+	              /*
+	              System.out.println(start +"   startTraj" +whole2separateTrajMap.get(start)[0]);	 
+	              System.out.println(end + "     endTrajd" +whole2separateTrajMap.get(end)[0]);	 
+	              System.out.println(start +" whole2separateTrajMp start==end : "+(whole2separateTrajMap.get(start)[0].equals(whole2separateTrajMap.get(end)[0]) ));
+	             */
+				  if(start<=interval.getEndIdx()&&
+            			  end<rescaleX.size()&&whole2separateTrajMap.get(start)[0].equals(whole2separateTrajMap.get(end)[0])){	  
 	            	  //int e = s+length;
+	             
             	  Location startPoint = new Location(rescaleX.get(start),rescaleY.get(start));
             	  Location endPoint = new Location(rescaleX.get(end),rescaleY.get(end));
             	  double startDist = Tools.locationDist(startPoint,queryRoute.getStartLocation());
             	  double endDist = Tools.locationDist(endPoint,queryRoute.getEndLocation());
 
             	  while(start<=interval.getEndIdx()&&
-            			  end<rescaleX.size()&&(whole2separateTrajMap.get(start)[0]==whole2separateTrajMap.get(end)[0])
+            			  end<rescaleX.size()&&(whole2separateTrajMap.get(start)[0].equals(whole2separateTrajMap.get(end)[0]))
             			  &&(startDist>maxPointErrorDistance||endDist>maxPointErrorDistance)){
             		  int steps = Math.max( Double.valueOf((startDist-maxPointErrorDistance)/this.stepDist).intValue(),Double.valueOf((endDist-maxPointErrorDistance)/this.stepDist).intValue());
             		  steps = steps==0?1:steps;
@@ -650,13 +663,13 @@ public class SequiturModel extends Observable {
         /*======================================================================================================================================
          * Below is pruning 3: the closest sub-trajectory among all trivial sub-trajectory must satisfy the start and end positions must be also the closest pair.  
          */
-            	  if(start<=interval.getEndIdx()&& end<rescaleX.size()&&(whole2separateTrajMap.get(start)[0]==whole2separateTrajMap.get(start+length)[0])){
+            	  if(start<=interval.getEndIdx()&& end<rescaleX.size()&&(whole2separateTrajMap.get(start)[0].equals(whole2separateTrajMap.get(start+length)[0]))){
             	
                 	//  System.out.println("end = "+end+"        sDist = "+startDist+ "eDist = "+endDist+"    maxPointErrorDistance = "+maxPointErrorDistance);
                 	  double minDist = startDist+endDist;
                 	  int minStart = start;
                 	  
-                	  while(start<=interval.getEndIdx()&& end<rescaleX.size()&&(whole2separateTrajMap.get(start)[0]==whole2separateTrajMap.get(start+length)[0])&&
+                	  while(start<=interval.getEndIdx()&& end<rescaleX.size()&&(whole2separateTrajMap.get(start)[0].equals(whole2separateTrajMap.get(start+length)[0]))&&
                 			  startDist<maxPointErrorDistance&&endDist<maxPointErrorDistance){
                 		  if(minDist<startDist+endDist){
                 			  minDist = startDist+endDist;
@@ -675,7 +688,6 @@ public class SequiturModel extends Observable {
             	  Route candidateRoute = new Route(rescaleX.subList(minStart, minStart+length),rescaleY.subList(minStart, minStart+length));
             	  double subtrajSquareEuDist = Tools.routeSqrEuDist(queryRoute, candidateRoute, maxSubtrajSquareEuDist);
             	  if(subtrajSquareEuDist<maxSubtrajSquareEuDist){
-            		  // todo: put it into motif set
             		  motif.add(minStart, candidateRoute);
             		  queryResultCounter++;
             		 // System.out.println("found query Result:\n queryStartPoint = "+queryStartPoint+"\n resultStartPoint = "+minStart+"\n subtrajEuDist = "+subtrajSquareEuDist+" maxSubtrajSquareEudist = "+maxSubtrajSquareEuDist);
@@ -689,8 +701,10 @@ public class SequiturModel extends Observable {
 			}
 	//	  System.out.println(startBlock.nearbyBlocks[i]);
 		}
-		motifList.add(motif);
-		motifListRuleMap.add(motif.id);
+		if(motif.getSize()>1){
+			motifList.add(motif);
+			motifListRuleMap.add(motif.id);
+		}
 		
 	//	System.out.println(queryRoute);
 	}
@@ -1918,10 +1932,11 @@ private void paa2saxseqs() {
 				 rescaleX.add(latOri.get(j));
 				 rescaleY.add(lonOri.get(j));
 				
-				 trajId = latOri.get(j).intValue()-1;
+				 
 				 posInTraj = 0;
-				 Integer[] map = {latOri.get(j).intValue(),-1};
-					whole2separateTrajMap.add(map);
+				 Integer[] map = {trajId,-1};
+				 whole2separateTrajMap.add(map);
+				 trajId--;// = latOri.get(j).intValue();
 				/*
 				 if(j+1<latOri.size()){  // add the start point to rescaled trajectory
 					rescaleX.add(latOri.get(j+1));
@@ -2018,7 +2033,7 @@ private void paa2saxseqs() {
 			 y = y0;
 			 rescaleX.add(x0);
 			 rescaleY.add(y0);
-			 Integer[] map = {latOri.get(j).intValue(),posInTraj};
+			 Integer[] map = {trajId,posInTraj};
 			 posInTraj++;
 			 whole2separateTrajMap.add(map);
 				 l = Tools.pointEuDist(x0, y0, x1, y1);
@@ -2027,9 +2042,9 @@ private void paa2saxseqs() {
 				 y = i*stepDist*(y1-y0)/l+y0;
 				 rescaleX.add(x);
 				 rescaleY.add(y);
-				 Integer[] map1 = {latOri.get(j).intValue(),posInTraj};
+				 Integer[] map1 = {trajId,posInTraj};
 				 posInTraj++;
-				 whole2separateTrajMap.add(map);
+				 whole2separateTrajMap.add(map1);
 			 }
 			  
 			  
@@ -2044,7 +2059,7 @@ private void paa2saxseqs() {
 		  System.out.println("rescaleY = "+rescaleY.subList(0, 100));
 		  /*
 		  for(int i = 0; i<whole2separateTrajMap.size(); i++)
-		  System.out.print(i+"("+whole2separateTrajMap.get(i)[0]+","+whole2separateTrajMap.get(i)[1]+")  ");
+		  System.out.println(i+"("+whole2separateTrajMap.get(i)[0]+","+whole2separateTrajMap.get(i)[1]+")  ");
 		  */
 		  
 		  
@@ -2186,6 +2201,7 @@ private void paa2saxseqs() {
 		          
 		          
 		          chartData.setGrammarRules(rules);
+		          
 		          System.out.println("chartData size: "+ chartData.getRulesNumber());
 		          System.out.println("rules size: "+ rules.size());
 				  motifList = new ArrayList<Motif>();

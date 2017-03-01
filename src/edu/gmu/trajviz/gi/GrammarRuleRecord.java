@@ -15,7 +15,7 @@ import edu.gmu.trajviz.util.Tools;
  * @author Manfred Lerner, seninp
  * 
  */
-public class GrammarRuleRecord {
+public class GrammarRuleRecord implements Comparable{
 
   /* The rule number in Sequitur grammar. */
   private int ruleNumber;
@@ -370,6 +370,18 @@ public int getActualRuleYield(){
  */
 public ArrayList<String> getRuleStringList(){
 	return expandedRuleStringList;
+}
+@Override
+public int compareTo(Object o) {
+	if(!(o instanceof GrammarRuleRecord) )
+		throw new IllegalArgumentException( "not comparable");
+	GrammarRuleRecord that = (GrammarRuleRecord) o;
+	if(this.getRuleYield()>that.getRuleYield())
+		return -1;
+	else if(this.getRuleYield()==that.getRuleYield())
+		return 0;
+	else
+		return 1;
 }
 
 }

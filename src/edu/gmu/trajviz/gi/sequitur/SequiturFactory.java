@@ -82,7 +82,7 @@ public final class SequiturFactory {
   public static SAXRule runSequitur(String inputString) throws TSException {
 
     consoleLogger.trace("digesting the string " + inputString);
-    System.out.println("digesting the string " + inputString);
+  //  System.out.println("digesting the string " + inputString);
     // clear global collections
     //
     SAXRule.numRules = new AtomicInteger(0);
