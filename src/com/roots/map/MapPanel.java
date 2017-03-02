@@ -268,7 +268,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
           setLayout(new MapLayout());
           setOpaque(true);
           setBackground(new Color(0xc0, 0xc0, 0xc0));
-      //    add(overlayPanel);
+         add(overlayPanel);
           add(controlPanel);
         addMouseListener(mouseListener);
         addMouseMotionListener(mouseListener);
@@ -810,10 +810,10 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 		s = (float)(1/((index+1)*0.5));
 		b = index;
 		*/
-		transparency = (float) 0.1;
-		g.setColor(Color.getHSBColor(h, s, b));
+		transparency = (float) 0.3;
+	//	g.setColor(Color.getHSBColor(h, s, b));
 		
-	//	g.setColor(new Color(0f,0f,1f,transparency));
+		g.setColor(new Color(0f,0f,1f,transparency));
 		
 		g.setComposite(AlphaComposite.getInstance(AlphaComposite.SRC_ATOP, transparency));
 		int[] xPoints = new int[longitudes.size()];
@@ -832,7 +832,7 @@ public class MapPanel extends JPanel implements PropertyChangeListener{
 	//	g.drawPolyline(xPoints, yPoints, nPoints);
 
 		g.setPaintMode();
-		g.setStroke(new BasicStroke(4));
+		g.setStroke(new BasicStroke(3));
 		g.drawPolyline(xPoints, yPoints, latitudes.size());
 		
 		

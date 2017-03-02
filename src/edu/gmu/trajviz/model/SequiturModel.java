@@ -70,21 +70,21 @@ public class SequiturModel extends Observable {
 	public long heuristicTime;
 	public static final Double OVERLAP_DEGREE = 0.3;
 	private static final int STEP = 2;
-//	private static final int DEFAULT_TIME_GAP = 10;//180;
-	private static final int DEFAULT_TIME_GAP = 180;
+	private static final int DEFAULT_TIME_GAP = 10;//180;
+//	private static final int DEFAULT_TIME_GAP = 180;
 //	private static final int DEFAULT_TIME_GAP = 3;
 	
 //=======================20170209=========================
 	public static double stepDist;
 	public ArrayList<Double> rescaleX;
 	public ArrayList<Double> rescaleY;
-	public ArrayList<Integer[]> whole2separateTrajMap; // i.e. whole2separateTrajMap.get(indexOfrescaleX) =={trajId,position in rescaledRoutes}
+	public static ArrayList<Integer[]> whole2separateTrajMap; // i.e. whole2separateTrajMap.get(indexOfrescaleX) =={trajId,position in rescaledRoutes}
 	public int queryResultCounter;
 	public int queryRuleCounter;
 	public static ArrayList<Motif> motifList;
 	public static ArrayList<Integer> motifListRuleMap;
 	public static ArrayList<ArrayList<Motif>> trajMotifMap;
-	
+	public static HashMap<SortedSet<Integer>, ArrayList<Motif>> startPosMap2Motif;
 	
 	
 	
@@ -235,6 +235,7 @@ public class SequiturModel extends Observable {
 	public static int minBlocks; 
 	private static Logger consoleLogger;
 	private Map<Integer, Double> accumulatDistance;
+	private static int identicalMotifStartPosSetCount;
 	public static HashMap<String, Integer> subSeqBlockMap;
 	public static HashMap<String,Double> allDiscordDistances;
 	  private static Level LOGGING_LEVEL = Level.DEBUG;
@@ -522,7 +523,12 @@ public class SequiturModel extends Observable {
 		  ct = System.currentTimeMillis();
 		  System.out.println("queryResultCounter = "+queryResultCounter);
 		  System.out.println("queryRuleCounter = "+queryRuleCounter);
-		 
+		  
+		  for (int i = 0; i<motifList.size(); i++){
+			  System.out.println("Motif "+i+" : "+motifList.get(i).trajIds);
+			  System.out.println("Motif "+i+" : "+motifList.get(i).startPositions);
+		  }
+		  System.out.println("identicalMotifStartPosSetCount = "+this.identicalMotifStartPosSetCount);
 		  
 		  /*
 		  long time = System.currentTimeMillis()/1000;
@@ -570,18 +576,24 @@ public class SequiturModel extends Observable {
 	 */
 	  
 	private void postProcessing() {
+		GrammarRuleRecord r0 = rules.get(0);
+			
+			System.out.println(r0);
+			System.out.println("actualRuleYield :"+r0.getActualRuleYield());
+			
+			
 			rules.sortByLength();
 		//SortedSet<GrammarRuleRecord> set = rules.sortByValues();
 		
 		
 		for (GrammarRuleRecord rule : rules.getSortedRulesByLength()){
 		//	GrammarRuleRecord rule = rules.get(i);
-			/*
+			
 			System.out.println(rule);
 			System.out.println("ruleYield = " +rule.getRuleYield());
 			System.out.println("expandedRuleString :"+rule.getExpandedRuleString());
 			System.out.println("Rule String list:"+ rule.getRuleStringList());
-		    */
+		    
 			if(rule.getActualRuleYield()>=minBlocks){
 			
 			queryRuleCounter++;
@@ -592,12 +604,7 @@ public class SequiturModel extends Observable {
 	}
 
 	private void query(GrammarRuleRecord rule) {
-		/*
-		System.out.println(rule);
-		System.out.println("actualRuleYield :"+rule.getActualRuleYield());
-		System.out.println(rule.getR0Intervals()); // not working
-		System.out.println(rule.getRuleIntervals());
-		*/
+		
 		ArrayList<String> stringList = rule.getRuleStringList();
 		
 		RuleInterval ruleInterval = rule.getRuleIntervals().get(0);   // get the 1st rule interval first
@@ -613,7 +620,7 @@ public class SequiturModel extends Observable {
 		
 		Block startBlock = blocks.findBlockById(words.get(queryStartPoint));
 		Route queryRoute = new Route(rescaleX.subList(queryStartPoint,queryEndPoint+1),rescaleY.subList(queryStartPoint, queryEndPoint+1));
-		Motif motif = new Motif(rule.getRuleNumber(), queryRoute);
+		Motif motif = new Motif(rule.getRuleNumber(), queryRoute,queryStartPoint);
 		double[] lowerBoundDistance = startBlock.getLowerBoundDistance2Neighbor(rescaleX.get(queryStartPoint), rescaleY.get(queryStartPoint));
 	//	blocks.printBlockMap();
 	//	System.out.println("startBlock: "+startBlock);
@@ -701,19 +708,30 @@ public class SequiturModel extends Observable {
 			}
 	//	  System.out.println(startBlock.nearbyBlocks[i]);
 		}
-		if(motif.getSize()>1){
+		if(startPosMap2Motif.containsKey(motif.startPositions)){
+			startPosMap2Motif.get(motif.startPositions).add(motif);
+			identicalMotifStartPosSetCount++;
+		}
+		else{
+		if(motif.size()>1){
 			motifList.add(motif);
 			motifListRuleMap.add(motif.id);
+			ArrayList<Motif> tempList = new ArrayList<Motif>();
+			tempList.add(motif);
+			startPosMap2Motif.put(motif.startPositions, tempList);
 		}
+		}// end else
 		
 	//	System.out.println(queryRoute);
 	}
 
 	private void initializeVariables() throws IOException {
+		  startPosMap2Motif = new HashMap<SortedSet<Integer>,ArrayList<Motif>>();
 		  whole2separateTrajMap = new ArrayList<Integer[]>();  // i.e. whole2separateTrajMap.get(indexOfrescaleX) =={trajId,position in rescaledRoutes}
 		  sortedCounter = 0;
 		  count_works = 0;
 		  not_works = 0;
+		  identicalMotifStartPosSetCount = 0;
 		  subSeqBlockMap = new HashMap<String, Integer>();
 		  this.allTrajClusters = new HashMap<Integer, ArrayList<Cluster>>();
 		  this.allMotifs = new HashMap<Integer, ArrayList<Cluster>>();
@@ -2170,7 +2188,7 @@ private void paa2saxseqs() {
 				  saxFrequencyData = SequiturFactory.entries2SAXRecords(trimedTrack);
 				  System.out.println("Input String Length: " + Tools.countSpaces(saxFrequencyData.getSAXString(SPACE)));
 				  consoleLogger.trace("String: " + saxFrequencyData.getSAXString(SPACE));
-				//  System.out.println("String: "+ saxFrequencyData.getSAXString(SPACE));
+				  System.out.println("String: "+ saxFrequencyData.getSAXString(SPACE).substring(0,1000));
 				  consoleLogger.debug("running sequitur...");
 				  
 				  SAXRule sequiturGrammar = SequiturFactory.runSequitur(saxFrequencyData.getSAXString(SPACE));

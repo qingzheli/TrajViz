@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import edu.gmu.trajviz.logic.Route;
 import edu.gmu.trajviz.model.SequiturModel;
@@ -15,18 +17,24 @@ public class Motif {
 	public Route repRoute;
 	public ArrayList<Double> repLineX,repLineY;
 	private ArrayList<Route> routes; //<StartPositionInRescaledX, Route>
-	private ArrayList<Integer> startPositions; 
+	public SortedSet<Integer> startPositions; 
+	public SortedSet<Integer> trajIds;
 	//private int firstTraj;
 	//private int firstStartPos;
 	//private boolean isSecond;
 	//public HashSet<String> trajIds;
 	
-	public Motif(int ruleNumber,Route firstRoute){
+	public Motif(int ruleNumber,Route firstRoute, int startPosition){
 		id = ruleNumber;
 		length = firstRoute.size();
 		routes = new ArrayList<Route>();
 		routes.add(firstRoute);
-		startPositions = new ArrayList<Integer>();
+		startPositions = new TreeSet<Integer>();
+		startPositions.add(startPosition);
+		trajIds = new TreeSet<Integer>();
+		trajIds.add(SequiturModel.whole2separateTrajMap.get(startPosition)[0]);
+		
+		
 	}
 	/*
 	public Cluster(int length,String s1,String s2){
@@ -40,7 +48,7 @@ public class Motif {
 		isSecond = true;
 	}
 */
-	public int getSize(){
+	public int size(){
 		return routes.size();
 	}
 	
@@ -48,64 +56,32 @@ public class Motif {
 	 * if repLine==null, repLine  = comming subtrajectory;
 	 */
 	public boolean add(Integer startPosition, Route route){
-		routes.add(route);
-		startPositions.add(startPosition);
+		
+		
+		if((!trajIds.contains(SequiturModel.whole2separateTrajMap.get(startPosition)[0]))||isNonTrivial(startPosition)){
+			trajIds.add(SequiturModel.whole2separateTrajMap.get(startPosition)[0]);
+			startPositions.add(startPosition);
+			routes.add(route);
+		}
 		return true;
-		/*
-		String name = "T"+traj+"S"+s+"L"+length;
-		if(repLineX==null || repLineY ==null){
-			repLineX = new ArrayList<Double>();
-			repLineY = new ArrayList<Double>();
-			
-			firstTraj = traj;
-			firstStartPos = s;
-			Route route = new Route();
-			for(int i = s; i<s+length; i++){
-				Double x = SequiturModel.oldtrajX.get(traj).get(i);
-				Double y = SequiturModel.oldtrajY.get(traj).get(i);
-			repLineX.add(x); 
-			repLineY.add(y);
-			
-			
-			route.addLocation(x,y);
-			}
-			trajIds.add(name);
-			routes.put(name, route);
-			repRoute = new Route(repLineX,repLineY);
-			return true;
-		}
-		else if(nonTrivial(traj)&&isClose(traj,s)){
-			if(isSecond){
-				for(int k = firstStartPos; k<firstStartPos+length; k++){
-					
-				
-				SequiturModel.isAnomaly.get(firstTraj).set(k, false);
-				}
-				isSecond = false;
-			}
-			Route route = new Route();
-			for(int i = s; i<s+length; i++){
-				Double x = SequiturModel.oldtrajX.get(traj).get(i);
-				Double y = SequiturModel.oldtrajY.get(traj).get(i);
-				
-				SequiturModel.isAnomaly.get(traj).set(i, false);
-				
-				repLineX.set(i-s, (repLineX.get(i-s)*trajIds.size()+x)/(trajIds.size()+1));
-				repLineY.set(i-s, (repLineY.get(i-s)*trajIds.size()+y)/(trajIds.size()+1));
-				
-				route.addLocation(x,y);
-			}
-			trajIds.add(name);
-			routes.put(name, route);
-			repRoute = new Route(repLineX,repLineY);
-		//	System.out.println("addToCluster: "+trajIds);
-			return true;
-		}
-		else
-			return false;
-			*/
+	
 	}
-	/*
+	private boolean isNonTrivial(Integer startPosition) {
+		
+		SortedSet<Integer>candidatePositions = startPositions.subSet(startPosition-length, startPosition+length);
+		if(candidatePositions.size()>0)
+			return false;
+		/*
+		Iterator it = startPositions.iterator();
+		while(it.hasNext()){
+			int next = (int) it.next();
+			if(Math.abs(startPosition-next)<length)
+				return false;
+		}
+		*/
+		return true;
+	}
+/*
 	public boolean addBest(int traj, int s){
 		String name = "T"+traj+"S"+s+"L"+length;
 		if(repLineX==null || repLineY ==null){
@@ -156,19 +132,7 @@ public class Motif {
 			return false;
 	}
 	*/
-private boolean nonTrivial(int traj) {
-	//need to rewrite
-	/*
-	Integer candidate = (Integer) traj;
-	Iterator it = trajIds.iterator();
-	while(it.hasNext()){
-		String name = (String) it.next();
-		
-		if(traj == Tools.parseTrajId(name)[0])
-		return false;
-	}*/
-		return true;
-	}
+
 
 public ArrayList<Route> getRoutes(){
 	return routes;

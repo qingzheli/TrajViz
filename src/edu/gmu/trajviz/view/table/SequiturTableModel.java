@@ -69,7 +69,7 @@ public class SequiturTableModel extends SequiturTableDataModel {
 				 Object[] item = new Object[getColumnCount()+1];
 				 int nColumn = 0;
 				 item[nColumn++] = i;
-				 item[nColumn++] = motif.getRoutes().size();
+				 item[nColumn++] = motif.size();
 				 rows.add(item);
 			 }
 			  
