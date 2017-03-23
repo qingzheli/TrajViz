@@ -70,7 +70,7 @@ public class SequiturModel extends Observable {
 	public long heuristicTime;
 	public static final Double OVERLAP_DEGREE = 0.3;
 	private static final int STEP = 2;
-	private static final int DEFAULT_TIME_GAP = 10;//180;
+	private static final int DEFAULT_TIME_GAP = 5;//180;
 //	private static final int DEFAULT_TIME_GAP = 180;
 //	private static final int DEFAULT_TIME_GAP = 3;
 	
@@ -514,6 +514,7 @@ public class SequiturModel extends Observable {
 		  ct = System.currentTimeMillis();
 		  leftPanelRaw();
 		  System.out.println("leftPanelRaw time: "+ (System.currentTimeMillis()-ct));
+		  writeForMatlab();
 		  ct = System.currentTimeMillis();
 		  runSequitur();
 		  System.out.println("runSequitur time: "+ (System.currentTimeMillis()-ct));
@@ -523,11 +524,12 @@ public class SequiturModel extends Observable {
 		  ct = System.currentTimeMillis();
 		  System.out.println("queryResultCounter = "+queryResultCounter);
 		  System.out.println("queryRuleCounter = "+queryRuleCounter);
-		  
+		/*  
 		  for (int i = 0; i<motifList.size(); i++){
 			  System.out.println("Motif "+i+" : "+motifList.get(i).trajIds);
 			  System.out.println("Motif "+i+" : "+motifList.get(i).startPositions);
 		  }
+		  */
 		  System.out.println("identicalMotifStartPosSetCount = "+this.identicalMotifStartPosSetCount);
 		  
 		  /*
@@ -575,6 +577,15 @@ public class SequiturModel extends Observable {
 	 * 2017 new method  
 	 */
 	  
+	private void writeForMatlab() {
+		System.out.println("CSV style to matlab~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~``");
+		for(int i = 0; i<rescaleRoutes.size(); i++){
+		//	System.out.println("traj "+i+" : "+rescaleRoutes.get(i).size());
+		//	System.out.println("r"+(i+1)+"x="+rescaleRoutes.get(i).getLats());
+		//	System.out.println("r"+(i+1)+"y="+rescaleRoutes.get(i).getLons());
+		}
+	}
+
 	private void postProcessing() {
 		GrammarRuleRecord r0 = rules.get(0);
 			
@@ -588,12 +599,12 @@ public class SequiturModel extends Observable {
 		
 		for (GrammarRuleRecord rule : rules.getSortedRulesByLength()){
 		//	GrammarRuleRecord rule = rules.get(i);
-			
+			/*
 			System.out.println(rule);
 			System.out.println("ruleYield = " +rule.getRuleYield());
 			System.out.println("expandedRuleString :"+rule.getExpandedRuleString());
 			System.out.println("Rule String list:"+ rule.getRuleStringList());
-		    
+		    */
 			if(rule.getActualRuleYield()>=minBlocks){
 			
 			queryRuleCounter++;
@@ -604,6 +615,11 @@ public class SequiturModel extends Observable {
 	}
 
 	private void query(GrammarRuleRecord rule) {
+		/* Todo 03/14/2017: 
+		1. merge intervals among candidate grids
+		2. pruning when compute euclidean distance using property 4. 
+		*/
+		
 		
 		ArrayList<String> stringList = rule.getRuleStringList();
 		
@@ -666,8 +682,8 @@ public class SequiturModel extends Observable {
             		  startDist = Tools.locationDist(startPoint,queryRoute.getStartLocation());
             		  endDist = Tools.locationDist(endPoint,queryRoute.getEndLocation());
             	  }
+            	  /*======================================================================================================================================
             	  
-        /*======================================================================================================================================
          * Below is pruning 3: the closest sub-trajectory among all trivial sub-trajectory must satisfy the start and end positions must be also the closest pair.  
          */
             	  if(start<=interval.getEndIdx()&& end<rescaleX.size()&&(whole2separateTrajMap.get(start)[0].equals(whole2separateTrajMap.get(start+length)[0]))){
@@ -2082,10 +2098,11 @@ private void paa2saxseqs() {
 		  
 		  
 		  
-		  
 		
 	}
 
+
+	
 
 	// Draw raw trajectory on left map
 	private void leftPanelRaw(){
@@ -2188,7 +2205,7 @@ private void paa2saxseqs() {
 				  saxFrequencyData = SequiturFactory.entries2SAXRecords(trimedTrack);
 				  System.out.println("Input String Length: " + Tools.countSpaces(saxFrequencyData.getSAXString(SPACE)));
 				  consoleLogger.trace("String: " + saxFrequencyData.getSAXString(SPACE));
-				  System.out.println("String: "+ saxFrequencyData.getSAXString(SPACE).substring(0,1000));
+				  System.out.println("String: "+ saxFrequencyData.getSAXString(SPACE));//.substring(0,1000));
 				  consoleLogger.debug("running sequitur...");
 				  
 				  SAXRule sequiturGrammar = SequiturFactory.runSequitur(saxFrequencyData.getSAXString(SPACE));

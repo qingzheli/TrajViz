@@ -10,5 +10,6 @@
 	<classpathentry kind="lib" path="/Users/qz/Desktop/qz-hp/jars/lib/miglayout/miglayout-4.0.jar"/>
 	<classpathentry kind="lib" path="/Users/qz/Downloads/libsvm-3.21/java/libsvm.jar"/>
 	<classpathentry kind="lib" path="/Users/qz/Downloads/javaml-0.1.7/javaml-0.1.7.jar"/>
+	<classpathentry kind="lib" path="/Users/qz/Dropbox/2017TrajectoryMining/JMatIO-041212/lib/jmatio.jar" sourcepath="/Users/qz/Dropbox/2017TrajectoryMining/JMatIO-041212/src"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
