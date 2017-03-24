@@ -5,6 +5,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.PriorityQueue;
 import java.util.Stack;
+import java.util.TreeSet;
 
 import edu.gmu.trajviz.model.Center;
 import edu.gmu.trajviz.model.RoutePair;
@@ -36,7 +37,7 @@ public class Block {
 	public ArrayList<String> residualSet;
 	public int size;  // a huge area divided into size*size blocks
 	//2017 new
-	private ArrayList<Interval> intervals;
+	private TreeSet<Interval> intervals;
 	
 	public Block(){
 		// just an empty block;
@@ -47,7 +48,7 @@ public class Block {
 		points = new ArrayList<Location>();
 		centers = new ArrayList<Center>();
 		residualSet = new ArrayList<String>();
-		intervals = new ArrayList<Interval>();
+		intervals = new TreeSet<Interval>();
 		nearbyBlocks = new Block[8];
 			
 	}
@@ -73,7 +74,7 @@ public class Block {
 		points = new ArrayList<Location>();
 		centers = new ArrayList<Center>();
 		residualSet = new ArrayList<String>();
-		intervals = new ArrayList<Interval>();
+		intervals = new TreeSet<Interval>();
 		nearbyBlocks = new Block[8];
 
 	//	SequiturModel.allSubseq.put(id, new ArrayList<String>());
@@ -549,7 +550,7 @@ public class Block {
 	public void addIntervals(Integer startIdx, int endIdx) {
 		intervals.add(new Interval(startIdx,endIdx));
 	}
-	public ArrayList<Interval> getIntervals(){
+	public TreeSet<Interval> getIntervals(){
 		return intervals;
 	}
 	public double getLowerBoundNeighbourDist(int i, Double double1, Double double2) {

@@ -34,6 +34,7 @@ import java.util.PriorityQueue;
 import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
+import java.util.TreeSet;
 import java.util.concurrent.TimeUnit;
 
 import org.slf4j.LoggerFactory;
@@ -625,8 +626,8 @@ public class SequiturModel extends Observable {
 		
 		RuleInterval ruleInterval = rule.getRuleIntervals().get(0);   // get the 1st rule interval first
 		int length = ruleInterval.getLength()+1;
-		int queryStartPoint = ruleInterval.getStartPos();
-		int queryEndPoint = ruleInterval.getEndPos();
+		int queryStartIdx = ruleInterval.getStartPos();
+		int queryEndIdx = ruleInterval.getEndPos();
 		double maxSubtrajSquareEuDist = length*maxPointErrorDistance*maxPointErrorDistance;   //
 		//Location queryStartLocation = new Location(rescale)
 		
@@ -634,19 +635,23 @@ public class SequiturModel extends Observable {
 		 * Below is pruning 1: only select points in blocks which overlap with the query circle of query trajectory's start point  
 		 */
 		
-		Block startBlock = blocks.findBlockById(words.get(queryStartPoint));
-		Route queryRoute = new Route(rescaleX.subList(queryStartPoint,queryEndPoint+1),rescaleY.subList(queryStartPoint, queryEndPoint+1));
-		Motif motif = new Motif(rule.getRuleNumber(), queryRoute,queryStartPoint);
-		double[] lowerBoundDistance = startBlock.getLowerBoundDistance2Neighbor(rescaleX.get(queryStartPoint), rescaleY.get(queryStartPoint));
+		
+		
+		SortedSet<Interval> cIntervalSet = mergeIntervals(queryStartIdx);
+		Route queryRoute = new Route(rescaleX.subList(queryStartIdx,queryEndIdx+1),rescaleY.subList(queryStartIdx, queryEndIdx+1));
+		
+		Motif motif = new Motif(rule.getRuleNumber(), queryRoute,queryStartIdx);
+		
 	//	blocks.printBlockMap();
 	//	System.out.println("startBlock: "+startBlock);
-		for(int i = -1; i<startBlock.nearbyBlocks.length; i++){
+		/*
+		for(int i = -1; i<gridQ.nearbyBlocks.length; i++){
 			Block nearbyBlock;
 			if(i<0){
-				nearbyBlock = startBlock;
+				nearbyBlock = gridQ;
 			}
 			else{
-			 nearbyBlock = startBlock.nearbyBlocks[i];
+			 nearbyBlock = gridQ.nearbyBlocks[i];
 			}
 			if(i<0||(nearbyBlock!=null && lowerBoundDistance[i]<maxPointErrorDistance)){   // if this neighbor block might contains nearby points
               
@@ -655,7 +660,8 @@ public class SequiturModel extends Observable {
 		*  query trajectory's start and end point respectively 
 		* 
         */
-				for(Interval interval : nearbyBlock.getIntervals()) {
+		
+				for(Interval interval : cIntervalSet) {
 	              int start = interval.getStartIdx();
 	              int end = start+length;
 	              /*
@@ -721,9 +727,9 @@ public class SequiturModel extends Observable {
             	  
                   }
 			  }  // end for interval
-			}
+			
 	//	  System.out.println(startBlock.nearbyBlocks[i]);
-		}
+		
 		if(startPosMap2Motif.containsKey(motif.startPositions)){
 			startPosMap2Motif.get(motif.startPositions).add(motif);
 			identicalMotifStartPosSetCount++;
@@ -739,6 +745,69 @@ public class SequiturModel extends Observable {
 		}// end else
 		
 	//	System.out.println(queryRoute);
+	}
+
+	
+	private SortedSet<Interval> mergeIntervals(int queryStartIdx) {
+		SortedSet<Interval> result = new TreeSet<Interval>();
+		Block gridQ = blocks.findBlockById(words.get(queryStartIdx));
+		double[] lowerBoundDistance = gridQ.getLowerBoundDistance2Neighbor(rescaleX.get(queryStartIdx), rescaleY.get(queryStartIdx));
+
+		for(int i = -1; i<gridQ.nearbyBlocks.length; i++){
+			Block nearbyBlock;
+			if(i<0){
+				nearbyBlock = gridQ;
+				result.addAll(nearbyBlock.getIntervals());
+			}
+			else{
+			 nearbyBlock = gridQ.nearbyBlocks[i];
+			
+			
+			if((nearbyBlock!=null && lowerBoundDistance[i]<maxPointErrorDistance)){   // if this neighbor block might contains nearby points
+			   //IntervalTree itree=new IntervalTree();
+               result = addIntervalWithMerge(result,nearbyBlock.getIntervals());
+			}
+			}
+	}
+		
+		return result;
+	}
+
+	private SortedSet<Interval> addIntervalWithMerge(SortedSet<Interval> currentIntervals, TreeSet<Interval> newIntervals) {
+		//System.out.println("currentIntervals: "+currentIntervals);
+		//System.out.println("    newIntervals: "+newIntervals);
+		SortedSet<Interval> temp = new TreeSet<Interval>();
+		temp.addAll(currentIntervals);
+		//System.out.println("           1temp: "+temp);
+		temp.addAll(newIntervals);
+		//System.out.println("           2temp: "+temp);
+		SortedSet<Interval> result = new TreeSet<Interval>();
+		Iterator it = temp.iterator();
+		if(it.hasNext()){
+			Interval previous = (Interval) it.next();
+			while(it.hasNext()){
+				Interval current = (Interval) it.next();
+				Interval newInterval = Interval.mergeInterval(previous, current);
+				if(newInterval==null){
+					result.add(new Interval(previous.getStartIdx(),previous.getEndIdx()));
+					previous = current;
+					if(!it.hasNext()){
+						result.add(current);
+					}
+				}
+				else{
+					previous = newInterval;
+					if(!it.hasNext()){
+						result.add(previous);
+					}
+				}
+			}
+		//System.out.println("result = "+result);
+		return result;
+		}
+		
+		else
+		return temp;
 	}
 
 	private void initializeVariables() throws IOException {
